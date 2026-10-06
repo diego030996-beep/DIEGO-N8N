@@ -36,9 +36,9 @@ mov_r AS (  -- movimientos de inventario de Microsip con unidades (entradas +, s
   SELECT (r.datos->>'articulo_id')::bigint AS articulo_id, r.fecha,
          CASE WHEN upper(coalesce(r.datos->>'tipo', '')) = 'E' THEN 1 ELSE -1 END * abs(coalesce(r.datos->>'unidades', r.datos->>'UNIDADES')::numeric) AS u
   FROM ms_raw r, cfg, desde
-  WHERE r.base = cfg.base AND r.tabla = 'RESUMEN_MOVTOS_IN' AND r.fecha >= desde.d AND (r.datos->>'articulo_id') ~ '^[0-9]+$'
+  WHERE r.base = cfg.base AND r.tabla = 'RESUMEN_MOVTOS_IN' AND r.fecha >= desde.d AND (r.datos->>'articulo_id') ~ '^[0-9]{1,18}$'
     AND coalesce(r.datos->>'unidades', r.datos->>'UNIDADES') ~ '^-?[0-9]+(\.[0-9]+)?$'
-    AND (r.datos->>'articulo_id')::bigint IN (SELECT articulo_id FROM arts)),
+    AND (CASE WHEN (r.datos->>'articulo_id') ~ '^[0-9]{1,18}$' THEN ((r.datos->>'articulo_id'))::bigint END) IN (SELECT articulo_id FROM arts)),
 usar_r AS (SELECT EXISTS (SELECT 1 FROM ms_raw r, cfg, desde WHERE r.base = cfg.base AND r.tabla = 'RESUMEN_MOVTOS_IN' AND r.fecha >= desde.d
                           AND coalesce(r.datos->>'unidades', r.datos->>'UNIDADES') IS NOT NULL LIMIT 1) AS ok),
 mov_v AS (  -- respaldo: ventas (salen) ...
@@ -58,7 +58,7 @@ mov_c AS (  -- ... y compras (entran)
   SELECT (d.datos->>'ARTICULO_ID')::bigint AS articulo_id, cm2.fecha,
          CASE WHEN cm2.tipo = 'D' THEN -1 ELSE 1 END * CASE WHEN (d.datos->>'UNIDADES') ~ '^-?[0-9.]+$' THEN (d.datos->>'UNIDADES')::numeric ELSE 0 END AS u
   FROM cm2 JOIN ms_raw d ON d.base = (SELECT base FROM cfg) AND d.tabla = 'DOCTOS_CM_DET' AND d.datos->>'DOCTO_CM_ID' = cm2.id
-  WHERE (d.datos->>'ARTICULO_ID') ~ '^[0-9]+$' AND (d.datos->>'ARTICULO_ID')::bigint IN (SELECT articulo_id FROM arts)),
+  WHERE (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}$' AND (CASE WHEN (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}$' THEN ((d.datos->>'ARTICULO_ID'))::bigint END) IN (SELECT articulo_id FROM arts)),
 mov AS (SELECT * FROM mov_r WHERE (SELECT ok FROM usar_r) UNION ALL SELECT * FROM mov_v UNION ALL SELECT * FROM mov_c),
 movd AS (SELECT articulo_id, fecha, sum(u) AS u FROM mov GROUP BY 1, 2),
 desp AS (   -- lo que se movió desde el día de la OC hasta hoy, por renglón

@@ -19,8 +19,8 @@ nvc AS (  -- proveedor de la última compra de esos artículos
     SELECT (d.datos->>'ARTICULO_ID')::bigint AS articulo_id, r.datos->>'PROVEEDOR_ID' AS prov, coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) AS fecha
     FROM ms_raw d JOIN cfg ON d.base = cfg.base
     JOIN ms_raw r ON r.base = d.base AND r.tabla = 'DOCTOS_CM' AND r.datos->>'DOCTO_CM_ID' = d.datos->>'DOCTO_CM_ID'
-    WHERE d.tabla = 'DOCTOS_CM_DET' AND (d.datos->>'ARTICULO_ID') ~ '^[0-9]+$' AND (SELECT count(*) FROM nv) > 0
-      AND (d.datos->>'ARTICULO_ID')::bigint IN (SELECT articulo_id FROM nv)
+    WHERE d.tabla = 'DOCTOS_CM_DET' AND (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}$' AND (SELECT count(*) FROM nv) > 0
+      AND (CASE WHEN (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}$' THEN ((d.datos->>'ARTICULO_ID'))::bigint END) IN (SELECT articulo_id FROM nv)
       AND upper(coalesce(r.datos->>'TIPO_DOCTO', '')) IN ('O', 'R', 'C') AND upper(coalesce(r.datos->>'ESTATUS', '')) <> 'C') z
   ORDER BY z.articulo_id, z.fecha DESC),
 nv2 AS (

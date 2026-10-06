@@ -305,7 +305,7 @@ function abrir(t){
 /* ================= carga general ================= */
 async function cargar(){
   if(!K){ aviso("Esta liga está incompleta. Pide la liga del planeador al administrador."); return; }
-  try { D = await api("datos"); } catch(e) { aviso("No se pudieron leer los datos: " + esc(e.message)); return; }
+  try { D = await api("datos"); } catch(e) { aviso(esc(e.message) + "<br><small>Si el mensaje no es claro, mándale una captura a quien instaló el planeador.</small>"); return; }
   aviso("");
   $("#tienda").textContent = (D.cfg.tienda || "Planeador de compras");
   $("#subt").textContent = "Planeador de compras · " + (D.cfg.empresa || "") + (soloLectura() ? " · solo consulta" : "");
