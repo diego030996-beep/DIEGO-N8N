@@ -14,9 +14,9 @@ Cómo se clasifica (se explica también en la página y en el Excel):
 
 - **A**: los artículos que juntos suman el primer **80%** de la venta (importe sin IVA) de los últimos **6 meses**
   completos. Cuentan tickets de punto de venta menos devoluciones y remisiones; no cuentan cancelados ni tickets de más de $500,000.
-- **B**: el resto de los que se vendieron en esos 6 meses.
-- **C**: los que se vendieron en los últimos **12 meses** pero no en esos 6, y los que se venden por primera vez en el mes
-  (entran como C provisional en el planeador hasta el siguiente cálculo). No cuentan para el 80/20.
+- **B**: el siguiente **15%** de la venta.
+- **C**: el último **5%** (los que se venden de vez en cuando); también los que se vendieron en los últimos **12 meses** pero no
+  en esos 6, y los que se venden por primera vez en el mes (C provisional hasta el siguiente cálculo).
 - **No entran**: las líneas o grupos de Microsip que digan `tinaco|cisterna` (fabricación propia), los dados de baja y los
   marcados a mano. La página lo avisa y sus OCs no salen como pendientes en el registro.
 
@@ -34,7 +34,8 @@ Mínimo, punto de reorden y máximo (método recomendado; se cambia en la págin
 - Ningún mínimo queda en 0 y siempre máximo > punto de reorden y máximo ≥ mínimo. También está el **método simple**
   (mínimo = venta diaria × (entrega + días de seguridad)) por si el auditor pide ese.
 
-Planeador: vista **Por proveedor** o **Todos los productos** (todo lo que hay que pedir, agrupado por proveedor; "Guardar todo"
+En cada renglón del planeador se ve la **última venta** (al día de hoy) y la **última recepción** (fecha, piezas y proveedor
+si fue otro). Planeador: vista **Por proveedor** o **Todos los productos** (todo lo que hay que pedir, agrupado por proveedor; "Guardar todo"
 guarda un plan por proveedor).
 
 **Compras de más**: si lo que compras pasa del sugerido o te deja arriba del máximo, el planeador lo marca en rojo y pide
@@ -78,7 +79,7 @@ Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/plan
 
 ## Para que el servidor no se cargue
 
-- Cada acción de la página es **una sola consulta** a Postgres, con límite de tiempo (`statement_timeout`) y de espera
+- Cada acción de la página es **una sola consulta** a Postgres, sin compilación JIT, con límite de tiempo (`statement_timeout`) y de espera
   por bloqueo, así que nunca se queda pegada ni frena los otros flujos.
 - Los máximos y mínimos se calculan **una vez al mes** y se guardan (`compras_maxmin`). La página solo lee lo ya calculado.
 - El flujo **no guarda en el historial de n8n** las ejecuciones que salen bien (solo los errores).

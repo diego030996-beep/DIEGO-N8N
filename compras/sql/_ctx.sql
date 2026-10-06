@@ -6,6 +6,7 @@ b AS (SELECT coalesce(nullif($1, ''), (SELECT nullif(valor, '') FROM compras_con
 cfg AS (SELECT b.*,
              greatest(least(coalesce(nullif(c->>'meses_abc', '')::int, 6), 24), 1) AS meses,
              coalesce(nullif(c->>'corte_a', '')::numeric, 80) / 100 AS corte,
+             coalesce(nullif(c->>'corte_b', '')::numeric, 95) / 100 AS corte_b,
              coalesce(nullif(c->>'seg_a', '')::numeric, 3) AS seg_a, coalesce(nullif(c->>'inv_a', '')::numeric, 15) AS inv_a,
              coalesce(nullif(c->>'seg_b', '')::numeric, 5) AS seg_b, coalesce(nullif(c->>'inv_b', '')::numeric, 30) AS inv_b,
              coalesce(nullif(c->>'entrega_def', '')::numeric, 3) AS ent_def,

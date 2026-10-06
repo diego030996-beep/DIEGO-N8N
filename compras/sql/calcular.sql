@@ -67,7 +67,8 @@ up AS (   -- proveedor de la última compra del artículo
 prv AS (SELECT p.pk AS proveedor_id, p.datos->>'NOMBRE' AS nombre FROM ms_raw p, cfg WHERE p.base = cfg.base AND p.tabla = 'PROVEEDORES'),
 c1 AS (
   SELECT abc.*, coalesce(nullif(abc.prov_f, ''), up.prov) AS prov_id,
-         coalesce(nullif(abc.clase_f, ''), abc.clase_c, CASE WHEN abc.acum - abc.imp < cfg.corte * abc.tot THEN 'A' ELSE 'B' END) AS clase,
+         coalesce(nullif(abc.clase_f, ''), abc.clase_c, CASE WHEN abc.acum - abc.imp < cfg.corte * abc.tot THEN 'A'
+                                                             WHEN abc.acum - abc.imp < cfg.corte_b * abc.tot THEN 'B' ELSE 'C' END) AS clase,
          CASE WHEN abc.clase_c = 'C' THEN nd.n_c ELSE nd.n END AS ndias
   FROM abc LEFT JOIN up USING (articulo_id) CROSS JOIN cfg CROSS JOIN nd),
 c2 AS (
@@ -132,7 +133,7 @@ m AS (SELECT date_trunc('month', coalesce(nullif(p->>'mes', '')::date, hoy))::da
 x AS (SELECT y.* FROM compras_maxmin y, cfg, m WHERE y.base = cfg.base AND y.mes = m.mes)
 SELECT json_build_object('ok', true, 'base', (SELECT base FROM cfg), 'mes', (SELECT mes FROM m)::text,
   'productos', (SELECT count(*) FROM x), 'a', (SELECT count(*) FROM x WHERE clase = 'A'), 'b', (SELECT count(*) FROM x WHERE clase = 'B'), 'c', (SELECT count(*) FROM x WHERE clase = 'C'),
-  'venta_a', (SELECT round(sum(venta) FILTER (WHERE clase = 'A') / nullif(sum(venta) FILTER (WHERE clase IN ('A', 'B')), 0) * 100, 1) FROM x),
+  'venta_a', (SELECT round(sum(venta) FILTER (WHERE clase = 'A') / nullif(sum(venta) FILTER (WHERE pct IS NOT NULL), 0) * 100, 1) FROM x),
   'alertas', (SELECT count(*) FROM x WHERE alerta IS NOT NULL),
   'rotacion', (SELECT json_object_agg(coalesce(rotacion, '-'), n) FROM (SELECT rotacion, count(*) AS n FROM x GROUP BY 1) z),
   'una_venta', (SELECT count(*) FROM x WHERE tickets <= 1),

@@ -17,7 +17,7 @@ d = correr('datos')
 ok(d['ok'] and d['mes'] is None and d['oc_total'] == 12, 'datos sin cálculo previo')
 ok([x['linea'] for x in d['excluidos']] == ['TINACOS Y CISTERNAS'], 'avisa que la línea de tinacos no se toma en cuenta')
 c = correr('calcular', {'mes': '2026-10-01'})
-ok(c['productos'] == 21 and c['c'] == 1 and c['a'] + c['b'] == 20, f"A/B/C: {c['a']} A, {c['b']} B, 1 C (tinaco excluido)")
+ok(c['productos'] == 21 and c['a'] + c['b'] + c['c'] == 21 and c['c'] >= 2, f"A/B/C: {c['a']} A, {c['b']} B, {c['c']} C (tinaco excluido)")
 mm = {f['clave']: f for f in correr('reporte', {})['filas']}
 f = mm['CEM25']
 import math
@@ -28,6 +28,12 @@ ok(f['maximo'] == f['punto_reorden'] + math.ceil(f['vd'] * f['inventario'] - 1e-
 ok(all(x['minimo'] >= 1 and x['maximo'] >= x['minimo'] and x['maximo'] > x['punto_reorden'] and (x['rotacion'] == 'baja' or x['punto_reorden'] >= x['minimo']) for x in mm.values()), 'ningún mínimo en 0, máx ≥ mín y máx > punto de reorden')
 ok(mm['BISAGRA']['rotacion'] == 'baja' and (mm['BISAGRA']['minimo'], mm['BISAGRA']['punto_reorden'], mm['BISAGRA']['maximo']) == (1, 0, 1), 'rota poco: tener 1 y pedir solo cuando se acabe (mín 1, reorden 0, máx 1)')
 ok(mm['CEM25']['rotacion'] == 'alta', 'cemento rota mucho')
+_ab = [x for x in mm.values() if x['pct'] is not None]
+_t = sum(x['venta'] for x in _ab)
+ok(all((x['clase'] == 'A') == ((x['pct_acum'] * _t - x['venta']) < 0.80 * _t + 0.01) for x in _ab), 'A = primer 80% de la venta')
+ok(all(x['clase'] == 'C' for x in _ab if (x['pct_acum'] * _t - x['venta']) >= 0.95 * _t + 0.01), 'C = último 5% de la venta')
+_p = {x['clave']: x for x in correr('planeador', {'proveedor_id': '14'})['filas']}
+ok(_p['CEM25']['ult_venta'] is not None and _p['CEM25']['rec_fecha'] == '2026-09-22' and _p['CEM25']['rec_unidades'] == 360, 'renglón con última venta y última recepción')
 ok(mm['MARTILLO']['alerta'] == 'sin proveedor', 'alerta sin proveedor')
 ok('TINACO' not in mm, 'tinacos fuera del cálculo')
 ok(mm['BROCHA4']['clase'] == 'C' and mm['BROCHA4']['minimo'] >= 1 and mm['BROCHA4']['maximo'] > mm['BROCHA4']['minimo'], 'C: vendido fuera de los 6 meses, mínimo 1 pieza')

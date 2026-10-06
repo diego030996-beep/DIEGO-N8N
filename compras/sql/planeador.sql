@@ -51,16 +51,41 @@ dec AS (SELECT d.*, pl.proveedor_id AS dprov FROM compras_decisiones d JOIN pl O
 uc AS (  -- última OC del artículo con este proveedor
   SELECT DISTINCT ON (d.articulo_id) d.articulo_id, o.fecha, d.u FROM oc o JOIN ocd d ON d.id = o.id, cfg
   WHERE cfg.p->>'todos' = 'si' OR o.prov = cfg.p->>'proveedor_id' ORDER BY d.articulo_id, o.fecha DESC),
+vm AS (  -- última venta al día de hoy (las de este mes todavía no están en el cálculo)
+  SELECT d.articulo_id, max(v.fecha) AS fecha
+  FROM ms_ventas v JOIN ms_ventas_det d ON d.base = v.base AND d.origen = v.origen AND d.docto_id = v.docto_id, cfg, ms
+  WHERE v.base = cfg.base AND v.fecha >= ms.mes AND coalesce(v.estatus, '') <> 'C' AND upper(v.tipo) <> 'D'
+    AND ((v.origen = 'PV' AND upper(v.tipo) = 'V') OR (v.origen = 'VE' AND v.tipo = 'R')) AND d.articulo_id IS NOT NULL
+  GROUP BY 1),
+rc AS MATERIALIZED (  -- recepciones y compras de Microsip (lo que de verdad entró al almacén) de los últimos 2 años
+  SELECT r.datos->>'DOCTO_CM_ID' AS id, coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) AS fecha, r.datos->>'PROVEEDOR_ID' AS prov
+  FROM ms_raw r, cfg
+  WHERE r.base = cfg.base AND r.tabla = 'DOCTOS_CM' AND upper(coalesce(r.datos->>'TIPO_DOCTO', '')) IN ('R', 'C')
+    AND upper(coalesce(r.datos->>'ESTATUS', '')) <> 'C' AND upper(coalesce(r.datos->>'CANCELADO', 'N')) <> 'S'
+    AND coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) >= cfg.hoy - 730),
+rcd AS MATERIALIZED (  -- renglones de compras de los artículos del planeador (se leen una sola vez)
+  SELECT z.* FROM (
+    SELECT d.datos->>'DOCTO_CM_ID' AS id,
+           (CASE WHEN (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}\Z' THEN (d.datos->>'ARTICULO_ID')::bigint END) AS articulo_id,
+           CASE WHEN (d.datos->>'UNIDADES') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (d.datos->>'UNIDADES')::numeric END AS u
+    FROM ms_raw d, cfg WHERE d.base = cfg.base AND d.tabla = 'DOCTOS_CM_DET') z
+  WHERE z.articulo_id IN (SELECT articulo_id FROM mm)),
+ur AS (  -- última recepción de cada artículo del planeador
+  SELECT DISTINCT ON (rcd.articulo_id) rcd.articulo_id, rc.fecha, rcd.u, rc.prov
+  FROM rcd JOIN rc ON rc.id = rcd.id
+  ORDER BY rcd.articulo_id, rc.fecha DESC),
 f AS (
   SELECT mm.articulo_id, mm.clave, mm.articulo, mm.unidad, mm.clase, mm.venta_diaria, mm.minimo, mm.maximo, mm.alerta,
          mm.punto_reorden, mm.rotacion, mm.tickets, mm.proveedor_id, mm.proveedor, mm.ultima_venta, mm.semanas_venta, mm.semanas, mm.unidades, mm.dias_periodo,
          (SELECT r.decision FROM compras_revision r WHERE r.base = cfg.base AND r.articulo_id = mm.articulo_id AND r.tipo = 'lento') AS lento,
          coalesce(ov.empaque, mm.empaque) AS empaque, coalesce(exi.e, 0) AS existencia, coalesce(pend.u, 0) AS pendiente, pend.folios,
-         uc.fecha AS ult_fecha, uc.u AS ult_unidades
+         uc.fecha AS ult_fecha, uc.u AS ult_unidades, ur.fecha AS rec_fecha, ur.u AS rec_unidades, ur.prov AS rec_prov,
+         greatest(vm.fecha, mm.ultima_venta) AS ult_venta
   FROM mm CROSS JOIN cfg
   LEFT JOIN compras_articulos ov ON ov.base = cfg.base AND ov.articulo_id = mm.articulo_id
   LEFT JOIN exi ON exi.articulo_id = mm.articulo_id LEFT JOIN pend ON pend.articulo_id = mm.articulo_id
-  LEFT JOIN uc ON uc.articulo_id = mm.articulo_id),
+  LEFT JOIN uc ON uc.articulo_id = mm.articulo_id LEFT JOIN ur ON ur.articulo_id = mm.articulo_id
+  LEFT JOIN vm ON vm.articulo_id = mm.articulo_id),
 g AS (SELECT f.*, /*SUG(f.existencia, f.pendiente, f.punto_reorden, f.maximo, f.empaque)*/ AS sugerido FROM f, cfg)
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveedor_id', cfg.p->>'proveedor_id', 'regla', cfg.regla,
   'plan', (SELECT json_build_object('id', id, 'folio', folio, 'folio_oc', folio_oc, 'clase', clase, 'creado', creado, 'modificado', modificado)
@@ -71,7 +96,9 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveed
       'tickets', g.tickets, 'proveedor_id', g.proveedor_id, 'proveedor', g.proveedor, 'ultima_venta', g.ultima_venta,
       'semanas_venta', g.semanas_venta, 'semanas', g.semanas, 'lento', g.lento, 'unidades', g.unidades, 'dias_periodo', g.dias_periodo, 'empaque', g.empaque, 'alerta', g.alerta,
       'existencia', g.existencia, 'pendiente', g.pendiente, 'folios', g.folios, 'sugerido', g.sugerido,
-      'ult_fecha', g.ult_fecha, 'ult_unidades', g.ult_unidades,
+      'ult_fecha', g.ult_fecha, 'ult_unidades', g.ult_unidades, 'rec_fecha', g.rec_fecha, 'rec_unidades', g.rec_unidades, 'rec_prov', g.rec_prov,
+      'rec_proveedor', (SELECT p.datos->>'NOMBRE' FROM ms_raw p WHERE p.base = cfg.base AND p.tabla = 'PROVEEDORES' AND p.pk = g.rec_prov),
+      'ult_venta', g.ult_venta,
       'comprado', dec.comprado, 'razon', dec.razon, 'nota', dec.nota)
       ORDER BY g.proveedor, g.clase, (g.sugerido > 0) DESC, (greatest(g.existencia, 0) + g.pendiente) / nullif(g.punto_reorden, 0), g.articulo), '[]'::json)
     FROM g LEFT JOIN dec ON dec.articulo_id = g.articulo_id AND coalesce(dec.dprov, '') = coalesce(g.proveedor_id, '')

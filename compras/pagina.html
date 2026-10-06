@@ -423,9 +423,10 @@ function ponerVista(v){
 $$("#segVista button").forEach(b => b.addEventListener("click", () => { ponerVista(b.dataset.v); ponerClase(vista === "todos" ? "" : (clase || "A")); cargarPlan(); }));
 $("#qPlan").addEventListener("input", () => { clearTimeout(pintarPlan._t); pintarPlan._t = setTimeout(pintarPlan, 250); });
 function deMas(f, c){   // cuánto se compra arriba del sugerido y cuánto quedaría arriba del máximo
-  c = num(c); if(c === null) return null;
+  c = num(c); if(c === null || c <= 0) return null;
   const sobre = num(f.sugerido) === null ? null : c - num(f.sugerido);
-  const arriba = Math.max(f.existencia || 0, 0) + (f.pendiente || 0) + c - (f.maximo ?? Infinity);
+  // solo cuenta lo que esta compra pone arriba del máximo (si ya estaba arriba antes, no es culpa de esta compra)
+  const arriba = Math.min(c, Math.max(f.existencia || 0, 0) + (f.pendiente || 0) + c - (f.maximo ?? Infinity));
   return (sobre > 0 || arriba > 0) ? {sobre: Math.max(sobre || 0, 0), arriba: Math.max(arriba, 0)} : null;
 }
 function avisoMas(m, u){ return m ? `<span class="mas">⚠ Compras de más${m.sobre ? ": +" + n0(m.sobre) + " " + esc(u || "") + " sobre lo sugerido" : ""}${m.arriba ? " · quedarías " + n0(m.arriba) + " arriba del máximo" : ""}</span>` : ""; }
@@ -474,7 +475,7 @@ function pintarPlan(){
       cab = `<tr class="grp"><td colspan="9"><b>${esc(f.proveedor || "Sin proveedor")}</b> <span class="muted">· ${n} por pedir</span></td></tr>`;
     }
     return cab + `<tr class="${necesita(f) ? "need" : ""}" data-i="${i}">
-      <td class="art"><span class="pill ${f.clase}">${f.clase}</span> <b>${esc(f.articulo)}</b> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}<div class="muted">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque ? " · empaque " + n0(f.empaque) : ""}${f.ult_fecha ? " · última OC " + fecha(f.ult_fecha) + " (" + n0(f.ult_unidades) + ")" : ""}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
+      <td class="art"><span class="pill ${f.clase}">${f.clase}</span> <b>${esc(f.articulo)}</b> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}<div class="muted">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque ? " · empaque " + n0(f.empaque) : ""}</div><div class="muted">Última venta: <b>${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " días)" : "—"}</b> · Última recepción: <b>${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) + " " + esc(f.unidad || "") + (f.rec_proveedor && String(f.rec_prov || "") !== String(f.proveedor_id || "") ? " de " + esc(f.rec_proveedor) : "") : "—"}</b>${f.ult_fecha && f.ult_fecha !== f.rec_fecha ? " · última OC " + fecha(f.ult_fecha) + " (" + n0(f.ult_unidades) + ")" : ""}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
       <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
       <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="muted">${esc(f.folios)}</div>` : ""}</td>
       <td class="n" data-l="Mín">${n0(f.minimo)}</td>
@@ -635,13 +636,13 @@ $$("#segAbc button").forEach(b => b.addEventListener("click", () => { filtroAbc 
 function pintarAbc(){
   if(!ABC) return;
   const F = ABC.filas, A = F.filter(f => f.clase === "A"), B = F.filter(f => f.clase === "B"), C = F.filter(f => f.clase === "C");
-  const vt = [...A, ...B].reduce((a, f) => a + (f.venta || 0), 0);
-  const f0 = A[0] || B[0] || F[0] || {}, c0 = C[0];
-  $("#abcSub").textContent = F.length ? `A y B: venta del ${fechaL(f0.ini)} al ${fechaL(f0.fin)} (${f0.dias} días)${c0 ? `. C: vendidos desde el ${fechaL(c0.ini)}, pero no en ese periodo` : ""}. Calculado el ${new Date(f0.calculado).toLocaleString("es-MX")}` : "Este mes aún no se calcula.";
+  const vt = F.filter(f => f.pct !== null).reduce((a, f) => a + (f.venta || 0), 0);
+  const f0 = A[0] || B[0] || F[0] || {}, c0 = C.find(f => f.pct === null);
+  $("#abcSub").textContent = F.length ? `Venta del ${fechaL(f0.ini)} al ${fechaL(f0.fin)} (${f0.dias} días)${c0 ? `. Además, C vendidos desde el ${fechaL(c0.ini)} pero no en ese periodo` : ""}. Calculado el ${new Date(f0.calculado).toLocaleString("es-MX")}` : "Este mes aún no se calcula.";
   $("#abcReglas").innerHTML = reglasTxt().map(t => `<div>${t}</div>`).join("");
   pintarExcl();
   $("#kpisAbc").innerHTML = [
-    [A.length, "productos A"], [B.length, "productos B"], [C.length, "productos C"], [pct(vt ? A.reduce((a, f) => a + f.venta, 0) / vt : null), "de la venta A+B es A"],
+    [A.length, "productos A"], [B.length, "productos B"], [C.length, "productos C"], [pct(vt ? A.reduce((a, f) => a + f.venta, 0) / vt : null), "de la venta es A"],
     [F.filter(f => f.rotacion === "alta").length, "rotan mucho"], [F.filter(f => f.rotacion === "baja").length, "rotan poco"],
     [F.filter(f => f.alerta).length, "con alerta", true], [F.filter(f => f.origen === "manual").length, "con mín/máx a mano"],
   ].map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${typeof v === "string" ? v : n0(v)}</b><span>${t}</span></div>`).join("");
@@ -735,8 +736,8 @@ function cargarXlsx(){
 function reglasTxt(){
   const c = D.cfg;
   return [
-    `<b>A</b>: los artículos que juntos suman el primer ${c.corte_a || 80}% de la venta (importe sin IVA) de los últimos ${c.meses_abc || 6} meses. <b>B</b>: el resto de los que se vendieron en esos meses.`,
-    `<b>C</b>: los que se vendieron en los últimos ${c.meses_c || 12} meses pero no en los ${c.meses_abc || 6} del A/B, y los que se vendieron por primera vez este mes (entran como C hasta el siguiente cálculo).`,
+    `<b>A</b>: los artículos que juntos suman el primer ${c.corte_a || 80}% de la venta (importe sin IVA) de los últimos ${c.meses_abc || 6} meses. <b>B</b>: el siguiente ${(c.corte_b || 95) - (c.corte_a || 80)}%. <b>C</b>: el último ${100 - (c.corte_b || 95)}% (los que se venden de vez en cuando).`,
+    `También son <b>C</b> los que se vendieron en los últimos ${c.meses_c || 12} meses pero no en los ${c.meses_abc || 6} del cálculo, y los que se vendieron por primera vez este mes (entran como C hasta el siguiente cálculo).`,
     (c.metodo || "retail") === "simple"
       ? `Método simple: Mínimo = venta diaria × (días de entrega + días de seguridad) = punto de reorden. Máximo = mínimo + venta diaria × días de inventario. Seguridad + inventario: A ${c.seg_a}+${c.inv_a} · B ${c.seg_b}+${c.inv_b} · C ${c.seg_c}+${c.inv_c}.`
       : `<b>Mínimo (stock de seguridad)</b> = Z × variación de la venta diaria × √(días de entrega + días entre revisiones), con nivel de servicio A ${c.ns_a || 95}% · B ${c.ns_b || 90}% · C ${c.ns_c || 85}%. ` +
@@ -770,10 +771,10 @@ $("#xlsReg").addEventListener("click", () => ocupado($("#xlsReg"), async () => {
 }));
 $("#xlsAb").addEventListener("click", () => ocupado($("#xlsAb"), async () => {
   const F = ABC.filas, f0 = F.find(f => f.clase !== "C") || {};
-  await excel(`Lista ABC ${ABC.mes.slice(0,7)}.xlsx`, "Lista A-B-C", "Clasificación de productos A, B (80/20 por venta) y C", "1.2.1.1", mesTxt(ABC.mes),
+  await excel(`Lista ABC ${ABC.mes.slice(0,7)}.xlsx`, "Lista A-B-C", "Clasificación de productos A, B y C (por venta: 80% / 15% / 5%)", "1.2.1.1", mesTxt(ABC.mes),
     ["#", "Clave", "Artículo", "Unidad", "Clase", "Venta sin IVA", "Unidades vendidas", "% de la venta", "% acumulado", "Proveedor"],
     F.map((f, i) => [i + 1, f.clave, f.articulo, f.unidad, f.clase, num(f.venta), num(f.unidades), num(f.pct), num(f.pct_acum), f.proveedor || ""]),
-    [5, 12, 42, 10, 7, 14, 12, 11, 11, 28], [`Venta A/B del ${f0.ini || ""} al ${f0.fin || ""}. En los C la venta es la de los últimos ${D.cfg.meses_c || 12} meses y no cuenta para el 80/20.`,
+    [5, 12, 42, 10, 7, 14, 12, 11, 11, 28], [`Venta del ${f0.ini || ""} al ${f0.fin || ""}. Los C que no se vendieron en ese periodo traen la venta de los últimos ${D.cfg.meses_c || 12} meses y no cuentan para el porcentaje.`,
       ...reglasTxt().slice(0, 2).map(txtPlano), txtPlano($(".excl").innerHTML)]);
 }));
 $("#xlsMm").addEventListener("click", () => ocupado($("#xlsMm"), async () => {
@@ -791,6 +792,7 @@ $("#xlsMm").addEventListener("click", () => ocupado($("#xlsMm"), async () => {
 const GEN = [
   ["meses_abc", "Meses de venta para A/B y venta diaria", "number", "Lineamiento: 6"],
   ["corte_a", "Corte de productos A (%)", "number", "80 = los que suman el 80% de la venta"],
+  ["corte_b", "Corte de productos B (%)", "number", "95 = el siguiente 15% es B y el último 5% es C"],
   ["metodo", "Cómo calcular mínimo, punto de reorden y máximo", "metodo", ""],
   ["ns_a", "Nivel de servicio · A (%)", "number", "Qué tan seguido quieres tenerlo cuando lo piden. 95 recomendado"],
   ["ns_b", "Nivel de servicio · B (%)", "number", "90 recomendado"], ["ns_c", "Nivel de servicio · C (%)", "number", "85 recomendado"],

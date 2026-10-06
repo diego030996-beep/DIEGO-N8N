@@ -114,7 +114,7 @@ switch (op) {
   }
   case 'config': {
     const REGLAS = {
-      meses_abc: v => numOk(v, 1, 24) && Number.isInteger(Number(v)), corte_a: v => numOk(v, 50, 95),
+      meses_abc: v => numOk(v, 1, 24) && Number.isInteger(Number(v)), corte_a: v => numOk(v, 50, 95), corte_b: v => numOk(v, 60, 100),
       seg_a: v => numOk(v, 0, 120), inv_a: v => numOk(v, 1, 365), seg_b: v => numOk(v, 0, 120), inv_b: v => numOk(v, 1, 365),
       meses_c: v => numOk(v, 1, 36) && Number.isInteger(Number(v)), seg_c: v => numOk(v, 0, 120), inv_c: v => numOk(v, 1, 365),
       min_c: v => numOk(v, 1, 1000),
@@ -130,7 +130,7 @@ switch (op) {
       razones: v => String(v).length <= 3000 && /^no_documentado=/m.test(v) && /^otra=/m.test(v),
       base: v => String(v).length <= 80,
     };
-    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'dias_lento', 'max_lento', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
+    const NUM = ['meses_abc', 'corte_a', 'corte_b', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'dias_lento', 'max_lento', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
     const general = {};
     for (const [k, v0] of Object.entries(b.general || {})) {
       if (!REGLAS[k]) continue;

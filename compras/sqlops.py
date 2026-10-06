@@ -54,7 +54,8 @@ def todas():
         s = expandir(leer(op))
         # sin comentarios de línea para que la consulta pese menos
         s = '\n'.join(l for l in (re.sub(r'\s+--.*$', '', x) if not x.lstrip().startswith('--') else '' for x in s.split('\n')) if l.strip())
-        out[op] = s
+        # sin compilación JIT: en un servidor chico tarda más compilar que ejecutar (solo para esta consulta)
+        out[op] = 'SET LOCAL jit = off;\n' + s
     return out
 
 
