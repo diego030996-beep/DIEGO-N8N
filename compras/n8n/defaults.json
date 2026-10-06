@@ -1,0 +1,20 @@
+{
+  "empresa": "GRUPO COMERCIAL DISACAM",
+  "tienda": "Construrama Lomas Ajusco",
+  "meses_abc": "6",
+  "corte_a": "80",
+  "seg_a": "3",
+  "inv_a": "15",
+  "seg_b": "5",
+  "inv_b": "30",
+  "entrega_def": "3",
+  "dia_a": "1",
+  "frec_b": "15",
+  "regla": "bajo_minimo",
+  "gracia_oc": "5",
+  "dias_ligar": "7",
+  "almacenes": "",
+  "excluir": "tinaco",
+  "monto_maximo": "500000",
+  "razones": "promocion=Promoción del proveedor\ntemporada=Temporada (se acerca más venta)\nempaque=Empaque o caja cerrada\nvolumen=Precio por volumen\nespecial=Pedido especial de cliente\nsin_existencia=El proveedor no tenía\nno_documentado=No documentado\notra=Otra (explicar en la nota)"
+}

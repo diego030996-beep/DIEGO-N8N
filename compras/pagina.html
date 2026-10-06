@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planeador de compras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#D9DCDE; --panel:#F3F4F5; --ink:#1A222C; --soft:#5A6470; --line:#C3C8CD;
+  --blue:#0B4EA2; --yellow:#FFC20E; --red:#C7352A; --green:#1E8A4C; --grey:#9AA1A8; --empty:#C9CDD1;
+  --a:#0B4EA2; --b:#7A8591; --warn:#FFF3C4; --warnink:#6B4E00;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#1C2025; --panel:#262B31; --ink:#EEF0F2; --soft:#9AA3AD; --line:#3A4149;
+  --blue:#5B9BEA; --empty:#363C43; --red:#EF6A5E; --green:#3CC37A; --grey:#6B737C; --a:#5B9BEA; --b:#8A949E;
+  --warn:#3D3415; --warnink:#FFD86B;
+}}
+:root[data-theme="dark"]{
+  --bg:#1C2025; --panel:#262B31; --ink:#EEF0F2; --soft:#9AA3AD; --line:#3A4149;
+  --blue:#5B9BEA; --empty:#363C43; --red:#EF6A5E; --green:#3CC37A; --grey:#6B737C; --a:#5B9BEA; --b:#8A949E;
+  --warn:#3D3415; --warnink:#FFD86B;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+main{max-width:1180px;margin:0 auto;padding:16px 14px 64px}
+h2{font-size:1.4rem;font-weight:800;font-stretch:112%;margin:0 0 4px;letter-spacing:-.01em}
+h3{margin:0 0 6px;font-size:1.08rem;font-weight:800;font-stretch:108%}
+.sub{color:var(--soft);margin:0 0 12px;font-size:.92rem}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.card{background:var(--panel);border-radius:16px;padding:16px;margin-top:14px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.store{font-weight:800;font-stretch:90%;font-size:1rem}
+.store small{display:block;font-weight:400;color:var(--soft);font-size:.85rem;font-stretch:100%}
+.who{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--soft)}
+.who input{width:120px}
+input[type=text],input[type=number],input[type=month],input[type=date],select,textarea{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);min-width:0}
+textarea{width:100%;min-height:200px;resize:vertical}
+.tabs{display:flex;gap:6px;margin-top:14px;overflow-x:auto;padding-bottom:2px}
+.tab{border:0;background:transparent;padding:10px 14px;border-radius:12px;font-weight:700;color:var(--soft);cursor:pointer;white-space:nowrap}
+.tab[aria-selected=true]{background:var(--panel);color:var(--ink);box-shadow:inset 0 -3px 0 var(--yellow)}
+.tab .n{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--red);color:#fff;font-size:.75rem;line-height:20px;text-align:center}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border-radius:12px;border:0;font-weight:700;cursor:pointer;font-size:.95rem}
+.btn-main{background:var(--blue);color:#fff}
+.btn-y{background:var(--yellow);color:#1A222C}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn-sm{padding:6px 10px;font-size:.85rem;border-radius:9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 12px;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left}
+.chip b{font-weight:800}
+.chip.a{border-color:var(--a)} .chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chip small{color:inherit;opacity:.75;font-weight:500}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:8px 14px;font-weight:700;cursor:pointer;color:var(--soft)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--panel)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.kpi{background:var(--bg);border-radius:12px;padding:10px 12px}
+.kpi b{display:block;font-size:1.5rem;font-weight:900;font-stretch:115%;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi span{font-size:.82rem;color:var(--soft)}
+.kpi.bad b{color:var(--red)}
+.warn{background:var(--warn);color:var(--warnink);border-radius:12px;padding:10px 12px;font-size:.9rem;margin-top:10px}
+.muted{color:var(--soft);font-size:.86rem}
+.pill{display:inline-block;font-size:.72rem;font-weight:800;padding:1px 7px;border-radius:6px;color:#fff;background:var(--b);vertical-align:1px}
+.pill.A{background:var(--a)}
+.tbl{width:100%;border-collapse:collapse;font-size:.9rem}
+.tbl th{text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--soft);font-weight:700;padding:6px 6px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+.tbl td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl tr.need td:first-child{box-shadow:inset 4px 0 0 var(--red)}
+.tbl tr.miss{background:var(--warn)}
+.tbl input[type=number]{width:86px;text-align:right}
+.tbl select{max-width:190px}
+.tbl .nota{width:100%;min-width:120px;margin-top:4px}
+.scroll{overflow-x:auto}
+.sug{font-weight:800;font-size:1.02rem}
+.neg{color:var(--red);font-weight:700}
+.alert{color:var(--warnink);background:var(--warn);border-radius:6px;padding:1px 6px;font-size:.76rem;display:inline-block;margin-top:2px}
+.plan{border-top:1.5px solid var(--line);padding-top:12px;margin-top:12px}
+.plan:first-child{border-top:0;margin-top:0;padding-top:0}
+.plan h4{margin:0;font-size:1rem}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:.88rem;font-weight:600}
+.form label small{font-weight:400;color:var(--soft)}
+.foot{position:sticky;bottom:0;background:var(--panel);border-top:1.5px solid var(--line);margin:14px -16px -16px;padding:12px 16px;border-radius:0 0 16px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#aviso{margin-top:14px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);opacity:0;pointer-events:none;background:var(--ink);color:var(--panel);padding:12px 18px;border-radius:12px;font-weight:600;transition:transform .25s ease,opacity .25s ease;z-index:9;max-width:92vw}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+[hidden]{display:none!important}
+@media (max-width:760px){
+  .foot{position:static}
+  #prov{width:100%}
+  .tbl.cards thead{display:none}
+  .tbl.cards tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .tbl.cards td{border:0;padding:0}
+  .tbl.cards td.art{grid-column:1/-1}
+  .tbl.cards td.wide{grid-column:1/-1}
+  .tbl.cards td[data-l]::before{content:attr(data-l);display:block;font-size:.7rem;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
+  .tbl.cards td.n{text-align:left}
+  .tbl.cards tr.need{box-shadow:inset 4px 0 0 var(--red);padding-left:10px}
+  .tbl.cards tr.need td:first-child{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="store"><span id="tienda">Planeador de compras</span><small id="subt">Máximos, mínimos y registro de compras · Microsip</small></div>
+    <label class="who">Quién captura <input id="quien" type="text" maxlength="40" placeholder="tu nombre"></label>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-t="plan" aria-selected="true">Planeador</button>
+    <button class="tab" role="tab" data-t="reg">Registro de compras<span class="n" id="nreg" hidden></span></button>
+    <button class="tab" role="tab" data-t="abc">A/B y máximos-mínimos</button>
+    <button class="tab" role="tab" data-t="cfg">Configuración</button>
+  </nav>
+  <div id="aviso" class="warn" hidden></div>
+
+  <!-- ============ PLANEADOR ============ -->
+  <section id="t-plan">
+    <div class="card">
+      <h2>¿Qué toca comprar hoy?</h2>
+      <p class="sub" id="hoyTxt">Productos A cada semana; productos B cada 15 días por proveedor.</p>
+      <div class="chips" id="toca"></div>
+      <div class="kpis" id="kpisPlan"></div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <select id="prov" class="grow" aria-label="Proveedor"></select>
+        <div class="seg" id="segClase"><button data-c="A" aria-pressed="true">Productos A</button><button data-c="B" aria-pressed="false">Productos B</button></div>
+        <label class="muted"><input type="checkbox" id="soloSug" checked> Solo lo que hay que pedir</label>
+      </div>
+      <p class="muted" id="planInfo" style="margin:10px 0 0"></p>
+      <div class="scroll" style="margin-top:10px">
+        <table class="tbl cards" id="tblPlan">
+          <thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Mín</th><th class="n">Máx</th><th class="n">Sugerido</th><th class="n">Compro</th><th>Razón si es distinto</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="foot" id="footPlan">
+        <label class="muted">Folio de la OC <input type="text" id="folio" maxlength="30" placeholder="opcional, se liga solo" style="width:170px"></label>
+        <span class="grow muted" id="planEstado"></span>
+        <button class="btn btn-main" id="guardar">Guardar decisión</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REGISTRO ============ -->
+  <section id="t-reg" hidden>
+    <div class="card">
+      <h2>Registro mensual de compras</h2>
+      <p class="sub">Cada orden de compra amarrada a su decisión: existencia, pendiente, máximo, sugerido, lo que se compró y la razón cuando fue distinto.</p>
+      <div class="row">
+        <input type="month" id="mesReg" aria-label="Mes">
+        <button class="btn btn-ghost" id="reconstruir" title="Para meses anteriores al planeador: arma el registro con las OCs que ya están en Microsip">Reconstruir desde Microsip</button>
+        <span class="grow"></span>
+        <button class="btn btn-y" id="xlsReg">Exportar a Excel</button>
+      </div>
+      <div class="warn" id="notaReconstruir" hidden>La razón tiene que ser la verdadera. El auditor la coteja contra Microsip y puede preguntar. Si no te acuerdas, elige <b>No documentado</b>: es mejor que inventar.</div>
+      <div class="kpis" id="kpisReg"></div>
+    </div>
+    <div class="card" id="planesReg"></div>
+    <div class="card" id="ocSinPlan" hidden></div>
+    <div class="card">
+      <h3>Validar contra el Diario de compras de Microsip</h3>
+      <p class="muted" style="margin:0 0 10px">Compara cuántas OCs y qué importe ve la página contra el reporte de Microsip del mismo periodo.</p>
+      <div class="row">
+        <input type="date" id="vDesde" aria-label="Desde"> <input type="date" id="vHasta" aria-label="Hasta">
+        <button class="btn btn-ghost" id="validar">Ver OCs</button>
+      </div>
+      <div id="validacion" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- ============ A/B Y MÁX-MÍN ============ -->
+  <section id="t-abc" hidden>
+    <div class="card">
+      <h2>Productos A/B y máximos-mínimos</h2>
+      <p class="sub" id="abcSub">Cada mes se calcula solo el 80/20 con la venta de los últimos 6 meses.</p>
+      <div class="row">
+        <select id="mesAbc" aria-label="Mes"></select>
+        <button class="btn btn-ghost" id="recalcular">Recalcular este mes</button>
+        <span class="grow"></span>
+        <button class="btn btn-y" id="xlsAb">Excel lista A/B</button>
+        <button class="btn btn-y" id="xlsMm">Excel máx/mín</button>
+      </div>
+      <div class="kpis" id="kpisAbc"></div>
+      <p class="muted" style="margin:10px 0 0">Mínimo = venta diaria × (días de entrega del proveedor + días de seguridad). Máximo = mínimo + venta diaria × días de inventario. Ninguno queda en cero y el máximo siempre es mayor que el mínimo.</p>
+    </div>
+    <div class="card">
+      <div class="row">
+        <input type="text" id="fAbc" class="grow" placeholder="Buscar artículo o proveedor">
+        <div class="seg" id="segAbc"><button data-c="" aria-pressed="true">Todos</button><button data-c="A" aria-pressed="false">A</button><button data-c="B" aria-pressed="false">B</button><button data-c="!" aria-pressed="false">Con alerta</button></div>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table class="tbl" id="tblAbc">
+          <thead><tr><th>#</th><th>Artículo</th><th>Proveedor</th><th class="n">Venta 6m</th><th class="n">% acum.</th><th class="n">Venta/día</th><th class="n">Entrega</th><th class="n">Seg.</th><th class="n">Inv.</th><th class="n">Mín</th><th class="n">Máx</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted" id="abcMas"></p>
+    </div>
+  </section>
+
+  <!-- ============ CONFIGURACIÓN ============ -->
+  <section id="t-cfg" hidden>
+    <div class="card">
+      <h2>Reglas generales</h2>
+      <p class="sub">Todo se guarda en la base de datos. Los cambios cuentan desde el siguiente cálculo (puedes recalcular el mes en la pestaña A/B).</p>
+      <div class="form" id="formGen"></div>
+      <div class="row" style="margin-top:14px"><span class="grow muted" id="genEstado"></span><button class="btn btn-main" id="guardarGen">Guardar reglas</button></div>
+    </div>
+    <div class="card">
+      <h2>Proveedores</h2>
+      <p class="sub">Días de entrega (aunque sea aproximado), qué día se revisan sus productos A y cada cuántos días sus productos B.</p>
+      <div class="scroll"><table class="tbl" id="tblProv">
+        <thead><tr><th>Proveedor</th><th class="n">Productos A / B</th><th class="n">Días de entrega</th><th>Revisar A el</th><th class="n">B cada (días)</th><th>Activo</th></tr></thead>
+        <tbody></tbody></table></div>
+      <div class="row" style="margin-top:14px"><span class="grow muted" id="provEstado"></span><button class="btn btn-main" id="guardarProv">Guardar proveedores</button></div>
+    </div>
+    <div class="card">
+      <h2>Ajustes por artículo</h2>
+      <p class="sub">Cambia el proveedor, fija la clase, pon el empaque (el sugerido se redondea a cajas completas), un mínimo/máximo a mano o excluye un artículo. Vacío = usar el cálculo.</p>
+      <div class="row"><input type="text" id="qArt" class="grow" placeholder="Busca por nombre o clave (ej. cemento 50)"><button class="btn btn-ghost" id="verAjustados">Ver los que tienen ajuste</button></div>
+      <div class="scroll" style="margin-top:10px"><table class="tbl" id="tblArt">
+        <thead><tr><th>Artículo</th><th>Cálculo actual</th><th>Proveedor</th><th>Clase</th><th class="n">Empaque</th><th class="n">Mín</th><th class="n">Máx</th><th>Excluir</th><th></th></tr></thead>
+        <tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Razones para comprar distinto al sugerido</h2>
+      <p class="sub">Una por renglón con el formato <code>clave=Texto</code>. La clave no se cambia una vez usada.</p>
+      <textarea id="razones"></textarea>
+      <div class="row" style="margin-top:10px"><span class="grow"></span><button class="btn btn-main" id="guardarRaz">Guardar razones</button></div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* Planeador de compras · datos de n8n (Microsip → Postgres). Toda la configuración vive en la base de datos. */
+const K = new URLSearchParams(location.search).get("k") || "";
+const API = location.pathname.replace(/\/compras\/?$/, "/compras-api");
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const num = v => (v === null || v === undefined || v === "" || isNaN(Number(v))) ? null : Number(v);
+const n0 = v => num(v) === null ? "–" : Number(v).toLocaleString("es-MX", {maximumFractionDigits: 2});
+const money = v => "$" + Math.round(num(v) || 0).toLocaleString("es-MX");
+const pct = v => num(v) === null ? "–" : (Number(v) * 100).toLocaleString("es-MX", {maximumFractionDigits: 1}) + "%";
+const fecha = iso => iso ? new Date(String(iso).slice(0,10) + "T12:00:00").toLocaleDateString("es-MX", {weekday:"short", day:"numeric", month:"short"}) : "–";
+const fechaL = iso => iso ? new Date(String(iso).slice(0,10) + "T12:00:00").toLocaleDateString("es-MX", {day:"numeric", month:"long", year:"numeric"}) : "–";
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const mesTxt = m => m ? MESES[Number(m.slice(5,7)) - 1] + " " + m.slice(0,4) : "–";
+const DIAS = ["", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+const dias = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(String(a).slice(0,10) + "T12:00:00")) / 864e5);
+function toast(t){ const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 3200); }
+function aviso(t){ const a = $("#aviso"); a.hidden = !t; a.innerHTML = t || ""; }
+let quien = ""; try { quien = localStorage.getItem("compras_quien") || ""; } catch(e) {}
+$("#quien").value = quien;
+$("#quien").addEventListener("change", e => { quien = e.target.value.trim(); try { localStorage.setItem("compras_quien", quien); } catch(err) {} });
+
+async function api(op, p = {}){
+  const r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({k:K, op, quien, ...p})});
+  if(!r.ok) throw new Error("HTTP " + r.status);
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.msg || "No se pudo completar");
+  return j;
+}
+async function ocupado(btn, fn){
+  const t = btn.textContent; btn.disabled = true; btn.textContent = "Un momento…";
+  try { return await fn(); } catch(e) { toast(e.message); } finally { btn.disabled = false; btn.textContent = t; }
+}
+
+let D = null, clase = "A", P = null, REG = null, ABC = null, filtroAbc = "";
+const soloLectura = () => D && D.rol === "auditor";
+function razones(){
+  const txt = (D && D.cfg && D.cfg.razones) || "";
+  return txt.split(/\n+/).map(l => l.trim()).filter(Boolean).map(l => { const i = l.indexOf("="); return i > 0 ? {id: l.slice(0, i).trim(), t: l.slice(i + 1).trim()} : {id: l, t: l}; });
+}
+const razonTxt = id => id === "igual" ? "Igual al sugerido" : ((razones().find(r => r.id === id) || {}).t || id || "");
+function selRazon(val, attrs = ""){
+  return `<select ${attrs}><option value="">— elige la razón —</option>${razones().map(r => `<option value="${esc(r.id)}" ${r.id === val ? "selected" : ""}>${esc(r.t)}</option>`).join("")}</select>`;
+}
+
+/* ================= pestañas ================= */
+$$(".tab").forEach(b => b.addEventListener("click", () => abrir(b.dataset.t)));
+function abrir(t){
+  $$(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
+  ["plan","reg","abc","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
+  try { localStorage.setItem("compras_tab", t); } catch(e) {}
+  if(t === "reg" && !REG) cargarReg();
+  if(t === "abc" && !ABC) cargarAbc();
+  if(t === "cfg") pintarCfg();
+}
+
+/* ================= carga general ================= */
+async function cargar(){
+  if(!K){ aviso("Esta liga está incompleta. Pide la liga del planeador al administrador."); return; }
+  try { D = await api("datos"); } catch(e) { aviso("No se pudieron leer los datos: " + esc(e.message)); return; }
+  aviso("");
+  $("#tienda").textContent = (D.cfg.tienda || "Planeador de compras");
+  $("#subt").textContent = "Planeador de compras · " + (D.cfg.empresa || "") + (soloLectura() ? " · solo consulta" : "");
+  document.body.classList.toggle("ro", soloLectura());
+  $$("#guardar,#reconstruir,#recalcular,#guardarGen,#guardarProv,#guardarRaz").forEach(b => b.hidden = soloLectura());
+  const nr = (D.falta_razon || 0) + (D.planes_sin_oc || 0);
+  $("#nreg").hidden = !nr; $("#nreg").textContent = nr;
+  const avisos = [];
+  if(!D.mes) avisos.push("Todavía no hay máximos y mínimos calculados. Ve a <b>A/B y máximos-mínimos</b> y pulsa <b>Recalcular este mes</b>.");
+  if(!D.oc_detalle) avisos.push("No llegan renglones de órdenes de compra (DOCTOS_CM_DET) desde Microsip; sin eso no se puede ligar ni reconstruir.");
+  if(avisos.length) aviso(avisos.join("<br>"));
+  pintarToca(); llenarProv();
+  let t = "plan"; try { t = localStorage.getItem("compras_tab") || "plan"; } catch(e) {}
+  abrir(t);
+  if(t === "plan") cargarPlan();
+}
+
+function tocaA(p){ return p.activo && p.n_a > 0 && p.ult_a !== D.hoy && (D.dow === Number(p.dia_rev_a) || (p.ult_a && dias(p.ult_a, D.hoy) > 7)); }
+function tocaB(p){ return p.activo && p.n_b > 0 && p.ult_b !== D.hoy && (!p.ult_b || dias(p.ult_b, D.hoy) >= Number(p.frec_rev_b || 15)); }
+function pintarToca(){
+  $("#hoyTxt").textContent = "Hoy es " + DIAS[D.dow] + " " + fechaL(D.hoy) + ". Productos A cada semana; productos B cada " + (D.cfg.frec_b || 15) + " días por proveedor." + (D.mes ? " Máximos y mínimos de " + mesTxt(D.mes) + "." : "");
+  const L = [];
+  for(const p of D.proveedores){
+    if(tocaA(p)) L.push({p, c:"A", t:`<b>${esc(p.nombre)}</b> · A <small>${p.bajo_a} bajo mínimo</small>`});
+    if(tocaB(p)) L.push({p, c:"B", t:`<b>${esc(p.nombre)}</b> · B <small>${p.bajo_b} bajo mínimo${p.ult_b ? "" : " · nunca revisado"}</small>`});
+  }
+  L.sort((x, y) => (x.c > y.c) - (x.c < y.c) || ((y.c === "A" ? y.p.bajo_a : y.p.bajo_b) - (x.c === "A" ? x.p.bajo_a : x.p.bajo_b)));
+  $("#toca").innerHTML = L.length ? L.map((x, i) => `<button class="chip ${x.c === "A" ? "a" : ""}" data-i="${i}">${x.t}</button>`).join("") : `<span class="muted">Hoy no toca revisar a ningún proveedor. Puedes abrir cualquiera abajo.</span>`;
+  $$("#toca .chip").forEach(b => b.addEventListener("click", () => { const x = L[b.dataset.i]; $("#prov").value = x.p.proveedor_id; ponerClase(x.c); cargarPlan(); $("#prov").scrollIntoView({behavior:"smooth", block:"center"}); }));
+  $("#kpisPlan").innerHTML = [
+    [D.falta_razon, "decisiones sin razón", D.falta_razon > 0],
+    [D.planes_sin_oc, "planes sin OC en Microsip", D.planes_sin_oc > 0],
+    [D.oc_sin_plan, "OCs (60 días) sin plan", D.oc_sin_plan > 0],
+    [D.sin_proveedor, "productos sin proveedor", D.sin_proveedor > 0],
+  ].map(([v, t, bad]) => `<div class="kpi ${bad ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
+}
+function llenarProv(){
+  const sel = $("#prov"), v = sel.value;
+  const con = D.proveedores.filter(p => p.n_a + p.n_b > 0);
+  sel.innerHTML = con.map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.nombre)} — ${p.n_a} A · ${p.n_b} B${p.bajo_a + p.bajo_b ? " · " + (p.bajo_a + p.bajo_b) + " bajo mínimo" : ""}</option>`).join("")
+    + (D.sin_proveedor ? `<option value="">(Sin proveedor) — ${D.sin_proveedor} productos</option>` : "");
+  if(v !== "" && con.some(p => p.proveedor_id === v)) sel.value = v;
+}
+function ponerClase(c){ clase = c; $$("#segClase button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === c)); }
+$$("#segClase button").forEach(b => b.addEventListener("click", () => { ponerClase(b.dataset.c); pintarPlan(); }));
+$("#prov").addEventListener("change", cargarPlan);
+$("#soloSug").addEventListener("change", pintarPlan);
+
+/* ================= planeador ================= */
+async function cargarPlan(){
+  if(!D || !D.mes) { $("#tblPlan tbody").innerHTML = ""; return; }
+  $("#tblPlan tbody").innerHTML = `<tr><td colspan="8" class="muted">Cargando…</td></tr>`;
+  try { P = await api("planeador", {proveedor_id: $("#prov").value}); } catch(e) { toast(e.message); return; }
+  for(const f of P.filas){ f._c = f.comprado ?? f.sugerido; f._r = f.razon === "igual" ? "" : (f.razon || ""); f._n = f.nota || ""; }
+  if(!P.filas.some(f => f.clase === clase) && P.filas.length) ponerClase(clase === "A" ? "B" : "A");
+  $("#folio").value = (P.plan && P.plan.folio) || "";
+  pintarPlan();
+}
+function pintarPlan(){
+  if(!P) return;
+  const sinProv = !$("#prov").value;
+  const filas = P.filas.filter(f => f.clase === clase && (!$("#soloSug").checked || f.sugerido > 0 || (f.comprado ?? 0) > 0 || f._c > 0));
+  const total = P.filas.filter(f => f.clase === clase).length;
+  $("#planInfo").innerHTML = `${filas.length} de ${total} productos ${clase} · regla: ${P.regla === "hasta_maximo" ? "completar hasta el máximo" : "pedir cuando existencia + por recibir llega al mínimo"}`
+    + (P.plan ? ` · <b>guardado hoy</b>${P.plan.folio_oc ? " · ligado a la OC " + esc(P.plan.folio_oc) : ""}` : "");
+  $("#tblPlan tbody").innerHTML = filas.length ? filas.map(f => {
+    const i = P.filas.indexOf(f), dist = num(f._c) !== num(f.sugerido);
+    const bajo = Math.max(f.existencia, 0) + f.pendiente <= f.minimo;
+    return `<tr class="${bajo ? "need" : ""}" data-i="${i}">
+      <td class="art"><span class="pill ${f.clase}">${f.clase}</span> <b>${esc(f.articulo)}</b><div class="muted">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque ? " · empaque " + n0(f.empaque) : ""}${f.ult_fecha ? " · última OC " + fecha(f.ult_fecha) + " (" + n0(f.ult_unidades) + ")" : ""}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
+      <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
+      <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="muted">${esc(f.folios)}</div>` : ""}</td>
+      <td class="n" data-l="Mín">${n0(f.minimo)}</td>
+      <td class="n" data-l="Máx">${n0(f.maximo)}</td>
+      <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span></td>
+      <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar"></td>
+      <td class="wide" data-l="Razón">${dist ? selRazon(f._r, `class="r" ${soloLectura() ? "disabled" : ""}`) + `<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}" ${soloLectura() ? "disabled" : ""}>` : `<span class="muted">igual al sugerido</span>`}</td>
+    </tr>`; }).join("") : `<tr><td colspan="8" class="muted">${total ? "Nada que pedir de productos " + clase + " con este proveedor. Quita la palomita de arriba para ver todos." : "Este proveedor no tiene productos " + clase + "."}</td></tr>`;
+  $$("#tblPlan tbody tr[data-i]").forEach(tr => {
+    const f = P.filas[tr.dataset.i];
+    tr.querySelector(".c").addEventListener("change", e => { f._c = num(e.target.value); pintarPlan(); });
+    const r = tr.querySelector(".r"); if(r) r.addEventListener("change", e => { f._r = e.target.value; });
+    const nt = tr.querySelector(".nota"); if(nt) nt.addEventListener("input", e => { f._n = e.target.value; });
+  });
+  $("#guardar").disabled = sinProv;
+  $("#planEstado").textContent = sinProv ? "Asigna proveedor a estos productos en Configuración para poder planearlos." : "";
+}
+$("#guardar").addEventListener("click", () => ocupado($("#guardar"), async () => {
+  const prov = D.proveedores.find(p => p.proveedor_id === $("#prov").value);
+  const lineas = P.filas.filter(f => f.clase === clase && ((f.sugerido || 0) > 0 || (f._c || 0) > 0 || f.comprado !== null));
+  for(const f of lineas){
+    if(f._c === null || f._c < 0) throw new Error("Falta la cantidad de " + f.articulo + " (pon 0 si no compras).");
+    if(num(f._c) !== num(f.sugerido)){
+      if(!f._r) throw new Error("Elige la razón de " + f.articulo + ": compras " + n0(f._c) + " y el sugerido es " + n0(f.sugerido) + ".");
+      if(f._r === "otra" && !f._n.trim()) throw new Error("Escribe la nota de " + f.articulo + " (elegiste Otra).");
+    }
+  }
+  const r = await api("guardar", {proveedor_id: prov.proveedor_id, proveedor: prov.nombre, clase, folio: $("#folio").value.trim(),
+    lineas: lineas.map(f => ({articulo_id: f.articulo_id, clave: f.clave, articulo: f.articulo, unidad: f.unidad, clase: f.clase, existencia: f.existencia,
+      pendiente: f.pendiente, minimo: f.minimo, maximo: f.maximo, sugerido: f.sugerido, comprado: f._c, razon: num(f._c) === num(f.sugerido) ? "" : f._r, nota: f._n}))});
+  toast("Guardado ✓ " + r.lineas + " renglones" + (r.plan && r.plan.folio_oc ? " · ligado a " + r.plan.folio_oc : " · se ligará solo cuando captures la OC en Microsip"));
+  const p = D.proveedores.find(x => x.proveedor_id === prov.proveedor_id); if(p){ if(clase === "A") p.ult_a = D.hoy; else p.ult_b = D.hoy; }
+  REG = null; pintarToca(); cargarPlan();
+}));
+
+/* ================= registro ================= */
+function mesActual(){ return D.hoy.slice(0, 7); }
+async function cargarReg(){
+  if(!$("#mesReg").value) $("#mesReg").value = mesActual();
+  $("#planesReg").innerHTML = `<p class="muted">Cargando…</p>`;
+  try { REG = await api("registro", {mes: $("#mesReg").value + "-01"}); } catch(e) { toast(e.message); return; }
+  pintarReg();
+}
+$("#mesReg").addEventListener("change", cargarReg);
+function faltaRazon(l){ return !l.razon && num(l.oc_unidades ?? l.comprado ?? 0) !== num(l.sugerido); }
+function pintarReg(){
+  const L = REG.planes.flatMap(p => p.lineas);
+  const sinOc = REG.planes.filter(p => !p.folio_oc && p.lineas.some(l => l.comprado > 0)).length;
+  $("#kpisReg").innerHTML = [
+    [REG.planes.length, "planes / órdenes"], [L.length, "renglones"], [L.filter(l => l.razon === "igual").length, "iguales al sugerido"],
+    [L.filter(faltaRazon).length, "sin razón", true], [sinOc, "planes sin OC", true], [REG.oc_sin_plan.length, "OCs sin plan", true],
+  ].map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
+  $("#notaReconstruir").hidden = !REG.planes.some(p => p.origen === "reconstruido");
+  $("#planesReg").innerHTML = REG.planes.length ? REG.planes.map(p => `<div class="plan">
+      <div class="row"><h4 class="grow">${esc(p.proveedor || "Proveedor " + p.proveedor_id)} <span class="muted">· ${p.origen === "reconstruido" ? "reconstruido de la OC" : "planeado el " + fecha(p.fecha)}${p.clase && p.clase !== "OC" ? " · revisión " + esc(p.clase) : ""}</span></h4>
+        ${p.folio_oc ? `<span><b>OC ${esc(p.folio_oc)}</b> <span class="muted">${fecha(p.fecha_oc)}</span></span>`
+          : (soloLectura() || p.origen !== "planeador" ? `<span class="neg">sin OC</span>` : `<label class="muted">Folio OC <input type="text" maxlength="30" style="width:110px" value="${esc(p.folio || "")}" data-plan="${p.id}" class="fol"></label><button class="btn btn-ghost btn-sm" data-plan="${p.id}">Ligar</button>`)}</div>
+      <div class="scroll"><table class="tbl cards"><thead><tr><th>Artículo</th><th class="n">Exist.</th><th class="n">Pend.</th><th class="n">Mín</th><th class="n">Máx</th><th class="n">Sugerido</th><th class="n">Compré</th><th class="n">En la OC</th><th>Razón</th></tr></thead><tbody>
+      ${p.lineas.map(l => `<tr class="${faltaRazon(l) ? "miss" : ""}">
+        <td class="art"><span class="pill ${esc(l.clase)}">${esc(l.clase || "")}</span> ${esc(l.articulo)}<div class="muted">${esc(l.clave || "")}${l.fuente && l.fuente !== "planeador" ? " · " + esc(l.fuente) : ""}</div></td>
+        <td class="n" data-l="Exist."><span class="${l.existencia < 0 ? "neg" : ""}">${n0(l.existencia)}</span></td><td class="n" data-l="Pend.">${n0(l.pendiente)}</td>
+        <td class="n" data-l="Mín">${n0(l.minimo)}</td><td class="n" data-l="Máx">${n0(l.maximo)}</td><td class="n" data-l="Sugerido"><b>${n0(l.sugerido)}</b></td>
+        <td class="n" data-l="Compré">${n0(l.comprado)}</td><td class="n" data-l="En la OC">${p.folio_oc ? n0(l.oc_unidades ?? 0) : "–"}</td>
+        <td class="wide" data-l="Razón">${l.razon === "igual" ? `<span class="muted">igual al sugerido</span>`
+          : soloLectura() ? esc(razonTxt(l.razon)) + (l.nota ? `<div class="muted">${esc(l.nota)}</div>` : "")
+          : selRazon(l.razon, `class="r" data-id="${l.id}"`) + `<input type="text" class="nota" maxlength="300" placeholder="nota" value="${esc(l.nota || "")}" data-id="${l.id}">`}</td>
+      </tr>`).join("")}</tbody></table></div></div>`).join("")
+    : `<p class="muted">No hay planes ni OCs ligadas en ${mesTxt($("#mesReg").value)}. Si es un mes anterior al planeador, usa <b>Reconstruir desde Microsip</b>.</p>`;
+  $$("#planesReg select.r").forEach(s => s.addEventListener("change", () => guardarRazon(s.dataset.id)));
+  $$("#planesReg input.nota").forEach(s => s.addEventListener("change", () => guardarRazon(s.dataset.id)));
+  $$("#planesReg button[data-plan]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const r = await api("folio", {plan_id: Number(b.dataset.plan), folio: $(`input.fol[data-plan="${b.dataset.plan}"]`).value.trim()});
+    toast(r.folio_oc ? "Ligado a la OC " + r.folio_oc + " ✓" : "Folio guardado. No encontré esa OC de este proveedor todavía; se ligará cuando llegue de Microsip.");
+    cargarReg();
+  })));
+  const o = REG.oc_sin_plan;
+  $("#ocSinPlan").hidden = !o.length;
+  $("#ocSinPlan").innerHTML = `<h3>OCs de Microsip sin plan</h3><p class="muted" style="margin:0 0 8px">${soloLectura() ? "" : "Pulsa Reconstruir desde Microsip para agregarlas al registro, o escribe su folio en el plan que les corresponde."}</p>`
+    + `<table class="tbl"><thead><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th class="n">Importe</th></tr></thead><tbody>${o.map(x => `<tr><td>${esc(x.folio)}</td><td>${fecha(x.fecha)}</td><td>${esc(x.proveedor || "")}</td><td class="n">${money(x.importe)}</td></tr>`).join("")}</tbody></table>`;
+}
+async function guardarRazon(id){
+  const sel = $(`#planesReg select.r[data-id="${id}"]`), nt = $(`#planesReg input.nota[data-id="${id}"]`);
+  if(sel.value === "otra" && !nt.value.trim()){ toast("Escribe la nota (elegiste Otra)."); nt.focus(); return; }
+  try { await api("razon", {id: Number(id), razon: sel.value, nota: nt.value.trim()}); toast("Razón guardada ✓");
+    const l = REG.planes.flatMap(p => p.lineas).find(x => String(x.id) === String(id)); if(l){ l.razon = sel.value || null; l.nota = nt.value.trim(); }
+    sel.closest("tr").classList.toggle("miss", !!(l && faltaRazon(l)));
+  } catch(e) { toast(e.message); }
+}
+$("#reconstruir").addEventListener("click", () => ocupado($("#reconstruir"), async () => {
+  const m = $("#mesReg").value;
+  if(!confirm("Se van a tomar las órdenes de compra de " + mesTxt(m) + " que ya están en Microsip. Para cada renglón se calcula la existencia que había ese día, lo pendiente por recibir y el sugerido con los máximos y mínimos de ese mes. Solo tendrás que poner la razón donde compraste distinto. ¿Continuar?")) return;
+  const r = await api("reconstruir", {mes: m + "-01"});
+  toast(r.ocs + " OCs, " + r.renglones + " renglones · " + r.falta_razon + " necesitan razón");
+  D.meses = null; ABC = null; cargarReg();
+}));
+$("#validar").addEventListener("click", () => ocupado($("#validar"), async () => {
+  const r = await api("ocs", {desde: $("#vDesde").value, hasta: $("#vHasta").value});
+  const t = r.ocs.reduce((a, x) => a + (x.importe || 0), 0), iv = r.ocs.reduce((a, x) => a + (x.impuestos || 0), 0);
+  $("#validacion").innerHTML = `<div class="kpis"><div class="kpi"><b>${r.ocs.length}</b><span>órdenes de compra</span></div><div class="kpi"><b>${money(t)}</b><span>importe neto</span></div><div class="kpi"><b>${money(t + iv)}</b><span>total con impuestos</span></div></div>
+    <div class="scroll" style="margin-top:10px"><table class="tbl"><thead><tr><th>Fecha</th><th>Folio</th><th>Proveedor</th><th class="n">Renglones</th><th class="n">Importe neto</th><th>En el registro</th></tr></thead><tbody>
+    ${r.ocs.map(x => `<tr><td>${fecha(x.fecha)}</td><td>${esc(x.folio)}</td><td>${esc(x.proveedor || "")}</td><td class="n">${x.renglones}</td><td class="n">${money(x.importe)}</td><td>${x.plan ? esc(x.plan) : `<span class="neg">no</span>`}</td></tr>`).join("")}</tbody></table></div>`;
+}));
+
+/* ================= A/B y máximos-mínimos ================= */
+async function cargarAbc(mes){
+  const sel = $("#mesAbc");
+  if(!D.meses){ try { D = Object.assign(D, await api("datos")); } catch(e) {} }
+  sel.innerHTML = (D.meses || []).map(m => `<option value="${m.mes}">${mesTxt(m.mes)} · ${m.productos} productos</option>`).join("")
+    + ((D.meses || []).some(m => m.mes.slice(0,7) === mesActual()) ? "" : `<option value="${mesActual()}-01">${mesTxt(mesActual())} · sin calcular</option>`);
+  if(mes) sel.value = mes;
+  try { ABC = await api("reporte", {mes: sel.value}); } catch(e) { toast(e.message); return; }
+  pintarAbc();
+}
+$("#mesAbc").addEventListener("change", () => cargarAbc($("#mesAbc").value));
+$("#fAbc").addEventListener("input", pintarAbc);
+$$("#segAbc button").forEach(b => b.addEventListener("click", () => { filtroAbc = b.dataset.c; $$("#segAbc button").forEach(x => x.setAttribute("aria-pressed", x === b)); pintarAbc(); }));
+function pintarAbc(){
+  if(!ABC) return;
+  const F = ABC.filas, A = F.filter(f => f.clase === "A"), vt = F.reduce((a, f) => a + (f.venta || 0), 0);
+  const f0 = F[0] || {};
+  $("#abcSub").textContent = F.length ? `Venta del ${fechaL(f0.ini)} al ${fechaL(f0.fin)} (${f0.dias} días). Calculado el ${new Date(f0.calculado).toLocaleString("es-MX")}` : "Este mes aún no se calcula.";
+  $("#kpisAbc").innerHTML = [
+    [A.length, "productos A"], [F.length - A.length, "productos B"], [pct(vt ? A.reduce((a, f) => a + f.venta, 0) / vt : null), "de la venta es A"],
+    [F.filter(f => f.alerta).length, "con alerta", true], [F.filter(f => f.origen === "manual").length, "con mín/máx a mano"],
+  ].map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${typeof v === "string" ? v : n0(v)}</b><span>${t}</span></div>`).join("");
+  const q = $("#fAbc").value.trim().toLowerCase();
+  const V = F.map((f, i) => ({...f, i: i + 1})).filter(f => (!filtroAbc || (filtroAbc === "!" ? f.alerta : f.clase === filtroAbc))
+    && (!q || (f.articulo + " " + f.clave + " " + (f.proveedor || "")).toLowerCase().includes(q)));
+  const M = V.slice(0, 400);
+  $("#tblAbc tbody").innerHTML = M.map(f => `<tr>
+    <td class="n">${f.i}</td><td><span class="pill ${f.clase}">${f.clase}</span> ${esc(f.articulo)}<div class="muted">${esc(f.clave)}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
+    <td>${esc(f.proveedor || "—")}</td><td class="n">${money(f.venta)}</td><td class="n">${pct(f.pct_acum)}</td><td class="n">${n0(f.vd)}</td>
+    <td class="n">${n0(f.entrega)}</td><td class="n">${n0(f.seguridad)}</td><td class="n">${n0(f.inventario)}</td>
+    <td class="n"><b>${n0(f.minimo)}</b></td><td class="n"><b>${n0(f.maximo)}</b>${f.origen === "manual" ? `<div class="muted">a mano</div>` : ""}</td>
+    <td>${soloLectura() ? "" : `<button class="btn btn-ghost btn-sm" data-q="${esc(f.clave)}">Ajustar</button>`}</td></tr>`).join("");
+  $("#abcMas").textContent = V.length > M.length ? `Se muestran ${M.length} de ${V.length}. Usa el buscador o exporta a Excel para ver todos.` : "";
+  $$("#tblAbc button[data-q]").forEach(b => b.addEventListener("click", () => { abrir("cfg"); $("#qArt").value = b.dataset.q; buscarArt(); $("#qArt").scrollIntoView({behavior:"smooth", block:"center"}); }));
+}
+$("#recalcular").addEventListener("click", () => ocupado($("#recalcular"), async () => {
+  const mes = $("#mesAbc").value;
+  if(!confirm("Se recalcula la lista A/B y los máximos y mínimos de " + mesTxt(mes) + " con la configuración actual. Las decisiones ya guardadas no cambian. ¿Continuar?")) return;
+  const r = await api("calcular", {mes});
+  toast(`${mesTxt(r.mes)}: ${r.a} A y ${r.b} B · ${r.alertas} con alerta`);
+  D.meses = null; await cargar(); cargarAbc(r.mes);
+}));
+
+/* ================= Excel ================= */
+let xlsxListo = null;
+function cargarXlsx(){
+  if(window.XLSX) return Promise.resolve();
+  return xlsxListo || (xlsxListo = new Promise((ok, no) => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload = ok; s.onerror = () => { xlsxListo = null; no(new Error("No se pudo cargar el generador de Excel")); }; document.head.appendChild(s); }));
+}
+async function excel(nombre, hoja, titulo, lineamiento, periodo, enc, filas, anchos, notas = []){
+  await cargarXlsx();
+  const aoa = [[D.cfg.empresa || ""], [D.cfg.tienda || ""], [titulo], ["Lineamiento: " + lineamiento], ["Periodo: " + periodo],
+    ["Generado: " + new Date().toLocaleString("es-MX") + (quien ? " por " + quien : "")], ...notas.map(n => [n]), [], enc, ...filas];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = anchos.map(w => ({wch: w}));
+  ws["!autofilter"] = {ref: XLSX.utils.encode_range({s: {r: 7 + notas.length, c: 0}, e: {r: 7 + notas.length + filas.length, c: enc.length - 1}})};
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, hoja);
+  XLSX.writeFile(wb, nombre);
+}
+$("#xlsReg").addEventListener("click", () => ocupado($("#xlsReg"), async () => {
+  if(!REG) await cargarReg();
+  const filas = REG.planes.flatMap(p => p.lineas.map(l => [p.fecha, p.fecha_oc || "", p.folio_oc || "SIN OC", p.proveedor || "", l.clave || "", l.articulo || "", l.clase || "",
+    num(l.existencia), num(l.pendiente), num(l.minimo), num(l.maximo), num(l.sugerido), num(l.comprado), p.folio_oc ? num(l.oc_unidades ?? 0) : null,
+    p.folio_oc ? num(l.oc_unidades ?? 0) - num(l.sugerido ?? 0) : null, l.razon === "igual" ? "Igual al sugerido" : (l.razon ? razonTxt(l.razon) : "FALTA RAZÓN"), l.nota || "",
+    p.origen === "reconstruido" ? "Reconstruido de Microsip" : "Planeador", l.por || p.por || ""]));
+  const o = REG.oc_sin_plan.map(x => [ "", x.fecha, x.folio, x.proveedor || "", "", "OC SIN PLAN", "", null, null, null, null, null, null, null, null, "FALTA PLAN", "", "Microsip", ""]);
+  const m = $("#mesReg").value;
+  await excel(`Registro de compras ${m}.xlsx`, "Registro de compras", "Registro mensual de compras: decisión de compra contra orden de compra", "1.2.2.3, 1.2.2.4 y 1.3.1.1", mesTxt(m),
+    ["Fecha del plan", "Fecha OC", "Folio OC", "Proveedor", "Clave", "Artículo", "Clase", "Existencia", "Pendiente por recibir", "Mínimo", "Máximo", "Sugerido", "Compré (plan)", "Unidades en la OC", "Diferencia vs sugerido", "Razón", "Nota", "Origen", "Capturó"],
+    [...filas, ...o], [12, 12, 12, 26, 12, 40, 7, 11, 11, 9, 9, 10, 11, 11, 11, 28, 30, 22, 16]);
+}));
+$("#xlsAb").addEventListener("click", () => ocupado($("#xlsAb"), async () => {
+  const F = ABC.filas, f0 = F[0] || {};
+  await excel(`Lista AB ${ABC.mes.slice(0,7)}.xlsx`, "Lista A-B", "Clasificación de productos A y B (80/20 por venta)", "1.2.1.1", mesTxt(ABC.mes),
+    ["#", "Clave", "Artículo", "Unidad", "Clase", "Venta sin IVA", "Unidades vendidas", "% de la venta", "% acumulado", "Proveedor"],
+    F.map((f, i) => [i + 1, f.clave, f.articulo, f.unidad, f.clase, num(f.venta), num(f.unidades), num(f.pct), num(f.pct_acum), f.proveedor || ""]),
+    [5, 12, 42, 10, 7, 14, 12, 11, 11, 28], [`Venta del ${f0.ini || ""} al ${f0.fin || ""} (${D.cfg.meses_abc || 6} meses). Productos A = los que suman el primer ${D.cfg.corte_a || 80}% de la venta.`]);
+}));
+$("#xlsMm").addEventListener("click", () => ocupado($("#xlsMm"), async () => {
+  const F = ABC.filas;
+  await excel(`Maximos y minimos ${ABC.mes.slice(0,7)}.xlsx`, "Máximos y mínimos", "Máximos y mínimos de inventario", "1.2.2.2", mesTxt(ABC.mes),
+    ["Clave", "Artículo", "Unidad", "Clase", "Proveedor", "Venta diaria", "Días de entrega", "Días de seguridad", "Días de inventario", "Empaque", "Mínimo", "Máximo", "Origen", "Alerta"],
+    F.map(f => [f.clave, f.articulo, f.unidad, f.clase, f.proveedor || "", num(f.vd), num(f.entrega), num(f.seguridad), num(f.inventario), num(f.empaque), num(f.minimo), num(f.maximo), f.origen, f.alerta || ""]),
+    [12, 42, 10, 7, 28, 11, 10, 10, 10, 9, 9, 9, 11, 40],
+    ["Mínimo = venta diaria × (días de entrega + días de seguridad). Máximo = mínimo + venta diaria × días de inventario. Se redondea hacia arriba; ninguno en cero y máximo mayor que mínimo."]);
+}));
+
+/* ================= configuración ================= */
+const GEN = [
+  ["meses_abc", "Meses de venta para A/B y venta diaria", "number", "Lineamiento: 6"],
+  ["corte_a", "Corte de productos A (%)", "number", "80 = los que suman el 80% de la venta"],
+  ["seg_a", "Días de seguridad · A", "number", ""], ["inv_a", "Días de inventario deseado · A", "number", ""],
+  ["seg_b", "Días de seguridad · B", "number", ""], ["inv_b", "Días de inventario deseado · B", "number", ""],
+  ["entrega_def", "Días de entrega si el proveedor no tiene", "number", ""],
+  ["dia_a", "Día para revisar productos A", "dia", "Cada proveedor puede tener el suyo"],
+  ["frec_b", "Productos B cada (días)", "number", ""],
+  ["regla", "Cuándo sugerir compra", "regla", ""],
+  ["gracia_oc", "Días extra para dar una OC por pendiente", "number", "OC sin recepción, dentro de días de entrega + estos días"],
+  ["dias_ligar", "Días para reconocer la OC después del plan", "number", ""],
+  ["almacenes", "Almacenes que cuentan (vacío = todos)", "text", "Ej.: GENERAL|BODEGA"],
+  ["excluir", "Excluir artículos que digan", "text", "Ej.: tinaco|servicio|flete"],
+  ["monto_maximo", "Ignorar tickets mayores a ($)", "number", "Ventas anómalas"],
+  ["empresa", "Empresa (para los reportes)", "text", ""], ["tienda", "Tienda", "text", ""],
+];
+function pintarCfg(){
+  if(!D) return;
+  const ro = soloLectura() ? "disabled" : "";
+  $("#formGen").innerHTML = GEN.map(([k, t, tipo, h]) => {
+    const v = D.cfg[k] ?? "";
+    let inp;
+    if(tipo === "dia") inp = `<select data-k="${k}" ${ro}>${[1,2,3,4,5,6].map(d => `<option value="${d}" ${String(v) === String(d) ? "selected" : ""}>${DIAS[d]}</option>`).join("")}</select>`;
+    else if(tipo === "regla") inp = `<select data-k="${k}" ${ro}><option value="bajo_minimo" ${v === "bajo_minimo" ? "selected" : ""}>Cuando existencia + por recibir llega al mínimo (pedir hasta el máximo)</option><option value="hasta_maximo" ${v === "hasta_maximo" ? "selected" : ""}>Siempre completar hasta el máximo</option></select>`;
+    else inp = `<input type="${tipo === "number" ? "number" : "text"}" step="any" data-k="${k}" value="${esc(v)}" ${ro}>`;
+    return `<label>${t}${inp}${h ? `<small>${esc(h)}</small>` : ""}</label>`;
+  }).join("");
+  $("#tblProv tbody").innerHTML = D.proveedores.map(p => `<tr data-id="${esc(p.proveedor_id)}">
+    <td><b>${esc(p.nombre)}</b>${!p.dias_entrega && p.n_a + p.n_b ? `<div><span class="alert">sin días de entrega</span></div>` : ""}</td>
+    <td class="n">${p.n_a} / ${p.n_b}</td>
+    <td class="n"><input type="number" min="0" max="120" step="any" class="de" value="${p.dias_entrega ?? ""}" placeholder="${esc(D.cfg.entrega_def || 3)}" ${ro}></td>
+    <td><select class="da" ${ro}><option value="">igual que todos (${DIAS[D.cfg.dia_a || 1]})</option>${[1,2,3,4,5,6].map(d => `<option value="${d}" ${String(p.dia_a) === String(d) ? "selected" : ""}>${DIAS[d]}</option>`).join("")}</select></td>
+    <td class="n"><input type="number" min="1" max="90" class="fb" value="${p.frec_b ?? ""}" placeholder="${esc(D.cfg.frec_b || 15)}" ${ro}></td>
+    <td><input type="checkbox" class="ac" ${p.activo ? "checked" : ""} ${ro} aria-label="Activo"></td></tr>`).join("");
+  $("#razones").value = D.cfg.razones || "";
+  $("#razones").disabled = soloLectura();
+}
+$("#guardarGen").addEventListener("click", () => ocupado($("#guardarGen"), async () => {
+  const general = {}; $$("#formGen [data-k]").forEach(i => general[i.dataset.k] = i.value.trim());
+  await api("config", {general});
+  Object.assign(D.cfg, general); toast("Reglas guardadas ✓ Recalcula el mes para aplicarlas.");
+  $("#genEstado").textContent = "Guardado " + new Date().toLocaleTimeString("es-MX");
+}));
+$("#guardarProv").addEventListener("click", () => ocupado($("#guardarProv"), async () => {
+  const proveedores = $$("#tblProv tbody tr").map(tr => {
+    const p = D.proveedores.find(x => x.proveedor_id === tr.dataset.id);
+    return {proveedor_id: p.proveedor_id, nombre: p.nombre, dias_entrega: num(tr.querySelector(".de").value), dia_a: num(tr.querySelector(".da").value),
+            frec_b: num(tr.querySelector(".fb").value), activo: tr.querySelector(".ac").checked, nota: p.nota || ""};
+  });
+  await api("config", {proveedores});
+  toast("Proveedores guardados ✓ Recalcula el mes para que los días de entrega cuenten en el mínimo.");
+  $("#provEstado").textContent = "Guardado " + new Date().toLocaleTimeString("es-MX");
+  await cargar();
+}));
+$("#guardarRaz").addEventListener("click", () => ocupado($("#guardarRaz"), async () => {
+  const txt = $("#razones").value.trim();
+  if(!/^no_documentado=/m.test(txt) || !/^otra=/m.test(txt)) throw new Error("Deja las razones no_documentado y otra.");
+  await api("config", {general: {razones: txt}}); D.cfg.razones = txt; toast("Razones guardadas ✓");
+}));
+let tq = null;
+$("#qArt").addEventListener("input", () => { clearTimeout(tq); tq = setTimeout(buscarArt, 350); });
+$("#verAjustados").addEventListener("click", () => buscarArt(true));
+async function buscarArt(ajustados){
+  const q = $("#qArt").value.trim();
+  if(!ajustados && q.length < 3){ $("#tblArt tbody").innerHTML = ""; return; }
+  let r; try { r = await api("buscar", ajustados ? {solo_ajustados: "si"} : {q}); } catch(e) { toast(e.message); return; }
+  const ro = soloLectura() ? "disabled" : "";
+  const opts = v => `<option value="">(el de la última compra)</option>` + D.proveedores.map(p => `<option value="${esc(p.proveedor_id)}" ${p.proveedor_id === v ? "selected" : ""}>${esc(p.nombre)}</option>`).join("");
+  $("#tblArt tbody").innerHTML = r.filas.length ? r.filas.map(a => `<tr data-id="${a.articulo_id}">
+    <td><b>${esc(a.articulo)}</b><div class="muted">${esc(a.clave)} · ${esc(a.unidad || "")}</div><input type="text" class="nt nota" maxlength="200" placeholder="nota" value="${esc(a.nota || "")}" ${ro}></td>
+    <td class="muted">${a.clase_calc ? `<span class="pill ${a.clase_calc}">${a.clase_calc}</span> mín ${n0(a.min_calc)} · máx ${n0(a.max_calc)}<br>${esc(a.prov_nombre || "sin proveedor")}` : "sin venta en el periodo"}</td>
+    <td><select class="pv" ${ro}>${opts(a.proveedor_id)}</select></td>
+    <td><select class="cl" ${ro}><option value="">auto</option><option ${a.clase === "A" ? "selected" : ""}>A</option><option ${a.clase === "B" ? "selected" : ""}>B</option></select></td>
+    <td class="n"><input type="number" min="0" step="any" class="em" value="${a.empaque ?? ""}" ${ro}></td>
+    <td class="n"><input type="number" min="0" step="any" class="mn" value="${a.minimo ?? ""}" ${ro}></td>
+    <td class="n"><input type="number" min="0" step="any" class="mx" value="${a.maximo ?? ""}" ${ro}></td>
+    <td><input type="checkbox" class="ex" ${a.excluir ? "checked" : ""} ${ro} aria-label="Excluir"></td>
+    <td>${ro ? "" : `<button class="btn btn-main btn-sm">Guardar</button>`}</td></tr>`).join("") : `<tr><td colspan="9" class="muted">Sin resultados.</td></tr>`;
+  $$("#tblArt tbody tr[data-id] button").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const tr = b.closest("tr"), g = c => tr.querySelector(c);
+    const mn = num(g(".mn").value), mx = num(g(".mx").value);
+    if(mn !== null && mx !== null && mx <= mn) throw new Error("El máximo debe ser mayor que el mínimo.");
+    if(mn === 0 || mx === 0) throw new Error("El mínimo y el máximo no pueden ser cero (déjalos vacíos para usar el cálculo).");
+    await api("articulo", {articulo_id: Number(tr.dataset.id), proveedor_id: g(".pv").value, clase: g(".cl").value, empaque: g(".em").value, minimo: g(".mn").value,
+      maximo: g(".mx").value, excluir: g(".ex").checked ? "true" : "false", nota: g(".nt").value.trim()});
+    toast("Ajuste guardado ✓ Cuenta desde el siguiente cálculo del mes.");
+  })));
+}
+
+const hoyLocal = new Date(Date.now() - 6 * 3600e3).toISOString().slice(0, 10);
+$("#vDesde").value = hoyLocal.slice(0, 8) + "01"; $("#vHasta").value = hoyLocal;
+cargar();
+</script>
+</body>
+</html>
