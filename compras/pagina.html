@@ -248,7 +248,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
 <script>
 /* Planeador de compras · datos de n8n (Microsip → Postgres). Toda la configuración vive en la base de datos. */
 const K = new URLSearchParams(location.search).get("k") || "";
-const API = location.pathname.replace(/\/compras\/?$/, "/compras-api");
+const API = location.pathname.replace(/\/?$/, "-api");
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));

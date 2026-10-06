@@ -30,6 +30,9 @@ Reglas de máximos y mínimos (se cambian en la página):
 
 ## Instalar
 
+Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/planeador-compras-api`
+(no chocan con ningún otro flujo).
+
 1. En n8n: **Importar desde archivo** → `n8n/Planeador de compras (Microsip).json`.
 2. Revisa que los nodos Postgres usen la credencial **Postgres account** (la misma de los demás flujos).
 3. Activa el flujo.

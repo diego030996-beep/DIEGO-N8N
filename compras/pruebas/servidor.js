@@ -3,7 +3,7 @@ const http = require('http'), fs = require('fs');
 const { pedir } = require('./nodos.js');
 const flujo = () => JSON.parse(fs.readFileSync(__dirname + '/../n8n/Planeador de compras (Microsip).json', 'utf8'));
 http.createServer((req, res) => {
-  if (req.method === 'GET' && req.url.startsWith('/webhook/compras')) {
+  if (req.method === 'GET' && req.url.startsWith('/webhook/planeador-compras')) {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(flujo().nodes.find(n => n.name === 'Mostrar página').parameters.responseBody);
   }

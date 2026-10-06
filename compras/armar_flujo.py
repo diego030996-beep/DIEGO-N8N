@@ -62,18 +62,18 @@ def armar():
     ligas_js = (
         "// Ligas del planeador de compras. compras = captura; auditor = solo consulta (para el Sello); admin = la misma llave del tablero.\n"
         "const cfg = $('Configuración (ligas)').first().json, a = $('Ligas').first().json;\n"
-        "const url = String(cfg.url_n8n || '').replace(/\\/+$/, '') + '/webhook/compras?k=';\n"
+        "const url = String(cfg.url_n8n || '').replace(/\\/+$/, '') + '/webhook/planeador-compras?k=';\n"
         "return [{ json: { compras: url + a.t_compras, auditor: url + a.t_auditor, administrador: a.t_admin ? url + a.t_admin : '(sin llave de admin)' } }];")
 
     nodes = [
-        nodo('Página', 'n8n-nodes-base.webhook', 2, [0, -400], {'path': 'compras', 'responseMode': 'responseNode', 'options': {}},
-             webhookId=uid('webhook/compras')),
+        nodo('Página', 'n8n-nodes-base.webhook', 2, [0, -400], {'path': 'planeador-compras', 'responseMode': 'responseNode', 'options': {}},
+             webhookId=uid('webhook/planeador-compras')),
         nodo('Mostrar página', 'n8n-nodes-base.respondToWebhook', 1.1, [224, -400], {
             'respondWith': 'text', 'responseBody': leer('pagina.html'),
             'options': {'responseHeaders': {'entries': [{'name': 'Content-Type', 'value': 'text/html; charset=utf-8'},
                                                         {'name': 'Cache-Control', 'value': 'no-store'}]}}}),
-        nodo('API', 'n8n-nodes-base.webhook', 2, [0, -160], {'httpMethod': 'POST', 'path': 'compras-api', 'responseMode': 'responseNode', 'options': {}},
-             webhookId=uid('webhook/compras-api')),
+        nodo('API', 'n8n-nodes-base.webhook', 2, [0, -160], {'httpMethod': 'POST', 'path': 'planeador-compras-api', 'responseMode': 'responseNode', 'options': {}},
+             webhookId=uid('webhook/planeador-compras-api')),
         nodo('Acceso', 'n8n-nodes-base.postgres', 2.5, [224, -160], {
             'operation': 'executeQuery', 'query': acceso_sql,
             'options': {'queryReplacement': "={{ [ String(($('API').first().json.body || {}).k || '').slice(0, 64) ] }}"}}, credentials=CRED),
