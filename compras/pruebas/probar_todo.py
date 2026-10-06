@@ -17,11 +17,17 @@ d = correr('datos')
 ok(d['ok'] and d['mes'] is None and d['oc_total'] == 12, 'datos sin cálculo previo')
 ok([x['linea'] for x in d['excluidos']] == ['TINACOS Y CISTERNAS'], 'avisa que la línea de tinacos no se toma en cuenta')
 c = correr('calcular', {'mes': '2026-10-01'})
-ok(c['productos'] == 16 and c['a'] == 3 and c['b'] == 12 and c['c'] == 1, 'A/B/C: 3 A, 12 B, 1 C (tinaco excluido)')
+ok(c['productos'] == 21 and c['c'] == 1 and c['a'] + c['b'] == 20, f"A/B/C: {c['a']} A, {c['b']} B, 1 C (tinaco excluido)")
 mm = {f['clave']: f for f in correr('reporte', {})['filas']}
 f = mm['CEM25']
-ok(f['minimo'] == -(-f['vd'] * (f['entrega'] + f['seguridad']) // 1) and f['maximo'] == f['minimo'] + -(-f['vd'] * f['inventario'] // 1), 'fórmula de mín/máx')
-ok(all(x['minimo'] >= 1 and x['maximo'] > x['minimo'] for x in mm.values()), 'ningún mínimo en 0 y máximo > mínimo')
+import math
+z = {95: 1.65, 90: 1.28, 85: 1.04}[int(f['ns'])]
+ok(f['minimo'] == math.ceil(z * f['sd'] * math.sqrt(f['entrega'] + f['revision']) - 1e-6) or abs(f['minimo'] - z * f['sd'] * math.sqrt(f['entrega'] + f['revision'])) < 1.01, 'stock de seguridad = Z × variación × √(entrega + revisión)')
+ok(f['punto_reorden'] == math.ceil(f['vd'] * (f['entrega'] + f['revision']) - 1e-9) + f['minimo'], 'punto de reorden = venta diaria × (entrega + revisión) + mínimo')
+ok(f['maximo'] == f['punto_reorden'] + math.ceil(f['vd'] * f['inventario'] - 1e-9), 'máximo = punto de reorden + venta diaria × días de inventario')
+ok(all(x['minimo'] >= 1 and x['punto_reorden'] >= x['minimo'] and x['maximo'] > x['punto_reorden'] for x in mm.values()), 'ningún mínimo en 0 y máx > punto de reorden ≥ mín')
+ok(mm['BISAGRA']['rotacion'] == 'baja' and (mm['BISAGRA']['minimo'], mm['BISAGRA']['punto_reorden'], mm['BISAGRA']['maximo']) == (1, 1, 2), 'rota poco: mín 1, punto de reorden 1, máx 2')
+ok(mm['CEM25']['rotacion'] == 'alta', 'cemento rota mucho')
 ok(mm['MARTILLO']['alerta'] == 'sin proveedor', 'alerta sin proveedor')
 ok('TINACO' not in mm, 'tinacos fuera del cálculo')
 ok(mm['BROCHA4']['clase'] == 'C' and mm['BROCHA4']['minimo'] >= 1 and mm['BROCHA4']['maximo'] > mm['BROCHA4']['minimo'], 'C: vendido fuera de los 6 meses, mínimo 1 pieza')
@@ -31,9 +37,11 @@ p = correr('planeador', {'proveedor_id': '14'})
 cem = {x['clave']: x for x in p['filas']}
 ok(cem['CEM25']['pendiente'] == 100 and 'O0000077' in cem['CEM25']['folios'], 'pendiente por recibir de la OC abierta')
 s = cem['CEM50']
-ok(s['sugerido'] == (s['maximo'] - max(s['existencia'], 0) - s['pendiente'] if max(s['existencia'], 0) + s['pendiente'] <= s['minimo'] else 0), 'sugerido')
+ok(s['sugerido'] == (s['maximo'] - max(s['existencia'], 0) - s['pendiente'] if max(s['existencia'], 0) + s['pendiente'] <= s['punto_reorden'] else 0), 'sugerido = máx − existencia − por recibir al llegar al punto de reorden')
+t = correr('planeador', {'todos': 'si'})['filas']
+ok(len({x['proveedor_id'] for x in t}) > 2 and all(x['sugerido'] > 0 or max(x['existencia'], 0) + x['pendiente'] <= x['punto_reorden'] for x in t), 'vista de todos los productos: solo lo que hay que pedir, de todos los proveedores')
 g = correr('guardar', {'proveedor_id': '14', 'proveedor': 'CEMEX', 'clase': 'A', 'folio': '', 'lineas': [
-    {**{k: s[k] for k in ('articulo_id', 'clave', 'articulo', 'unidad', 'clase', 'existencia', 'pendiente', 'minimo', 'maximo', 'sugerido')}, 'comprado': s['sugerido'] + 20, 'razon': 'promocion', 'nota': ''}]})
+    {**{k: s[k] for k in ('articulo_id', 'clave', 'articulo', 'unidad', 'clase', 'existencia', 'pendiente', 'minimo', 'punto_reorden', 'maximo', 'sugerido')}, 'comprado': s['sugerido'] + 20, 'razon': 'promocion', 'nota': ''}]})
 ok(g['lineas'] == 1, 'guardar plan')
 dat = json.dumps({'DOCTO_CM_ID': 5099, 'TIPO_DOCTO': 'O', 'FOLIO': 'O0000078', 'FECHA': '2026-10-07', 'PROVEEDOR_ID': 14, 'ESTATUS': 'P'})
 subprocess.run(PSQL + ['-c', f"INSERT INTO ms_raw (base,tabla,pk,fecha,datos) VALUES ('LOMAS AJUSCO','DOCTOS_CM','5099','2026-10-07','{dat}');"
@@ -63,6 +71,16 @@ f = {x['clave']: x for x in correr('reporte', {})['filas']}['CEM50']
 ok(f['entrega'] == 2 and f['seguridad'] == 4 and f['empaque'] == 10, 'el recálculo usa lo configurado en la página')
 s = {x['clave']: x for x in correr('planeador', {'proveedor_id': '14'})['filas']}['CEM50']
 ok(s['sugerido'] % 10 == 0, 'sugerido redondeado al empaque')
+l = correr('limpieza', {})
+ok([x['clave'] for x in l['una_venta']] == ['BISAGRA'], 'detecta lo que se vendió una sola vez')
+dup = [sorted(a['clave'] for a in g['articulos']) for g in l['duplicados']]
+ok(['CINTAN', 'CINTAP'] in dup, 'cinta aislar negra Pretul / Nitto: posible duplicado de marca')
+ok(not any('LLAVE38' in g for g in dup), 'llave 3/8 y 5/16 no son duplicado (cambia la medida)')
+ok(correr('revision', {'articulo_id': 23, 'tipo': 'una_venta', 'decision': 'se_va', 'grupo': '', 'nota': ''})['ok'], 'marcar "ya no comprar"')
+ok(correr('limpieza', {})['una_venta'] == [], 'ya no aparece por revisar')
+ok(correr('calcular', {'mes': '2026-10-01'})['productos'] == 20, 'sale del cálculo')
+correr('revision', {'articulo_id': 23, 'tipo': 'una_venta', 'decision': 'deshacer', 'grupo': '', 'nota': ''})
+ok(correr('calcular', {'mes': '2026-10-01'})['productos'] == 21, 'deshacer lo regresa')
 print('Todo bien.')
 
 # n8n (algunas versiones) mete la consulta con String.replace(): "$'", "$&", "$`" y "$$" cambian el texto. No debe haber ninguno.

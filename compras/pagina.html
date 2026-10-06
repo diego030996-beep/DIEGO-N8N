@@ -81,6 +81,9 @@ textarea{width:100%;min-height:200px;resize:vertical}
 .scroll{overflow-x:auto}
 .sug{font-weight:800;font-size:1.02rem}
 .neg{color:var(--red);font-weight:700}
+.rot{display:inline-block;white-space:nowrap;font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:6px;border:1px solid var(--line);color:var(--soft);vertical-align:1px}
+.rot.alta{color:var(--green);border-color:var(--green)} .rot.baja{color:var(--red);border-color:var(--red)}
+.tbl tr.grp td{background:var(--bg);padding:8px 6px}
 .alert{color:var(--warnink);background:var(--warn);border-radius:6px;padding:1px 6px;font-size:.76rem;display:inline-block;margin-top:2px}
 .plan{border-top:1.5px solid var(--line);padding-top:12px;margin-top:12px}
 .plan:first-child{border-top:0;margin-top:0;padding-top:0}
@@ -88,6 +91,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
 .form{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .form label{display:flex;flex-direction:column;gap:4px;font-size:.88rem;font-weight:600}
 .form label small{font-weight:400;color:var(--soft)}
+.form label:has(textarea){grid-column:1/-1}
 .foot{position:sticky;bottom:0;background:var(--panel);border-top:1.5px solid var(--line);margin:14px -16px -16px;padding:12px 16px;border-radius:0 0 16px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 #aviso{margin-top:14px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);opacity:0;pointer-events:none;background:var(--ink);color:var(--panel);padding:12px 18px;border-radius:12px;font-weight:600;transition:transform .25s ease,opacity .25s ease;z-index:9;max-width:92vw}
@@ -97,6 +101,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
   .foot{position:static}
   #prov{width:100%}
   .tbl.cards thead{display:none}
+  .tbl.cards tr.grp{display:block}
   .tbl.cards tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .tbl.cards td{border:0;padding:0}
   .tbl.cards td.art{grid-column:1/-1}
@@ -119,6 +124,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
     <button class="tab" role="tab" data-t="plan" aria-selected="true">Planeador</button>
     <button class="tab" role="tab" data-t="reg">Registro de compras<span class="n" id="nreg" hidden></span></button>
     <button class="tab" role="tab" data-t="abc">A/B/C y máximos-mínimos</button>
+    <button class="tab" role="tab" data-t="lim">Limpieza de catálogo<span class="n" id="nlim" hidden></span></button>
     <button class="tab" role="tab" data-t="cfg">Configuración</button>
   </nav>
   <div id="aviso" class="warn" hidden></div>
@@ -134,19 +140,23 @@ textarea{width:100%;min-height:200px;resize:vertical}
     </div>
     <div class="card">
       <div class="row">
+        <div class="seg" id="segVista"><button data-v="prov" aria-pressed="true">Por proveedor</button><button data-v="todos" aria-pressed="false">Todos los productos</button></div>
         <select id="prov" class="grow" aria-label="Proveedor"></select>
-        <div class="seg" id="segClase"><button data-c="A" aria-pressed="true">Productos A</button><button data-c="B" aria-pressed="false">Productos B</button><button data-c="C" aria-pressed="false">Productos C</button></div>
+        <input type="text" id="qPlan" class="grow" placeholder="Buscar artículo, clave o proveedor" hidden>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="seg" id="segClase"><button data-c="" aria-pressed="false">Todas</button><button data-c="A" aria-pressed="true">A</button><button data-c="B" aria-pressed="false">B</button><button data-c="C" aria-pressed="false">C</button></div>
         <label class="muted"><input type="checkbox" id="soloSug" checked> Solo lo que hay que pedir</label>
       </div>
       <p class="muted" id="planInfo" style="margin:10px 0 0"></p>
       <div class="scroll" style="margin-top:10px">
         <table class="tbl cards" id="tblPlan">
-          <thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Mín</th><th class="n">Máx</th><th class="n">Sugerido</th><th class="n">Compro</th><th>Razón si es distinto</th></tr></thead>
+          <thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n" title="Stock de seguridad">Mín</th><th class="n" title="Cuando existencia + por recibir llega aquí, se pide">P. reorden</th><th class="n">Máx</th><th class="n">Sugerido</th><th class="n">Compro</th><th>Razón si es distinto</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
       <div class="foot" id="footPlan">
-        <label class="muted">Folio de la OC <input type="text" id="folio" maxlength="30" placeholder="opcional, se liga solo" style="width:170px"></label>
+        <label class="muted" id="lblFolio">Folio de la OC <input type="text" id="folio" maxlength="30" placeholder="opcional, se liga solo" style="width:170px"></label>
         <span class="grow muted" id="planEstado"></span>
         <button class="btn btn-main" id="guardar">Guardar decisión</button>
       </div>
@@ -203,11 +213,31 @@ textarea{width:100%;min-height:200px;resize:vertical}
       </div>
       <div class="scroll" style="margin-top:10px">
         <table class="tbl" id="tblAbc">
-          <thead><tr><th>#</th><th>Artículo</th><th>Proveedor</th><th class="n">Venta</th><th class="n">% acum.</th><th class="n">Venta/día</th><th class="n">Entrega</th><th class="n">Seg.</th><th class="n">Inv.</th><th class="n">Mín</th><th class="n">Máx</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Artículo</th><th>Proveedor</th><th class="n">Venta</th><th class="n">% acum.</th><th class="n">Venta/día</th><th>Rotación</th><th class="n">Entrega</th><th class="n">Revisión</th><th class="n">Mín</th><th class="n">P. reorden</th><th class="n">Máx</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
       <p class="muted" id="abcMas"></p>
+    </div>
+  </section>
+
+  <!-- ============ LIMPIEZA ============ -->
+  <section id="t-lim" hidden>
+    <div class="card">
+      <h2>Limpieza de catálogo</h2>
+      <p class="sub">Para no seguir comprando lo que no se vende. Lo que marques como <b>Ya no comprar</b> sale del cálculo y del planeador (puedes deshacerlo).</p>
+      <label class="muted"><input type="checkbox" id="verRev"> Ver también lo que ya revisé</label>
+      <div class="kpis" id="kpisLim"></div>
+    </div>
+    <div class="card">
+      <h3>Se vendieron una sola vez</h3>
+      <p class="muted" id="unaTxt" style="margin:0 0 10px"></p>
+      <div class="scroll"><table class="tbl cards" id="tblUna"><thead><tr><th>Artículo</th><th>Proveedor</th><th class="n">Vendido</th><th class="n">Existencia</th><th>¿Se sigue comprando?</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h3>Posibles duplicados: el mismo producto en otra marca</h3>
+      <p class="muted" style="margin:0 0 10px">Solo se juntan artículos cuyo nombre es igual salvo una palabra que parece marca (ej. <i>cinta aislar negra Pretul</i> y <i>cinta aislar negra Nitto</i>). Si cambia la medida, el número, el color o el material no se juntan (ej. <i>llave 3/8</i> y <i>llave 5/16</i>). Decide cuál se queda.</p>
+      <div id="dups"></div>
     </div>
   </section>
 
@@ -295,11 +325,12 @@ function selRazon(val, attrs = ""){
 $$(".tab").forEach(b => b.addEventListener("click", () => abrir(b.dataset.t)));
 function abrir(t){
   $$(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
-  ["plan","reg","abc","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
+  ["plan","reg","abc","lim","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
   try { localStorage.setItem("compras_tab", t); } catch(e) {}
   if(t === "reg" && !REG) cargarReg();
   if(t === "abc" && !ABC) cargarAbc();
   if(t === "cfg") pintarCfg();
+  if(t === "lim") cargarLim();
 }
 
 /* ================= carga general ================= */
@@ -338,14 +369,14 @@ function pintarToca(){
   pintarExcl();
   const L = [];
   for(const p of D.proveedores){
-    if(tocaA(p)) L.push({p, c:"A", t:`<b>${esc(p.nombre)}</b> · A <small>${p.bajo_a} bajo mínimo</small>`});
-    if(tocaB(p)) L.push({p, c:"B", t:`<b>${esc(p.nombre)}</b> · B <small>${p.bajo_b} bajo mínimo${p.ult_b ? "" : " · nunca revisado"}</small>`});
-    if(tocaC(p)) L.push({p, c:"C", t:`<b>${esc(p.nombre)}</b> · C <small>${p.bajo_c} bajo mínimo${p.ult_c ? "" : " · nunca revisado"}</small>`});
+    if(tocaA(p)) L.push({p, c:"A", t:`<b>${esc(p.nombre)}</b> · A <small>${p.bajo_a} por pedir</small>`});
+    if(tocaB(p)) L.push({p, c:"B", t:`<b>${esc(p.nombre)}</b> · B <small>${p.bajo_b} por pedir${p.ult_b ? "" : " · nunca revisado"}</small>`});
+    if(tocaC(p)) L.push({p, c:"C", t:`<b>${esc(p.nombre)}</b> · C <small>${p.bajo_c} por pedir${p.ult_c ? "" : " · nunca revisado"}</small>`});
   }
   const bajo = x => x.p["bajo_" + x.c.toLowerCase()];
   L.sort((x, y) => (x.c > y.c) - (x.c < y.c) || (bajo(y) - bajo(x)));
   $("#toca").innerHTML = L.length ? L.map((x, i) => `<button class="chip ${x.c === "A" ? "a" : ""}" data-i="${i}">${x.t}</button>`).join("") : `<span class="muted">Hoy no toca revisar a ningún proveedor. Puedes abrir cualquiera abajo.</span>`;
-  $$("#toca .chip").forEach(b => b.addEventListener("click", () => { const x = L[b.dataset.i]; $("#prov").value = x.p.proveedor_id; ponerClase(x.c); cargarPlan(); $("#prov").scrollIntoView({behavior:"smooth", block:"center"}); }));
+  $$("#toca .chip").forEach(b => b.addEventListener("click", () => { const x = L[b.dataset.i]; ponerVista("prov"); $("#prov").value = x.p.proveedor_id; ponerClase(x.c); cargarPlan(); $("#prov").scrollIntoView({behavior:"smooth", block:"center"}); }));
   $("#kpisPlan").innerHTML = [
     [D.falta_razon, "decisiones sin razón", D.falta_razon > 0],
     [D.planes_sin_oc, "planes sin OC en Microsip", D.planes_sin_oc > 0],
@@ -356,7 +387,7 @@ function pintarToca(){
 function llenarProv(){
   const sel = $("#prov"), v = sel.value;
   const con = D.proveedores.filter(p => p.n_a + p.n_b + p.n_c > 0);
-  sel.innerHTML = con.map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.nombre)} — ${p.n_a} A · ${p.n_b} B · ${p.n_c} C${p.bajo_a + p.bajo_b + p.bajo_c ? " · " + (p.bajo_a + p.bajo_b + p.bajo_c) + " bajo mínimo" : ""}</option>`).join("")
+  sel.innerHTML = con.map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.nombre)} — ${p.n_a} A · ${p.n_b} B · ${p.n_c} C${p.bajo_a + p.bajo_b + p.bajo_c ? " · " + (p.bajo_a + p.bajo_b + p.bajo_c) + " por pedir" : ""}</option>`).join("")
     + (D.sin_proveedor ? `<option value="">(Sin proveedor) — ${D.sin_proveedor} productos</option>` : "");
   if(v !== "" && con.some(p => p.proveedor_id === v)) sel.value = v;
 }
@@ -366,47 +397,68 @@ $("#prov").addEventListener("change", cargarPlan);
 $("#soloSug").addEventListener("change", pintarPlan);
 
 /* ================= planeador ================= */
+let vista = "prov";
+function ponerVista(v){
+  vista = v; $$("#segVista button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === v));
+  $("#prov").hidden = v === "todos"; $("#qPlan").hidden = v !== "todos"; $("#lblFolio").hidden = v === "todos";
+  $("#guardar").textContent = v === "todos" ? "Guardar todo" : "Guardar decisión";
+}
+$$("#segVista button").forEach(b => b.addEventListener("click", () => { ponerVista(b.dataset.v); ponerClase(vista === "todos" ? "" : (clase || "A")); cargarPlan(); }));
+$("#qPlan").addEventListener("input", () => { clearTimeout(pintarPlan._t); pintarPlan._t = setTimeout(pintarPlan, 250); });
+const necesita = f => Math.max(f.existencia, 0) + f.pendiente <= (f.punto_reorden ?? f.minimo);
+const ROT = {alta: "rota mucho", media: "rota medio", baja: "rota poco", nuevo: "nuevo"};
 async function cargarPlan(){
   if(!D || !D.mes) { $("#tblPlan tbody").innerHTML = ""; return; }
-  $("#tblPlan tbody").innerHTML = `<tr><td colspan="8" class="muted">Cargando…</td></tr>`;
-  try { P = await api("planeador", {proveedor_id: $("#prov").value}); } catch(e) { toast(e.message); return; }
+  $("#tblPlan tbody").innerHTML = `<tr><td colspan="9" class="muted">Cargando…</td></tr>`;
+  try { P = await api("planeador", vista === "todos" ? {todos: "si"} : {proveedor_id: $("#prov").value}); } catch(e) { toast(e.message); return; }
   for(const f of P.filas){ f._c = f.comprado ?? f.sugerido; f._r = f.razon === "igual" ? "" : (f.razon || ""); f._n = f.nota || ""; }
-  if(!P.filas.some(f => f.clase === clase) && P.filas.length) ponerClase(["A", "B", "C"].find(c => P.filas.some(f => f.clase === c)));
+  if(vista === "prov" && clase && !P.filas.some(f => f.clase === clase) && P.filas.length) ponerClase(["A", "B", "C"].find(c => P.filas.some(f => f.clase === c)));
   $("#folio").value = (P.plan && P.plan.folio) || "";
   pintarPlan();
 }
+function filasPlan(){
+  const q = vista === "todos" ? $("#qPlan").value.trim().toLowerCase() : "";
+  return P.filas.filter(f => (!clase || f.clase === clase) && (!$("#soloSug").checked || f.sugerido > 0 || (f.comprado ?? 0) > 0 || f._c > 0 || necesita(f))
+    && (!q || (f.articulo + " " + f.clave + " " + (f.proveedor || "")).toLowerCase().includes(q)));
+}
 function pintarPlan(){
   if(!P) return;
-  const sinProv = !$("#prov").value;
-  const filas = P.filas.filter(f => f.clase === clase && (!$("#soloSug").checked || f.sugerido > 0 || (f.comprado ?? 0) > 0 || f._c > 0));
-  const total = P.filas.filter(f => f.clase === clase).length;
-  $("#planInfo").innerHTML = `${filas.length} de ${total} productos ${clase} · regla: ${P.regla === "hasta_maximo" ? "completar hasta el máximo" : "pedir cuando existencia + por recibir llega al mínimo"}`
-    + (P.plan ? ` · <b>guardado hoy</b>${P.plan.folio_oc ? " · ligado a la OC " + esc(P.plan.folio_oc) : ""}` : "");
+  const filas = filasPlan(), total = P.filas.filter(f => !clase || f.clase === clase).length, cl = clase ? "productos " + clase : "productos";
+  $("#planInfo").innerHTML = `${filas.length} de ${total} ${cl}${vista === "todos" ? " que hay que pedir o ya se capturaron hoy, de todos los proveedores" : ""} · regla: ${P.regla === "hasta_maximo" ? "completar hasta el máximo" : "pedir cuando existencia + por recibir llega al punto de reorden, hasta el máximo"}`
+    + (vista === "prov" && P.plan ? ` · <b>guardado hoy</b>${P.plan.folio_oc ? " · ligado a la OC " + esc(P.plan.folio_oc) : ""}` : "");
+  let prev = null;
   $("#tblPlan tbody").innerHTML = filas.length ? filas.map(f => {
-    const i = P.filas.indexOf(f), dist = num(f._c) !== num(f.sugerido);
-    const bajo = Math.max(f.existencia, 0) + f.pendiente <= f.minimo;
-    return `<tr class="${bajo ? "need" : ""}" data-i="${i}">
-      <td class="art"><span class="pill ${f.clase}">${f.clase}</span> <b>${esc(f.articulo)}</b><div class="muted">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque ? " · empaque " + n0(f.empaque) : ""}${f.ult_fecha ? " · última OC " + fecha(f.ult_fecha) + " (" + n0(f.ult_unidades) + ")" : ""}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
+    const i = P.filas.indexOf(f), dist = num(f._c) !== num(f.sugerido), sinProv = !f.proveedor_id;
+    let cab = "";
+    if(vista === "todos" && f.proveedor_id !== prev){
+      prev = f.proveedor_id;
+      const n = filas.filter(x => x.proveedor_id === f.proveedor_id && x.sugerido > 0).length;
+      cab = `<tr class="grp"><td colspan="9"><b>${esc(f.proveedor || "Sin proveedor")}</b> <span class="muted">· ${n} por pedir</span></td></tr>`;
+    }
+    return cab + `<tr class="${necesita(f) ? "need" : ""}" data-i="${i}">
+      <td class="art"><span class="pill ${f.clase}">${f.clase}</span> <b>${esc(f.articulo)}</b> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}<div class="muted">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque ? " · empaque " + n0(f.empaque) : ""}${f.ult_fecha ? " · última OC " + fecha(f.ult_fecha) + " (" + n0(f.ult_unidades) + ")" : ""}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
       <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
       <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="muted">${esc(f.folios)}</div>` : ""}</td>
       <td class="n" data-l="Mín">${n0(f.minimo)}</td>
+      <td class="n" data-l="P. reorden"><b>${n0(f.punto_reorden)}</b></td>
       <td class="n" data-l="Máx">${n0(f.maximo)}</td>
       <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span></td>
       <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar"></td>
-      <td class="wide" data-l="Razón">${dist ? selRazon(f._r, `class="r" ${soloLectura() ? "disabled" : ""}`) + `<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}" ${soloLectura() ? "disabled" : ""}>` : `<span class="muted">igual al sugerido</span>`}</td>
-    </tr>`; }).join("") : `<tr><td colspan="8" class="muted">${total ? "Nada que pedir de productos " + clase + " con este proveedor. Quita la palomita de arriba para ver todos." : "Este proveedor no tiene productos " + clase + "."}</td></tr>`;
+      <td class="wide" data-l="Razón">${sinProv ? `<span class="muted">asigna proveedor en Configuración</span>` : dist ? selRazon(f._r, `class="r" ${soloLectura() ? "disabled" : ""}`) + `<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}" ${soloLectura() ? "disabled" : ""}>` : `<span class="muted">igual al sugerido</span>`}</td>
+    </tr>`; }).join("") : `<tr><td colspan="9" class="muted">${total ? "Nada que pedir. Quita la palomita de arriba para ver todos." : vista === "todos" ? "No hay nada que pedir." : "Este proveedor no tiene " + cl + "."}</td></tr>`;
   $$("#tblPlan tbody tr[data-i]").forEach(tr => {
     const f = P.filas[tr.dataset.i];
     tr.querySelector(".c").addEventListener("change", e => { f._c = num(e.target.value); pintarPlan(); });
     const r = tr.querySelector(".r"); if(r) r.addEventListener("change", e => { f._r = e.target.value; });
     const nt = tr.querySelector(".nota"); if(nt) nt.addEventListener("input", e => { f._n = e.target.value; });
   });
+  const sinProv = vista === "prov" && !$("#prov").value;
   $("#guardar").disabled = sinProv;
   $("#planEstado").textContent = sinProv ? "Asigna proveedor a estos productos en Configuración para poder planearlos." : "";
 }
 $("#guardar").addEventListener("click", () => ocupado($("#guardar"), async () => {
-  const prov = D.proveedores.find(p => p.proveedor_id === $("#prov").value);
-  const lineas = P.filas.filter(f => f.clase === clase && ((f.sugerido || 0) > 0 || (f._c || 0) > 0 || f.comprado !== null));
+  const lineas = P.filas.filter(f => (!clase || f.clase === clase) && f.proveedor_id && ((f.sugerido || 0) > 0 || (f._c || 0) > 0 || f.comprado !== null));
+  if(!lineas.length) throw new Error("No hay renglones para guardar.");
   for(const f of lineas){
     if(f._c === null || f._c < 0) throw new Error("Falta la cantidad de " + f.articulo + " (pon 0 si no compras).");
     if(num(f._c) !== num(f.sugerido)){
@@ -414,11 +466,19 @@ $("#guardar").addEventListener("click", () => ocupado($("#guardar"), async () =>
       if(f._r === "otra" && !f._n.trim()) throw new Error("Escribe la nota de " + f.articulo + " (elegiste Otra).");
     }
   }
-  const r = await api("guardar", {proveedor_id: prov.proveedor_id, proveedor: prov.nombre, clase, folio: $("#folio").value.trim(),
-    lineas: lineas.map(f => ({articulo_id: f.articulo_id, clave: f.clave, articulo: f.articulo, unidad: f.unidad, clase: f.clase, existencia: f.existencia,
-      pendiente: f.pendiente, minimo: f.minimo, maximo: f.maximo, sugerido: f.sugerido, comprado: f._c, razon: num(f._c) === num(f.sugerido) ? "" : f._r, nota: f._n}))});
-  toast("Guardado ✓ " + r.lineas + " renglones" + (r.plan && r.plan.folio_oc ? " · ligado a " + r.plan.folio_oc : " · se ligará solo cuando captures la OC en Microsip"));
-  const p = D.proveedores.find(x => x.proveedor_id === prov.proveedor_id); if(p){ if(clase === "A") p.ult_a = D.hoy; else p.ult_b = D.hoy; }
+  const grupos = {};   // un plan por proveedor y por clase revisada
+  for(const f of lineas) (grupos[f.proveedor_id + "|" + f.clase] ||= []).push(f);
+  let n = 0, ligadas = [];
+  for(const [k, L] of Object.entries(grupos)){
+    const [pid, cl] = k.split("|"), prov = D.proveedores.find(p => p.proveedor_id === pid) || {};
+    const r = await api("guardar", {proveedor_id: pid, proveedor: prov.nombre || L[0].proveedor || "", clase: cl, folio: vista === "prov" ? $("#folio").value.trim() : "",
+      lineas: L.map(f => ({articulo_id: f.articulo_id, clave: f.clave, articulo: f.articulo, unidad: f.unidad, clase: f.clase, existencia: f.existencia,
+        pendiente: f.pendiente, minimo: f.minimo, punto_reorden: f.punto_reorden, maximo: f.maximo, sugerido: f.sugerido, comprado: f._c,
+        razon: num(f._c) === num(f.sugerido) ? "" : f._r, nota: f._n}))});
+    n += L.length; if(r.plan && r.plan.folio_oc) ligadas.push(r.plan.folio_oc);
+    const p = D.proveedores.find(x => x.proveedor_id === pid); if(p) p["ult_" + cl.toLowerCase()] = D.hoy;
+  }
+  toast("Guardado ✓ " + n + " renglones" + (Object.keys(grupos).length > 1 ? " en " + Object.keys(grupos).length + " planes" : "") + (ligadas.length ? " · ligado a " + ligadas.join(", ") : " · se ligará solo cuando captures la OC en Microsip"));
   REG = null; pintarToca(); cargarPlan();
 }));
 
@@ -498,6 +558,9 @@ async function cargarAbc(mes){
     + ((D.meses || []).some(m => m.mes.slice(0,7) === mesActual()) ? "" : `<option value="${mesActual()}-01">${mesTxt(mesActual())} · sin calcular</option>`);
   if(mes) sel.value = mes;
   try { ABC = await api("reporte", {mes: sel.value}); } catch(e) { toast(e.message); return; }
+  const per = ABC.periodos || {};   // las filas llegan como listas: se convierten a objetos aquí
+  ABC.filas = ABC.filas.map(v => { const o = {}; ABC.cols.forEach((c, i) => o[c] = v[i]); const pe = per[o.clase === "C" ? "C" : "AB"] || {};
+    return Object.assign(o, {ini: pe.ini, fin: pe.fin, dias: pe.dias, calculado: ABC.calculado}); });
   pintarAbc();
 }
 $("#mesAbc").addEventListener("change", () => cargarAbc($("#mesAbc").value));
@@ -513,6 +576,7 @@ function pintarAbc(){
   pintarExcl();
   $("#kpisAbc").innerHTML = [
     [A.length, "productos A"], [B.length, "productos B"], [C.length, "productos C"], [pct(vt ? A.reduce((a, f) => a + f.venta, 0) / vt : null), "de la venta A+B es A"],
+    [F.filter(f => f.rotacion === "alta").length, "rotan mucho"], [F.filter(f => f.rotacion === "baja").length, "rotan poco"],
     [F.filter(f => f.alerta).length, "con alerta", true], [F.filter(f => f.origen === "manual").length, "con mín/máx a mano"],
   ].map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${typeof v === "string" ? v : n0(v)}</b><span>${t}</span></div>`).join("");
   const q = $("#fAbc").value.trim().toLowerCase();
@@ -522,8 +586,9 @@ function pintarAbc(){
   $("#tblAbc tbody").innerHTML = M.map(f => `<tr>
     <td class="n">${f.i}</td><td><span class="pill ${f.clase}">${f.clase}</span> ${esc(f.articulo)}<div class="muted">${esc(f.clave)}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
     <td>${esc(f.proveedor || "—")}</td><td class="n">${money(f.venta)}</td><td class="n">${pct(f.pct_acum)}</td><td class="n">${n0(f.vd)}</td>
-    <td class="n">${n0(f.entrega)}</td><td class="n">${n0(f.seguridad)}</td><td class="n">${n0(f.inventario)}</td>
-    <td class="n"><b>${n0(f.minimo)}</b></td><td class="n"><b>${n0(f.maximo)}</b>${f.origen === "manual" ? `<div class="muted">a mano</div>` : ""}</td>
+    <td>${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span><div class="muted">${n0(f.semanas_venta)} de ${n0(f.semanas)} sem.</div>` : "–"}</td>
+    <td class="n">${n0(f.entrega)}</td><td class="n">${n0(f.revision)}</td>
+    <td class="n">${n0(f.minimo)}</td><td class="n"><b>${n0(f.punto_reorden)}</b></td><td class="n"><b>${n0(f.maximo)}</b>${f.origen === "manual" ? `<div class="muted">a mano</div>` : ""}</td>
     <td>${soloLectura() ? "" : `<button class="btn btn-ghost btn-sm" data-q="${esc(f.clave)}">Ajustar</button>`}</td></tr>`).join("");
   $("#abcMas").textContent = V.length > M.length ? `Se muestran ${M.length} de ${V.length}. Usa el buscador o exporta a Excel para ver todos.` : "";
   $$("#tblAbc button[data-q]").forEach(b => b.addEventListener("click", () => { abrir("cfg"); $("#qArt").value = b.dataset.q; buscarArt(); $("#qArt").scrollIntoView({behavior:"smooth", block:"center"}); }));
@@ -536,6 +601,53 @@ $("#recalcular").addEventListener("click", () => ocupado($("#recalcular"), async
   D.meses = null; await cargar(); cargarAbc(r.mes);
 }));
 
+/* ================= limpieza ================= */
+let LIM = null;
+$("#verRev").addEventListener("change", cargarLim);
+async function cargarLim(){
+  $("#dups").innerHTML = `<p class="muted">Revisando el catálogo…</p>`;
+  try { LIM = await api("limpieza", {ver_revisados: $("#verRev").checked ? "si" : ""}); } catch(e) { toast(e.message); return; }
+  pintarLim();
+}
+const DEC = {queda: "Se queda", se_va: "Ya no se compra"};
+function botonesDec(id, tipo, dec, grupo){
+  if(soloLectura()) return dec ? `<b>${DEC[dec]}</b>` : "";
+  if(dec) return `<b>${DEC[dec]}</b> <button class="btn btn-ghost btn-sm" data-id="${id}" data-tipo="${tipo}" data-dec="deshacer">Deshacer</button>`;
+  return `<button class="btn btn-ghost btn-sm" data-id="${id}" data-tipo="${tipo}" data-dec="queda" data-grupo="${esc(grupo || "")}">Se queda</button>
+          <button class="btn btn-y btn-sm" data-id="${id}" data-tipo="${tipo}" data-dec="se_va" data-grupo="${esc(grupo || "")}">${tipo === "duplicado" ? "Se va" : "Ya no comprar"}</button>`;
+}
+function pintarLim(){
+  const U = LIM.una_venta, G = LIM.duplicados, rv = LIM.revisados || {};
+  const pend = U.filter(x => !x.decision).length + G.filter(g => g.articulos.some(a => !a.decision)).length;
+  $("#nlim").hidden = !pend; $("#nlim").textContent = pend;
+  $("#kpisLim").innerHTML = [[U.filter(x => !x.decision).length, "vendidos una sola vez", true], [G.filter(g => g.articulos.some(a => !a.decision)).length, "grupos de posibles duplicados", true],
+    [rv.se_va || 0, "marcados para ya no comprar"], [rv.queda || 0, "revisados que se quedan"]]
+    .map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
+  $("#unaTxt").textContent = `Artículos con una sola venta en los últimos ${LIM.meses_c || 12} meses. Si fue un pedido especial, conviene dejar de tenerlos en existencia y pedirlos solo cuando un cliente los pida.`;
+  $("#tblUna tbody").innerHTML = U.length ? U.map(x => `<tr>
+      <td class="art"><span class="pill ${esc(x.clase)}">${esc(x.clase)}</span> <b>${esc(x.articulo)}</b><div class="muted">${esc(x.clave)}</div></td>
+      <td data-l="Proveedor">${esc(x.proveedor || "—")}</td><td class="n" data-l="Vendido">${n0(x.unidades)} ${esc(x.unidad || "")}<div class="muted">${money(x.venta)}</div></td>
+      <td class="n" data-l="Existencia">${n0(x.existencia)}</td><td class="wide">${botonesDec(x.articulo_id, "una_venta", x.decision)}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">No hay artículos vendidos una sola vez por revisar.</td></tr>`;
+  $("#dups").innerHTML = G.length ? G.map(g => `<div class="plan">
+      <div class="row"><h4 class="grow">${esc(g.llave.toLowerCase())} <span class="muted">· cambia: ${esc(String(g.marcas || "").replace(/[{}"]/g, "").replace(/,/g, ", "))}</span></h4>
+        ${soloLectura() || g.articulos.every(a => a.decision) ? "" : `<button class="btn btn-ghost btn-sm" data-todos="${esc(g.articulos.map(a => a.articulo_id).join(","))}" data-grupo="${esc(g.llave)}">No son el mismo producto</button>`}</div>
+      <table class="tbl cards"><thead><tr><th>Artículo</th><th>Proveedor</th><th class="n">Vendido</th><th class="n">Existencia</th><th>Decisión</th></tr></thead><tbody>
+      ${g.articulos.map(a => `<tr><td class="art">${a.clase ? `<span class="pill ${esc(a.clase)}">${esc(a.clase)}</span> ` : ""}<b>${esc(a.articulo)}</b><div class="muted">${esc(a.clave)}${a.tickets ? " · " + n0(a.tickets) + " ventas" : " · sin venta"}</div></td>
+        <td data-l="Proveedor">${esc(a.proveedor || "—")}</td><td class="n" data-l="Vendido">${n0(a.unidades || 0)}<div class="muted">${money(a.venta)}</div></td>
+        <td class="n" data-l="Existencia">${n0(a.existencia)}</td><td class="wide">${botonesDec(a.articulo_id, "duplicado", a.decision, g.llave)}</td></tr>`).join("")}
+      </tbody></table></div>`).join("") : `<p class="muted">No encontré posibles duplicados por revisar.</p>`;
+  $$("#t-lim button[data-dec]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    await api("revision", {articulo_id: Number(b.dataset.id), tipo: b.dataset.tipo, decision: b.dataset.dec, grupo: b.dataset.grupo || ""});
+    toast(b.dataset.dec === "se_va" ? "Listo: ya no se calcula ni sale en el planeador (desde el siguiente cálculo del mes)." : "Guardado ✓");
+    cargarLim();
+  })));
+  $$("#t-lim button[data-todos]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    for(const id of b.dataset.todos.split(",")) await api("revision", {articulo_id: Number(id), tipo: "duplicado", decision: "queda", grupo: b.dataset.grupo});
+    toast("Guardado: se quedan todos ✓"); cargarLim();
+  })));
+}
+
 /* ================= Excel ================= */
 let xlsxListo = null;
 function cargarXlsx(){
@@ -547,7 +659,12 @@ function reglasTxt(){
   return [
     `<b>A</b>: los artículos que juntos suman el primer ${c.corte_a || 80}% de la venta (importe sin IVA) de los últimos ${c.meses_abc || 6} meses. <b>B</b>: el resto de los que se vendieron en esos meses.`,
     `<b>C</b>: los que se vendieron en los últimos ${c.meses_c || 12} meses pero no en los ${c.meses_abc || 6} del A/B, y los que se vendieron por primera vez este mes (entran como C hasta el siguiente cálculo).`,
-    `Mínimo = venta diaria × (días de entrega del proveedor + días de seguridad). Máximo = mínimo + venta diaria × días de inventario. Días de seguridad + inventario: A ${c.seg_a}+${c.inv_a} · B ${c.seg_b}+${c.inv_b} · C ${c.seg_c || 5}+${c.inv_c || 30}, y en C el mínimo es de al menos ${c.min_c || 1} pieza. Ninguno queda en cero y el máximo siempre es mayor que el mínimo.`,
+    (c.metodo || "retail") === "simple"
+      ? `Método simple: Mínimo = venta diaria × (días de entrega + días de seguridad) = punto de reorden. Máximo = mínimo + venta diaria × días de inventario. Seguridad + inventario: A ${c.seg_a}+${c.inv_a} · B ${c.seg_b}+${c.inv_b} · C ${c.seg_c}+${c.inv_c}.`
+      : `<b>Mínimo (stock de seguridad)</b> = Z × variación de la venta diaria × √(días de entrega + días entre revisiones), con nivel de servicio A ${c.ns_a || 95}% · B ${c.ns_b || 90}% · C ${c.ns_c || 85}%. ` +
+        `<b>Punto de reorden</b> = venta diaria × (días de entrega + días entre revisiones) + mínimo: cuando existencia + por recibir llega aquí, se pide. ` +
+        `<b>Máximo</b> = punto de reorden + venta diaria × días de inventario (A ${c.inv_a} · B ${c.inv_b} · C ${c.inv_c}). Revisión: A cada ${c.rev_a || 7} días, B y C cada ${c.frec_b || 15}.`,
+    `<b>Rotación</b> = % de semanas con venta: rota mucho ≥ ${c.rot_alta || 50}%, medio ≥ ${c.rot_media || 20}%, poco abajo de eso. Los que rotan poco no llevan colchón por variación: mínimo ${c.min_c || 1} pieza y se piden solo cuando se acaban (mín ${c.min_c || 1}, máx 2 o lo que dé su venta). Ninguno queda en cero y el máximo siempre es mayor que el punto de reorden.`,
   ];
 }
 const txtPlano = h => h.replace(/<[^>]+>/g, "");
@@ -564,14 +681,14 @@ async function excel(nombre, hoja, titulo, lineamiento, periodo, enc, filas, anc
 $("#xlsReg").addEventListener("click", () => ocupado($("#xlsReg"), async () => {
   if(!REG) await cargarReg();
   const filas = REG.planes.flatMap(p => p.lineas.map(l => [p.fecha, p.fecha_oc || "", p.folio_oc || "SIN OC", p.proveedor || "", l.clave || "", l.articulo || "", l.clase || "",
-    num(l.existencia), num(l.pendiente), num(l.minimo), num(l.maximo), num(l.sugerido), num(l.comprado), p.folio_oc ? num(l.oc_unidades ?? 0) : null,
+    num(l.existencia), num(l.pendiente), num(l.minimo), num(l.punto_reorden ?? l.minimo), num(l.maximo), num(l.sugerido), num(l.comprado), p.folio_oc ? num(l.oc_unidades ?? 0) : null,
     p.folio_oc ? num(l.oc_unidades ?? 0) - num(l.sugerido ?? 0) : null, l.razon === "igual" ? "Igual al sugerido" : (l.razon ? razonTxt(l.razon) : "FALTA RAZÓN"), l.nota || "",
     p.origen === "reconstruido" ? "Reconstruido de Microsip" : "Planeador", l.por || p.por || ""]));
-  const o = REG.oc_sin_plan.map(x => [ "", x.fecha, x.folio, x.proveedor || "", "", "OC SIN PLAN", "", null, null, null, null, null, null, null, null, "FALTA PLAN", "", "Microsip", ""]);
+  const o = REG.oc_sin_plan.map(x => [ "", x.fecha, x.folio, x.proveedor || "", "", "OC SIN PLAN", "", null, null, null, null, null, null, null, null, null, "FALTA PLAN", "", "Microsip", ""]);
   const m = $("#mesReg").value;
   await excel(`Registro de compras ${m}.xlsx`, "Registro de compras", "Registro mensual de compras: decisión de compra contra orden de compra", "1.2.2.3, 1.2.2.4 y 1.3.1.1", mesTxt(m),
-    ["Fecha del plan", "Fecha OC", "Folio OC", "Proveedor", "Clave", "Artículo", "Clase", "Existencia", "Pendiente por recibir", "Mínimo", "Máximo", "Sugerido", "Compré (plan)", "Unidades en la OC", "Diferencia vs sugerido", "Razón", "Nota", "Origen", "Capturó"],
-    [...filas, ...o], [12, 12, 12, 26, 12, 40, 7, 11, 11, 9, 9, 10, 11, 11, 11, 28, 30, 22, 16]);
+    ["Fecha del plan", "Fecha OC", "Folio OC", "Proveedor", "Clave", "Artículo", "Clase", "Existencia", "Pendiente por recibir", "Mínimo", "Punto de reorden", "Máximo", "Sugerido", "Compré (plan)", "Unidades en la OC", "Diferencia vs sugerido", "Razón", "Nota", "Origen", "Capturó"],
+    [...filas, ...o], [12, 12, 12, 26, 12, 40, 7, 11, 11, 9, 11, 9, 10, 11, 11, 11, 28, 30, 22, 16]);
 }));
 $("#xlsAb").addEventListener("click", () => ocupado($("#xlsAb"), async () => {
   const F = ABC.filas, f0 = F.find(f => f.clase !== "C") || {};
@@ -584,20 +701,29 @@ $("#xlsAb").addEventListener("click", () => ocupado($("#xlsAb"), async () => {
 $("#xlsMm").addEventListener("click", () => ocupado($("#xlsMm"), async () => {
   const F = ABC.filas;
   await excel(`Maximos y minimos ${ABC.mes.slice(0,7)}.xlsx`, "Máximos y mínimos", "Máximos y mínimos de inventario", "1.2.2.2", mesTxt(ABC.mes),
-    ["Clave", "Artículo", "Unidad", "Clase", "Proveedor", "Venta diaria", "Días de entrega", "Días de seguridad", "Días de inventario", "Empaque", "Mínimo", "Máximo", "Origen", "Alerta"],
-    F.map(f => [f.clave, f.articulo, f.unidad, f.clase, f.proveedor || "", num(f.vd), num(f.entrega), num(f.seguridad), num(f.inventario), num(f.empaque), num(f.minimo), num(f.maximo), f.origen, f.alerta || ""]),
-    [12, 42, 10, 7, 28, 11, 10, 10, 10, 9, 9, 9, 11, 40],
-    [txtPlano(reglasTxt()[2]), txtPlano($(".excl").innerHTML)]);
+    ["Clave", "Artículo", "Unidad", "Clase", "Proveedor", "Venta diaria", "Variación diaria", "Semanas con venta", "Semanas", "Rotación", "Ventas (tickets)",
+     "Días de entrega", "Días entre revisiones", "Nivel de servicio %", "Días de inventario", "Empaque", "Mínimo (stock de seguridad)", "Punto de reorden", "Máximo", "Método", "Origen", "Alerta"],
+    F.map(f => [f.clave, f.articulo, f.unidad, f.clase, f.proveedor || "", num(f.vd), num(f.sd), num(f.semanas_venta), num(f.semanas), ROT[f.rotacion] || f.rotacion || "", num(f.tickets),
+      num(f.entrega), num(f.revision), num(f.ns), num(f.inventario), num(f.empaque), num(f.minimo), num(f.punto_reorden), num(f.maximo), f.metodo || "", f.origen, f.alerta || ""]),
+    [12, 42, 10, 7, 28, 10, 10, 9, 9, 11, 9, 9, 10, 9, 9, 9, 12, 11, 9, 9, 11, 40],
+    [...reglasTxt().slice(2).map(txtPlano), txtPlano($(".excl").innerHTML)]);
 }));
 
 /* ================= configuración ================= */
 const GEN = [
   ["meses_abc", "Meses de venta para A/B y venta diaria", "number", "Lineamiento: 6"],
   ["corte_a", "Corte de productos A (%)", "number", "80 = los que suman el 80% de la venta"],
-  ["seg_a", "Días de seguridad · A", "number", ""], ["inv_a", "Días de inventario deseado · A", "number", ""],
-  ["seg_b", "Días de seguridad · B", "number", ""], ["inv_b", "Días de inventario deseado · B", "number", ""],
+  ["metodo", "Cómo calcular mínimo, punto de reorden y máximo", "metodo", ""],
+  ["ns_a", "Nivel de servicio · A (%)", "number", "Qué tan seguido quieres tenerlo cuando lo piden. 95 recomendado"],
+  ["ns_b", "Nivel de servicio · B (%)", "number", "90 recomendado"], ["ns_c", "Nivel de servicio · C (%)", "number", "85 recomendado"],
+  ["rev_a", "Productos A: revisar cada (días)", "number", "7 = cada semana"],
+  ["inv_a", "Días de inventario extra · A", "number", "Lo que se pide encima del punto de reorden"],
+  ["inv_b", "Días de inventario extra · B", "number", ""], ["inv_c", "Días de inventario extra · C", "number", ""],
+  ["rot_alta", "Rota mucho si vende en al menos (% de semanas)", "number", "50 recomendado"],
+  ["rot_media", "Rota medio si vende en al menos (% de semanas)", "number", "Abajo de esto rota poco: mín 1"],
+  ["seg_a", "Días de seguridad · A (solo método simple)", "number", ""], ["seg_b", "Días de seguridad · B (solo método simple)", "number", ""],
+  ["seg_c", "Días de seguridad · C (solo método simple)", "number", ""],
   ["meses_c", "Meses hacia atrás para los C", "number", "Vendidos en estos meses pero no en los del A/B"],
-  ["seg_c", "Días de seguridad · C", "number", ""], ["inv_c", "Días de inventario deseado · C", "number", ""],
   ["min_c", "Mínimo de piezas · C", "number", "Aunque casi no se venda, tener al menos esto"],
   ["lineas_excluidas", "Líneas o grupos que NO entran", "text", "De Microsip. Ej.: tinaco|cisterna (fabricación propia)"],
   ["entrega_def", "Días de entrega si el proveedor no tiene", "number", ""],
@@ -610,6 +736,7 @@ const GEN = [
   ["excluir", "Excluir artículos cuyo nombre diga", "text", "Ej.: servicio|flete"],
   ["monto_maximo", "Ignorar tickets mayores a ($)", "number", "Ventas anómalas"],
   ["empresa", "Empresa (para los reportes)", "text", ""], ["tienda", "Tienda", "text", ""],
+  ["palabras_distintas", "Palabras que NO son marca (para buscar duplicados)", "area", "Colores, tamaños, materiales, tipos… Si dos artículos difieren en una de estas, no se juntan."],
 ];
 function pintarCfg(){
   if(!D) return;
@@ -618,7 +745,9 @@ function pintarCfg(){
     const v = D.cfg[k] ?? "";
     let inp;
     if(tipo === "dia") inp = `<select data-k="${k}" ${ro}>${[1,2,3,4,5,6].map(d => `<option value="${d}" ${String(v) === String(d) ? "selected" : ""}>${DIAS[d]}</option>`).join("")}</select>`;
-    else if(tipo === "regla") inp = `<select data-k="${k}" ${ro}><option value="bajo_minimo" ${v === "bajo_minimo" ? "selected" : ""}>Cuando existencia + por recibir llega al mínimo (pedir hasta el máximo)</option><option value="hasta_maximo" ${v === "hasta_maximo" ? "selected" : ""}>Siempre completar hasta el máximo</option></select>`;
+    else if(tipo === "metodo") inp = `<select data-k="${k}" ${ro}><option value="retail" ${v !== "simple" ? "selected" : ""}>Recomendado: con variación de la venta y rotación</option><option value="simple" ${v === "simple" ? "selected" : ""}>Simple: días de seguridad fijos</option></select>`;
+    else if(tipo === "area") inp = `<textarea data-k="${k}" style="min-height:90px" ${ro}>${esc(v)}</textarea>`;
+    else if(tipo === "regla") inp = `<select data-k="${k}" ${ro}><option value="bajo_minimo" ${v === "bajo_minimo" ? "selected" : ""}>Cuando existencia + por recibir llega al punto de reorden (pedir hasta el máximo)</option><option value="hasta_maximo" ${v === "hasta_maximo" ? "selected" : ""}>Siempre completar hasta el máximo</option></select>`;
     else inp = `<input type="${tipo === "number" ? "number" : "text"}" step="any" data-k="${k}" value="${esc(v)}" ${ro}>`;
     return `<label>${t}${inp}${h ? `<small>${esc(h)}</small>` : ""}</label>`;
   }).join("");

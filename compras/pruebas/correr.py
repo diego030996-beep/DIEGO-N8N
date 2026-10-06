@@ -25,7 +25,14 @@ def correr(op, p=None, hoy='2026-10-06', base='', por='prueba'):
     if r.returncode:
         raise SystemExit(f'ERROR en {op}: {r.stderr}')
     i = r.stdout.rfind('{"ok"')
-    return json.loads(r.stdout[i:].split('\nINSERT')[0].split('\nUPDATE')[0]) if i >= 0 else None
+    out = json.loads(r.stdout[i:].split('\nINSERT')[0].split('\nUPDATE')[0]) if i >= 0 else None
+    if out and 'cols' in out:   # el reporte llega compacto: filas como listas
+        per = out.get('periodos') or {}
+        out['filas'] = [dict(zip(out['cols'], f)) for f in out['filas']]
+        for f in out['filas']:
+            pe = per.get('C' if f['clase'] == 'C' else 'AB') or {}
+            f.update(ini=pe.get('ini'), fin=pe.get('fin'), dias=pe.get('dias'))
+    return out
 
 
 if __name__ == '__main__':

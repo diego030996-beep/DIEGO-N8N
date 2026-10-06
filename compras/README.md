@@ -20,13 +20,24 @@ Cómo se clasifica (se explica también en la página y en el Excel):
 - **No entran**: las líneas o grupos de Microsip que digan `tinaco|cisterna` (fabricación propia), los dados de baja y los
   marcados a mano. La página lo avisa y sus OCs no salen como pendientes en el registro.
 
-Reglas de máximos y mínimos (se cambian en la página):
+Mínimo, punto de reorden y máximo (método recomendado; se cambia en la página):
 
-- **Mínimo** = venta diaria × (días de entrega del proveedor + días de seguridad)
-- **Máximo** = mínimo + venta diaria × días de inventario deseado
-- De fábrica: A = 3 días de seguridad y 15 de inventario; B = 5 y 30; C = 5 y 30 con mínimo de al menos 1 pieza.
-  Ningún mínimo queda en 0 y el máximo siempre es mayor que el mínimo.
-- **Sugerido** = máximo − existencia − por recibir, cuando existencia + por recibir llega al mínimo (o siempre, si eliges “completar hasta el máximo”). Se redondea al empaque.
+- **Mínimo (stock de seguridad)** = Z × variación de la venta diaria × √(días de entrega + días entre revisiones).
+  Z sale del nivel de servicio: A 95 % (1.65), B 90 % (1.28), C 85 % (1.04). La variación se mide semana por semana.
+- **Punto de reorden** = venta diaria × (días de entrega + días entre revisiones) + mínimo. Cuando existencia + por recibir
+  llega aquí, se pide. Revisión: A cada 7 días, B y C cada 15.
+- **Máximo** = punto de reorden + venta diaria × días de inventario (A 7, B 15, C 30). El sugerido es máximo − existencia − por recibir,
+  redondeado al empaque.
+- **Rotación** = % de semanas con venta: mucho ≥ 50 %, medio ≥ 20 %, poco abajo. Los que rotan poco no llevan colchón por variación:
+  mínimo 1, punto de reorden 1 y máximo 2 (o lo que dé su venta).
+- Ninguno queda en 0 y siempre máximo > punto de reorden ≥ mínimo. También está el **método simple**
+  (mínimo = venta diaria × (entrega + días de seguridad)) por si el auditor pide ese.
+
+Planeador: vista **Por proveedor** o **Todos los productos** (todo lo que hay que pedir, agrupado por proveedor; "Guardar todo"
+guarda un plan por proveedor).
+
+**Limpieza de catálogo**: lista lo que se vendió una sola vez en 12 meses y los posibles duplicados donde solo cambia la marca
+(medidas, números, colores y materiales no cuentan como marca). "Ya no comprar" / "Se va" excluye el artículo; se puede deshacer.
 
 ## Instalar
 

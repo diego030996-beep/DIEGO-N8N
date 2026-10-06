@@ -15,14 +15,14 @@ WITH /*CTX*/,
 pl AS (SELECT pl.id FROM compras_planes pl, cfg WHERE pl.base = cfg.base AND pl.fecha = cfg.hoy AND pl.origen = 'planeador'
          AND pl.proveedor_id = cfg.p->>'proveedor_id'),
 l AS (SELECT x.* FROM cfg, jsonb_to_recordset(cfg.p->'lineas') AS x(articulo_id bigint, clave text, articulo text, unidad text, clase text,
-        existencia numeric, pendiente numeric, minimo numeric, maximo numeric, sugerido numeric, comprado numeric, razon text, nota text))
-INSERT INTO compras_decisiones (plan_id, articulo_id, clave, articulo, unidad, clase, existencia, pendiente, minimo, maximo, sugerido, comprado, razon, nota, fuente, por)
-SELECT pl.id, l.articulo_id, l.clave, l.articulo, l.unidad, l.clase, l.existencia, l.pendiente, l.minimo, l.maximo, l.sugerido, l.comprado,
+        existencia numeric, pendiente numeric, minimo numeric, punto_reorden numeric, maximo numeric, sugerido numeric, comprado numeric, razon text, nota text))
+INSERT INTO compras_decisiones (plan_id, articulo_id, clave, articulo, unidad, clase, existencia, pendiente, minimo, punto_reorden, maximo, sugerido, comprado, razon, nota, fuente, por)
+SELECT pl.id, l.articulo_id, l.clave, l.articulo, l.unidad, l.clase, l.existencia, l.pendiente, l.minimo, l.punto_reorden, l.maximo, l.sugerido, l.comprado,
        CASE WHEN l.comprado = l.sugerido THEN 'igual' ELSE nullif(l.razon, '') END, nullif(l.nota, ''), 'planeador', cfg.por
 FROM pl, l, cfg
 ON CONFLICT (plan_id, articulo_id) DO UPDATE
   SET comprado = EXCLUDED.comprado, razon = EXCLUDED.razon, nota = EXCLUDED.nota, existencia = EXCLUDED.existencia, pendiente = EXCLUDED.pendiente,
-      minimo = EXCLUDED.minimo, maximo = EXCLUDED.maximo, sugerido = EXCLUDED.sugerido, clase = EXCLUDED.clase, por = EXCLUDED.por, modificado = now();
+      minimo = EXCLUDED.minimo, punto_reorden = EXCLUDED.punto_reorden, maximo = EXCLUDED.maximo, sugerido = EXCLUDED.sugerido, clase = EXCLUDED.clase, por = EXCLUDED.por, modificado = now();
 
 /*LIGAR*/
 WITH /*CTX*/

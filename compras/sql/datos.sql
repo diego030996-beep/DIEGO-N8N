@@ -12,9 +12,9 @@ solo_excl AS (  -- OCs cuyos renglones son todos de artículos excluidos (ej. ti
   HAVING bool_and(EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = ocd.articulo_id))),
 est AS (SELECT mm.proveedor_id, count(*) FILTER (WHERE mm.clase = 'A') AS n_a, count(*) FILTER (WHERE mm.clase = 'B') AS n_b,
                count(*) FILTER (WHERE mm.clase = 'C') AS n_c,
-               count(*) FILTER (WHERE mm.clase = 'C' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= mm.minimo) AS bajo_c,
-               count(*) FILTER (WHERE mm.clase = 'A' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= mm.minimo) AS bajo_a,
-               count(*) FILTER (WHERE mm.clase = 'B' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= mm.minimo) AS bajo_b,
+               count(*) FILTER (WHERE mm.clase = 'C' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= coalesce(mm.punto_reorden, mm.minimo)) AS bajo_c,
+               count(*) FILTER (WHERE mm.clase = 'A' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= coalesce(mm.punto_reorden, mm.minimo)) AS bajo_a,
+               count(*) FILTER (WHERE mm.clase = 'B' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= coalesce(mm.punto_reorden, mm.minimo)) AS bajo_b,
                max(mm.proveedor) AS nombre
         FROM mm LEFT JOIN exi USING (articulo_id) LEFT JOIN pend USING (articulo_id) GROUP BY 1),
 ult AS (SELECT pl.proveedor_id, max(pl.fecha) FILTER (WHERE pl.clase LIKE '%A%') AS ult_a, max(pl.fecha) FILTER (WHERE pl.clase LIKE '%B%') AS ult_b,

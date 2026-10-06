@@ -12,6 +12,12 @@ CREATE TABLE IF NOT EXISTS compras_maxmin (mes DATE NOT NULL, base TEXT NOT NULL
   periodo_ini DATE, periodo_fin DATE, dias_periodo INT, por TEXT, calculado TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (mes, base, articulo_id));
 CREATE INDEX IF NOT EXISTS compras_maxmin_prov ON compras_maxmin (base, mes, proveedor_id);
+ALTER TABLE compras_maxmin ADD COLUMN IF NOT EXISTS punto_reorden NUMERIC, ADD COLUMN IF NOT EXISTS rotacion TEXT,
+  ADD COLUMN IF NOT EXISTS semanas_venta INT, ADD COLUMN IF NOT EXISTS semanas INT, ADD COLUMN IF NOT EXISTS tickets INT,
+  ADD COLUMN IF NOT EXISTS desv_diaria NUMERIC, ADD COLUMN IF NOT EXISTS nivel_servicio NUMERIC, ADD COLUMN IF NOT EXISTS dias_revision NUMERIC,
+  ADD COLUMN IF NOT EXISTS metodo TEXT;
+CREATE TABLE IF NOT EXISTS compras_revision (base TEXT NOT NULL, articulo_id BIGINT NOT NULL, tipo TEXT NOT NULL, decision TEXT NOT NULL,
+  grupo TEXT, nota TEXT, por TEXT, fecha TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (base, articulo_id, tipo));
 CREATE TABLE IF NOT EXISTS compras_planes (id BIGSERIAL PRIMARY KEY, base TEXT NOT NULL, fecha DATE NOT NULL, proveedor_id TEXT, proveedor TEXT,
   clase TEXT NOT NULL, origen TEXT NOT NULL DEFAULT 'planeador', folio TEXT, docto_cm_id TEXT, folio_oc TEXT, fecha_oc DATE, ligado TIMESTAMPTZ,
   por TEXT, creado TIMESTAMPTZ NOT NULL DEFAULT now(), modificado TIMESTAMPTZ);
@@ -26,3 +32,4 @@ CREATE TABLE IF NOT EXISTS compras_decisiones (id BIGSERIAL PRIMARY KEY, plan_id
 CREATE TABLE IF NOT EXISTS ms_existencias_hist (fecha DATE NOT NULL, base TEXT NOT NULL, almacen_id BIGINT NOT NULL, almacen TEXT,
   articulo_id BIGINT NOT NULL, clave TEXT, articulo TEXT, existencia NUMERIC, valor NUMERIC, guardado TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (fecha, base, almacen_id, articulo_id));
+ALTER TABLE compras_decisiones ADD COLUMN IF NOT EXISTS punto_reorden NUMERIC;

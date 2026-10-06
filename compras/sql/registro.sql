@@ -11,7 +11,7 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM m)::text, 'razones'
        'id', pl.id, 'fecha', pl.fecha, 'proveedor_id', pl.proveedor_id, 'proveedor', coalesce(pl.proveedor, prv.nombre), 'clase', pl.clase,
        'origen', pl.origen, 'folio', pl.folio, 'folio_oc', pl.folio_oc, 'fecha_oc', pl.fecha_oc, 'por', pl.por, 'creado', pl.creado,
        'lineas', (SELECT coalesce(json_agg(json_build_object('id', d.id, 'articulo_id', d.articulo_id, 'clave', d.clave, 'articulo', d.articulo,
-                    'unidad', d.unidad, 'clase', d.clase, 'existencia', d.existencia, 'pendiente', d.pendiente, 'minimo', d.minimo,
+                    'unidad', d.unidad, 'clase', d.clase, 'existencia', d.existencia, 'pendiente', d.pendiente, 'minimo', d.minimo, 'punto_reorden', d.punto_reorden,
                     'maximo', d.maximo, 'sugerido', d.sugerido, 'comprado', d.comprado, 'oc_unidades', d.oc_unidades, 'razon', d.razon,
                     'nota', d.nota, 'fuente', d.fuente, 'por', d.por, 'modificado', coalesce(d.modificado, d.creado)) ORDER BY d.clase, d.articulo), '[]'::json)
                   FROM compras_decisiones d WHERE d.plan_id = pl.id))

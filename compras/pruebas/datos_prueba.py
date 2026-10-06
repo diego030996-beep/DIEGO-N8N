@@ -48,6 +48,11 @@ arts = [  # id, clave, nombre, unidad, precio, ventas por día aprox, proveedor
     (16, 'TINACO', 'TINACO 1100 LTS', 'Pieza', 2500, 0.1, None),
     (17, 'BROCHA4', 'BROCHA 4 PULGADAS', 'Pieza', 60, 0.3, '16'),      # C: solo vendió en enero-febrero
     (18, 'TALADRO', 'TALADRO TRUPER 1/2', 'Pieza', 900, 0.4, '16'),    # nuevo: solo vendió en octubre
+    (19, 'CINTAP', 'CINTA AISLAR NEGRA PRETUL', 'Pieza', 30, 0.5, '15'),  # duplicado de marca de...
+    (20, 'CINTAN', 'CINTA AISLAR NEGRA NITTO', 'Pieza', 45, 0.6, '15'),   # ...esta
+    (21, 'LLAVE38', 'LLAVE ESPAÑOLA 3/8 TRUPER', 'Pieza', 60, 0.3, '16'), # misma marca, otra medida: NO es duplicado
+    (22, 'LLAVE516', 'LLAVE ESPAÑOLA 5/16 TRUPER', 'Pieza', 60, 0.3, '16'),
+    (23, 'BISAGRA', 'BISAGRA LATON 3 PULGADAS', 'Pieza', 80, 0.0, '16'),  # una sola venta
 ]
 VENTANA = {17: (date(2026, 1, 5), date(2026, 2, 28)), 18: (date(2026, 10, 1), date(2026, 10, 31))}
 sql = [ddl]
@@ -70,9 +75,14 @@ while d <= fin:
                 continue
             if a[0] not in VENTANA and d < date(2026, 3, 1):
                 continue
+            if a[0] == 23:
+                if d != date(2026, 6, 15):
+                    continue
             u = sum(1 for _ in range(int(a[5] * 3)) if random.random() < 1 / 3)
             if a[5] < 1 and random.random() < a[5]:
                 u += 1
+            if a[0] == 23:
+                u = 2
             if u <= 0:
                 continue
             docto += 1

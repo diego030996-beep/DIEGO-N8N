@@ -71,7 +71,7 @@ pre AS (  -- pendiente: otras OCs del mismo artículo hechas en los días de ent
 x AS (
   SELECT ln.*, fo.e AS e_foto,
          coalesce(ah.e, 0) - coalesce(dp.u, 0) AS e_mov,
-         coalesce(pre.u, 0) AS pendiente, mm.clave, mm.articulo, mm.unidad, mm.clase, mm.minimo, mm.maximo, coalesce(ov.empaque, mm.empaque) AS empaque,
+         coalesce(pre.u, 0) AS pendiente, mm.clave, mm.articulo, mm.unidad, mm.clase, mm.minimo, mm.maximo, coalesce(mm.punto_reorden, mm.minimo) AS pr, coalesce(ov.empaque, mm.empaque) AS empaque,
          a.clave AS a_clave, a.nombre AS a_nombre, a.unidad AS a_unidad
   FROM ln CROSS JOIN cfg
   LEFT JOIN ahora ah ON ah.articulo_id = ln.articulo_id
@@ -85,11 +85,11 @@ y AS (SELECT x.*, round(coalesce(x.e_foto, x.e_mov), 2) AS existencia,
              CASE WHEN x.e_foto IS NOT NULL THEN 'foto del inventario'
                   WHEN (SELECT ok FROM usar_r) THEN 'movimientos de inventario' ELSE 'ventas y compras (aprox.)' END AS metodo
       FROM x),
-z AS (SELECT y.*, /*SUG(y.existencia, y.pendiente, y.minimo, y.maximo, y.empaque)*/ AS sugerido FROM y, cfg)
-INSERT INTO compras_decisiones (plan_id, articulo_id, clave, articulo, unidad, clase, existencia, pendiente, minimo, maximo, sugerido, comprado,
+z AS (SELECT y.*, /*SUG(y.existencia, y.pendiente, y.pr, y.maximo, y.empaque)*/ AS sugerido FROM y, cfg)
+INSERT INTO compras_decisiones (plan_id, articulo_id, clave, articulo, unidad, clase, existencia, pendiente, minimo, punto_reorden, maximo, sugerido, comprado,
   razon, oc_unidades, fuente, por)
 SELECT z.plan_id, z.articulo_id, coalesce(z.clave, z.a_clave), coalesce(z.articulo, z.a_nombre), coalesce(z.unidad, z.a_unidad),
-       coalesce(z.clase, 'sin venta'), z.existencia, z.pendiente, z.minimo, z.maximo, z.sugerido, z.u,
+       coalesce(z.clase, 'sin venta'), z.existencia, z.pendiente, z.minimo, z.pr, z.maximo, z.sugerido, z.u,
        CASE WHEN z.sugerido = z.u THEN 'igual' END, z.u, 'reconstruido: ' || z.metodo, cfg.por
 FROM z, cfg
 ON CONFLICT (plan_id, articulo_id) DO NOTHING;

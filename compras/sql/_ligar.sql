@@ -36,9 +36,9 @@ WITH /*CTX*/,
 lk AS (SELECT pl.id AS plan_id, pl.docto_cm_id, coalesce(pl.fecha_oc, pl.fecha) AS f FROM compras_planes pl, cfg
        WHERE pl.base = cfg.base AND pl.origen = 'planeador' AND pl.docto_cm_id IS NOT NULL AND coalesce(pl.fecha_oc, pl.fecha) >= cfg.hoy - 120),
 ids AS (SELECT docto_cm_id AS id FROM lk), /*OCD*/, /*EXCL*/
-INSERT INTO compras_decisiones (plan_id, articulo_id, clave, articulo, unidad, clase, minimo, maximo, comprado, oc_unidades, fuente, por)
+INSERT INTO compras_decisiones (plan_id, articulo_id, clave, articulo, unidad, clase, minimo, punto_reorden, maximo, comprado, oc_unidades, fuente, por)
 SELECT lk.plan_id, ocd.articulo_id, coalesce(mm.clave, a.clave), coalesce(mm.articulo, a.nombre), coalesce(mm.unidad, a.unidad), mm.clase,
-       mm.minimo, mm.maximo, ocd.u, ocd.u, 'en la OC, no estaba en el plan', 'automático'
+       mm.minimo, coalesce(mm.punto_reorden, mm.minimo), mm.maximo, ocd.u, ocd.u, 'en la OC, no estaba en el plan', 'automático'
 FROM lk JOIN ocd ON ocd.id = lk.docto_cm_id CROSS JOIN cfg
 LEFT JOIN compras_maxmin mm ON mm.base = cfg.base AND mm.mes = date_trunc('month', lk.f)::date AND mm.articulo_id = ocd.articulo_id
 LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = ocd.articulo_id

@@ -17,7 +17,7 @@ if (!rol) return fail('Esta liga no tiene permiso. Pide la liga del planeador al
 const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op]) return fail('Operación desconocida.');
-const ESCRIBE = ['guardar', 'razon', 'folio', 'reconstruir', 'calcular', 'articulo', 'config'];
+const ESCRIBE = ['guardar', 'razon', 'folio', 'reconstruir', 'calcular', 'articulo', 'config', 'revision'];
 if (rol === 'auditor' && ESCRIBE.includes(op)) return fail('Esta liga es solo de consulta.');
 const quien = String(b.quien || '').replace(/[^\p{L}\p{N} .\-]/gu, '').trim().slice(0, 40);
 const por = quien ? quien + ' (' + rol + ')' : rol;
@@ -37,7 +37,16 @@ switch (op) {
   case 'datos': break;
   case 'planeador':
     if (!provOk(b.proveedor_id)) return fail('Proveedor inválido.');
-    p = { proveedor_id: String(b.proveedor_id || '') };
+    p = b.todos === 'si' ? { todos: 'si' } : { proveedor_id: String(b.proveedor_id || '') };
+    break;
+  case 'limpieza':
+    p = { ver_revisados: b.ver_revisados === 'si' ? 'si' : '' };
+    break;
+  case 'revision':
+    if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
+    if (!['una_venta', 'duplicado'].includes(b.tipo)) return fail('Tipo inválido.');
+    if (!['queda', 'se_va', 'deshacer'].includes(b.decision)) return fail('Decisión inválida.');
+    p = { articulo_id: Number(b.articulo_id), tipo: b.tipo, decision: b.decision, grupo: txt(b.grupo, 200), nota: txt(b.nota, 200) };
     break;
   case 'guardar': {
     if (!provOk(b.proveedor_id) || !b.proveedor_id) return fail('Elige el proveedor.');
@@ -104,6 +113,9 @@ switch (op) {
       seg_a: v => numOk(v, 0, 120), inv_a: v => numOk(v, 1, 365), seg_b: v => numOk(v, 0, 120), inv_b: v => numOk(v, 1, 365),
       meses_c: v => numOk(v, 1, 36) && Number.isInteger(Number(v)), seg_c: v => numOk(v, 0, 120), inv_c: v => numOk(v, 1, 365),
       min_c: v => numOk(v, 1, 1000),
+      metodo: v => ['retail', 'simple'].includes(v), ns_a: v => numOk(v, 50, 99.9), ns_b: v => numOk(v, 50, 99.9), ns_c: v => numOk(v, 50, 99.9),
+      rev_a: v => numOk(v, 1, 60), rot_alta: v => numOk(v, 1, 100), rot_media: v => numOk(v, 0, 100),
+      palabras_distintas: v => String(v).length <= 3000,
       lineas_excluidas: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       entrega_def: v => numOk(v, 0, 120), dia_a: v => ['1', '2', '3', '4', '5', '6', '7'].includes(String(v)), frec_b: v => numOk(v, 1, 90),
       regla: v => ['bajo_minimo', 'hasta_maximo'].includes(v), gracia_oc: v => numOk(v, 0, 60), dias_ligar: v => numOk(v, 0, 30),
@@ -113,7 +125,7 @@ switch (op) {
       razones: v => String(v).length <= 3000 && /^no_documentado=/m.test(v) && /^otra=/m.test(v),
       base: v => String(v).length <= 80,
     };
-    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
+    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
     const general = {};
     for (const [k, v0] of Object.entries(b.general || {})) {
       if (!REGLAS[k]) continue;

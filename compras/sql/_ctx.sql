@@ -16,5 +16,11 @@ cfg AS (SELECT b.*,
              greatest(least(coalesce(nullif(c->>'meses_c', '')::int, 12), 36), 1) AS meses_c,
              coalesce(nullif(c->>'seg_c', '')::numeric, 5) AS seg_c, coalesce(nullif(c->>'inv_c', '')::numeric, 30) AS inv_c,
              greatest(coalesce(nullif(c->>'min_c', '')::numeric, 1), 1) AS min_c,
+             coalesce(nullif(c->>'metodo', ''), 'retail') AS metodo,
+             coalesce(nullif(c->>'ns_a', '')::numeric, 95) AS ns_a, coalesce(nullif(c->>'ns_b', '')::numeric, 90) AS ns_b,
+             coalesce(nullif(c->>'ns_c', '')::numeric, 85) AS ns_c,
+             coalesce(nullif(c->>'rev_a', '')::numeric, 7) AS rev_a,
+             coalesce(nullif(c->>'rot_alta', '')::numeric, 50) / 100 AS rot_alta, coalesce(nullif(c->>'rot_media', '')::numeric, 20) / 100 AS rot_media,
+             coalesce(c->>'palabras_distintas', '') AS palabras_distintas,
              coalesce(nullif(c->>'monto_maximo', '')::numeric, 500000) AS maxm
         FROM b)
