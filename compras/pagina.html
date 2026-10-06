@@ -434,8 +434,10 @@ function casiNoSeVende(f){
   const lim = Number(D.cfg.dias_lento || 90), dsv = f.ultima_venta ? dias(f.ultima_venta, D.hoy) : null;
   const alcanza = f.vd > 0 ? Math.round(Math.max(f.existencia, 0) / f.vd) : null;
   const motivos = [];
-  if(f.rotacion === "baja") motivos.push(`vendió solo en ${n0(f.semanas_venta)} de ${n0(f.semanas)} semanas`);
-  else if(f.vd > 0 && f.vd * 30 < 1) motivos.push(`vende menos de 1 al mes (${n0(f.vd * 30)} al mes)`);
+  const meses = f.dias_periodo ? Math.round(f.dias_periodo / 30.4) : null;
+  const vendio = f.unidades !== null && f.unidades !== undefined && meses ? `vendió ${n0(f.unidades)} ${esc(f.unidad || "")} en ${meses} meses` : null;
+  if(f.rotacion === "baja") motivos.push((vendio ? vendio + ", " : "") + `en solo ${n0(f.semanas_venta)} de ${n0(f.semanas)} semanas`);
+  else if(f.vd > 0 && f.vd * 30 < 1) motivos.push(vendio || `vende menos de 1 al mes`);
   if(f.tickets !== null && f.tickets <= 1) motivos.push("se vendió una sola vez");
   if(dsv !== null && dsv > lim) motivos.push(`última venta hace ${dsv} días`);
   if(alcanza !== null && alcanza > lim) motivos.push(`lo que tienes alcanza para ${n0(alcanza)} días`);
