@@ -1,8 +1,8 @@
 oc AS (   -- órdenes de compra (tipo O) de Microsip, sin canceladas
   SELECT r.datos->>'DOCTO_CM_ID' AS id, r.datos->>'PROVEEDOR_ID' AS prov, coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) AS fecha,
          r.datos->>'FOLIO' AS folio, upper(coalesce(r.datos->>'ESTATUS', '')) AS estatus,
-         CASE WHEN (r.datos->>'IMPORTE_NETO') ~ '^-?[0-9.]+$' THEN (r.datos->>'IMPORTE_NETO')::numeric ELSE 0 END AS importe,
-         CASE WHEN (r.datos->>'TOTAL_IMPUESTOS') ~ '^-?[0-9.]+$' THEN (r.datos->>'TOTAL_IMPUESTOS')::numeric ELSE 0 END AS impuestos
+         CASE WHEN (r.datos->>'IMPORTE_NETO') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (r.datos->>'IMPORTE_NETO')::numeric ELSE 0 END AS importe,
+         CASE WHEN (r.datos->>'TOTAL_IMPUESTOS') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (r.datos->>'TOTAL_IMPUESTOS')::numeric ELSE 0 END AS impuestos
   FROM ms_raw r, cfg
   WHERE r.base = cfg.base AND r.tabla = 'DOCTOS_CM' AND upper(coalesce(r.datos->>'TIPO_DOCTO', '')) = 'O'
     AND upper(coalesce(r.datos->>'ESTATUS', '')) <> 'C' AND upper(coalesce(r.datos->>'CANCELADO', 'N')) <> 'S'),

@@ -56,7 +56,7 @@ up AS (   -- proveedor de la última compra del artículo
   SELECT DISTINCT ON (z.articulo_id) z.articulo_id, z.prov FROM (
     SELECT (d.datos->>'ARTICULO_ID')::bigint AS articulo_id, cmh.prov, cmh.fecha
     FROM cmh JOIN ms_raw d ON d.base = (SELECT base FROM cfg) AND d.tabla = 'DOCTOS_CM_DET' AND d.datos->>'DOCTO_CM_ID' = cmh.id
-    WHERE (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}$') z
+    WHERE (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}\Z') z
   ORDER BY z.articulo_id, z.fecha DESC),
 prv AS (SELECT p.pk AS proveedor_id, p.datos->>'NOMBRE' AS nombre FROM ms_raw p, cfg WHERE p.base = cfg.base AND p.tabla = 'PROVEEDORES'),
 c1 AS (

@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from correr import correr, PSQL  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def ok(c, msg):
     print(('OK   ' if c else 'FALLA') + ' ' + msg)
@@ -63,3 +64,9 @@ ok(f['entrega'] == 2 and f['seguridad'] == 4 and f['empaque'] == 10, 'el recálc
 s = {x['clave']: x for x in correr('planeador', {'proveedor_id': '14'})['filas']}['CEM50']
 ok(s['sugerido'] % 10 == 0, 'sugerido redondeado al empaque')
 print('Todo bien.')
+
+# n8n (algunas versiones) mete la consulta con String.replace(): "$'", "$&", "$`" y "$$" cambian el texto. No debe haber ninguno.
+import re as _re
+from sqlops import todas as _todas
+for _op, _q in _todas().items():
+    ok(not _re.search(r"\$(?![1-5](?![0-9]))", _q), f'sin "$" peligrosos en la consulta {_op}')
