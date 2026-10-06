@@ -81,6 +81,13 @@ ok(correr('limpieza', {})['una_venta'] == [], 'ya no aparece por revisar')
 ok(correr('calcular', {'mes': '2026-10-01'})['productos'] == 20, 'sale del cálculo')
 correr('revision', {'articulo_id': 23, 'tipo': 'una_venta', 'decision': 'deshacer', 'grupo': '', 'nota': ''})
 ok(correr('calcular', {'mes': '2026-10-01'})['productos'] == 21, 'deshacer lo regresa')
+r = correr('registro', {'mes': '2026-08-01'})
+ok(all(l['razon'] in ('igual', 'gerencia', 'no_documentado') for p in r['planes'] for l in p['lineas']), 'OCs anteriores: «Autorizó gerencia» por omisión')
+ok(correr('revision', {'articulo_id': 3, 'tipo': 'lento', 'decision': 'se_va', 'grupo': '', 'nota': ''})['ok'], 'pausar un producto desde el planeador')
+ok(not any(f['clave'] == 'MOR25' for f in correr('planeador', {'proveedor_id': '14'})['filas']), 'el pausado sale del planeador de inmediato')
+ok([x['clave'] for x in correr('limpieza', {})['pausados']] == ['MOR25'], 'aparece en Pausados')
+correr('reactivar', {'articulo_id': 3})
+ok(any(f['clave'] == 'MOR25' for f in correr('planeador', {'proveedor_id': '14'})['filas']) and correr('limpieza', {})['pausados'] == [], 'Regresar lo trae de vuelta')
 print('Todo bien.')
 
 # n8n (algunas versiones) mete la consulta con String.replace(): "$'", "$&", "$`" y "$$" cambian el texto. No debe haber ninguno.

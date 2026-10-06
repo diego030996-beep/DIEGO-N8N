@@ -4,7 +4,8 @@ SET LOCAL statement_timeout = '30s';
 WITH /*CTX*/, /*OC*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
 mm0 AS (SELECT x.articulo_id, x.clave, x.articulo, x.unidad, x.clase, x.venta_diaria, x.minimo, x.maximo, x.alerta, x.empaque,
-               coalesce(x.punto_reorden, x.minimo) AS punto_reorden, x.rotacion, x.tickets, x.proveedor_id, x.proveedor
+               coalesce(x.punto_reorden, x.minimo) AS punto_reorden, x.rotacion, x.tickets, x.proveedor_id, x.proveedor,
+               x.ultima_venta, x.semanas_venta, x.semanas
         FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes
          AND (cfg.p->>'todos' = 'si' OR coalesce(x.proveedor_id, '') = coalesce(cfg.p->>'proveedor_id', ''))),
 /*EXCL*/,
@@ -41,7 +42,7 @@ mm AS (SELECT * FROM mm0
        SELECT nv3.articulo_id, nv3.clave, nv3.articulo, nv3.unidad, 'C', round(nv3.vd, 4), nv3.mn,
               greatest(coalesce(nv3.max_f, nv3.mn + ceil(nv3.vd * cfg.inv_c)), nv3.mn + 1),
               'nuevo: se vendió este mes y aún no tiene clase (entra como C hasta el próximo cálculo)', nv3.empaque,
-              nv3.mn, 'nuevo', NULL::int, nv3.prov, nv3.prov_nom
+              nv3.mn, 'nuevo', NULL::int, nv3.prov, nv3.prov_nom, NULL::date, NULL::int, NULL::int
        FROM nv3, cfg),
 ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EXI*/,
 pl AS (SELECT pl.* FROM compras_planes pl, cfg WHERE pl.base = cfg.base AND pl.fecha = cfg.hoy AND pl.origen = 'planeador'
@@ -52,7 +53,8 @@ uc AS (  -- última OC del artículo con este proveedor
   WHERE cfg.p->>'todos' = 'si' OR o.prov = cfg.p->>'proveedor_id' ORDER BY d.articulo_id, o.fecha DESC),
 f AS (
   SELECT mm.articulo_id, mm.clave, mm.articulo, mm.unidad, mm.clase, mm.venta_diaria, mm.minimo, mm.maximo, mm.alerta,
-         mm.punto_reorden, mm.rotacion, mm.tickets, mm.proveedor_id, mm.proveedor,
+         mm.punto_reorden, mm.rotacion, mm.tickets, mm.proveedor_id, mm.proveedor, mm.ultima_venta, mm.semanas_venta, mm.semanas,
+         (SELECT r.decision FROM compras_revision r WHERE r.base = cfg.base AND r.articulo_id = mm.articulo_id AND r.tipo = 'lento') AS lento,
          coalesce(ov.empaque, mm.empaque) AS empaque, coalesce(exi.e, 0) AS existencia, coalesce(pend.u, 0) AS pendiente, pend.folios,
          uc.fecha AS ult_fecha, uc.u AS ult_unidades
   FROM mm CROSS JOIN cfg
@@ -66,7 +68,8 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveed
   'filas', (SELECT coalesce(json_agg(json_build_object(
       'articulo_id', g.articulo_id, 'clave', g.clave, 'articulo', g.articulo, 'unidad', g.unidad, 'clase', g.clase,
       'vd', round(g.venta_diaria, 2), 'minimo', g.minimo, 'maximo', g.maximo, 'punto_reorden', g.punto_reorden, 'rotacion', g.rotacion,
-      'tickets', g.tickets, 'proveedor_id', g.proveedor_id, 'proveedor', g.proveedor, 'empaque', g.empaque, 'alerta', g.alerta,
+      'tickets', g.tickets, 'proveedor_id', g.proveedor_id, 'proveedor', g.proveedor, 'ultima_venta', g.ultima_venta,
+      'semanas_venta', g.semanas_venta, 'semanas', g.semanas, 'lento', g.lento, 'empaque', g.empaque, 'alerta', g.alerta,
       'existencia', g.existencia, 'pendiente', g.pendiente, 'folios', g.folios, 'sugerido', g.sugerido,
       'ult_fecha', g.ult_fecha, 'ult_unidades', g.ult_unidades,
       'comprado', dec.comprado, 'razon', dec.razon, 'nota', dec.nota)

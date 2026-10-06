@@ -17,7 +17,7 @@ if (!rol) return fail('Esta liga no tiene permiso. Pide la liga del planeador al
 const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op]) return fail('Operación desconocida.');
-const ESCRIBE = ['guardar', 'razon', 'folio', 'reconstruir', 'calcular', 'articulo', 'config', 'revision'];
+const ESCRIBE = ['guardar', 'razon', 'folio', 'reconstruir', 'calcular', 'articulo', 'config', 'revision', 'gerencia', 'reactivar'];
 if (rol === 'auditor' && ESCRIBE.includes(op)) return fail('Esta liga es solo de consulta.');
 const quien = String(b.quien || '').replace(/[^\p{L}\p{N} .\-]/gu, '').trim().slice(0, 40);
 const por = quien ? quien + ' (' + rol + ')' : rol;
@@ -25,6 +25,7 @@ const por = quien ? quien + ' (' + rol + ')' : rol;
 // razones válidas: las guardadas en la base o las de fábrica
 const razTxt = String($('Acceso').first().json.razones || DEF.razones || '');
 const RAZ = new Set(razTxt.split(/\n+/).map(l => l.split('=')[0].trim()).filter(Boolean));
+RAZ.add('gerencia'); RAZ.add('no_documentado');   // siempre válidas
 const numOk = (v, min, max) => v === '' || v === null || v === undefined || (isFinite(Number(v)) && Number(v) >= min && Number(v) <= max);
 const txt = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 const mesOk = v => /^\d{4}-\d{2}(-01)?$/.test(String(v || '')) && String(v).slice(0, 7) <= hoyMX.slice(0, 7) && String(v) >= '2020-01';
@@ -44,7 +45,7 @@ switch (op) {
     break;
   case 'revision':
     if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
-    if (!['una_venta', 'duplicado'].includes(b.tipo)) return fail('Tipo inválido.');
+    if (!['una_venta', 'duplicado', 'lento'].includes(b.tipo)) return fail('Tipo inválido.');
     if (!['queda', 'se_va', 'deshacer'].includes(b.decision)) return fail('Decisión inválida.');
     p = { articulo_id: Number(b.articulo_id), tipo: b.tipo, decision: b.decision, grupo: txt(b.grupo, 200), nota: txt(b.nota, 200) };
     break;
@@ -82,7 +83,11 @@ switch (op) {
     if (!idOk(b.plan_id)) return fail('Plan inválido.');
     p = { plan_id: Number(b.plan_id), folio: txt(b.folio, 30) };
     break;
-  case 'registro': case 'reporte': case 'calcular': case 'reconstruir':
+  case 'reactivar':
+    if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
+    p = { articulo_id: Number(b.articulo_id) };
+    break;
+  case 'registro': case 'reporte': case 'calcular': case 'reconstruir': case 'gerencia':
     if (op === 'reporte' && !b.mes) { p = {}; break; }
     if (!mesOk(b.mes)) return fail('Revisa el mes (no puede ser futuro).');
     p = { mes: String(b.mes).slice(0, 7) + '-01' };
@@ -115,7 +120,7 @@ switch (op) {
       min_c: v => numOk(v, 1, 1000),
       metodo: v => ['retail', 'simple'].includes(v), ns_a: v => numOk(v, 50, 99.9), ns_b: v => numOk(v, 50, 99.9), ns_c: v => numOk(v, 50, 99.9),
       rev_a: v => numOk(v, 1, 60), rot_alta: v => numOk(v, 1, 100), rot_media: v => numOk(v, 0, 100),
-      palabras_distintas: v => String(v).length <= 3000,
+      palabras_distintas: v => String(v).length <= 3000, dias_lento: v => numOk(v, 7, 1000),
       lineas_excluidas: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       entrega_def: v => numOk(v, 0, 120), dia_a: v => ['1', '2', '3', '4', '5', '6', '7'].includes(String(v)), frec_b: v => numOk(v, 1, 90),
       regla: v => ['bajo_minimo', 'hasta_maximo'].includes(v), gracia_oc: v => numOk(v, 0, 60), dias_ligar: v => numOk(v, 0, 30),
@@ -125,7 +130,7 @@ switch (op) {
       razones: v => String(v).length <= 3000 && /^no_documentado=/m.test(v) && /^otra=/m.test(v),
       base: v => String(v).length <= 80,
     };
-    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
+    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'dias_lento', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
     const general = {};
     for (const [k, v0] of Object.entries(b.general || {})) {
       if (!REGLAS[k]) continue;

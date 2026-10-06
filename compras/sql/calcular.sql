@@ -25,27 +25,28 @@ dias AS (SELECT greatest(per.ini, coalesce((SELECT min(fecha) FROM vt), per.ini)
 nd AS (SELECT greatest(per.fin - dias.desde, 1) AS n, dias.desde, greatest(per.fin - dias.desde_c, 1) AS n_c, dias.desde_c FROM per, dias),
 wk AS (    -- venta por artículo y por semana (para la variabilidad y la rotación)
   SELECT d.articulo_id, (vt.fecha - per.ini_c) / 7 AS semana, vt.fecha >= per.ini AS en_ab,
-         sum(vt.sg * abs(d.unidades)) AS u, sum(vt.sg * abs(d.importe)) AS imp, count(DISTINCT vt.docto_id) FILTER (WHERE vt.sg > 0) AS tk
+         sum(vt.sg * abs(d.unidades)) AS u, sum(vt.sg * abs(d.importe)) AS imp, count(DISTINCT vt.docto_id) FILTER (WHERE vt.sg > 0) AS tk,
+         max(vt.fecha) FILTER (WHERE vt.sg > 0) AS uf
   FROM vt CROSS JOIN per JOIN ms_ventas_det d ON d.base = (SELECT base FROM cfg) AND d.origen = vt.origen AND d.docto_id = vt.docto_id
   WHERE d.articulo_id IS NOT NULL GROUP BY 1, 2, 3),
 vd0 AS (   -- u/imp = periodo A/B (6 meses); *_c = periodo largo (12 meses) para los C y para contar ventas
   SELECT articulo_id, sum(u) FILTER (WHERE en_ab) AS u, sum(imp) FILTER (WHERE en_ab) AS imp,
          sum(u * u) FILTER (WHERE en_ab) AS s2, count(*) FILTER (WHERE en_ab AND u > 0) AS sem,
-         sum(u) AS u_c, sum(imp) AS imp_c, sum(u * u) AS s2_c, count(*) FILTER (WHERE u > 0) AS sem_c, sum(tk) AS tickets
+         sum(u) AS u_c, sum(imp) AS imp_c, sum(u * u) AS s2_c, count(*) FILTER (WHERE u > 0) AS sem_c, sum(tk) AS tickets, max(uf) AS ultima
   FROM wk GROUP BY 1),
 /*EXCL*/,
 vd AS (SELECT vd0.* FROM vd0 WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = vd0.articulo_id)),
 ov AS (SELECT o.* FROM compras_articulos o, cfg WHERE o.base = cfg.base),
 art AS (SELECT a.articulo_id, a.clave, a.nombre, a.unidad FROM ms_articulos a, cfg WHERE a.base = cfg.base),
 cand AS (   -- A/B: con venta neta en los 6 meses
-  SELECT vd.articulo_id, vd.u, vd.imp, vd.s2, vd.sem, vd.tickets, art.clave, art.nombre, art.unidad,
+  SELECT vd.articulo_id, vd.u, vd.imp, vd.s2, vd.sem, vd.tickets, vd.ultima, art.clave, art.nombre, art.unidad,
          ov.clase AS clase_f, ov.proveedor_id AS prov_f, ov.empaque, ov.minimo AS min_f, ov.maximo AS max_f
   FROM vd LEFT JOIN art USING (articulo_id) LEFT JOIN ov USING (articulo_id)
   WHERE vd.u > 0 AND vd.imp > 0),
 abc0 AS (SELECT cand.*, sum(imp) OVER (ORDER BY imp DESC, articulo_id ROWS UNBOUNDED PRECEDING) AS acum, sum(imp) OVER () AS tot,
                 NULL::text AS clase_c FROM cand),
 cc AS (     -- C: se vendieron en los 12 meses pero no en los 6 meses del A/B
-  SELECT vd.articulo_id, vd.u_c AS u, vd.imp_c AS imp, vd.s2_c AS s2, vd.sem_c AS sem, vd.tickets, art.clave, art.nombre, art.unidad,
+  SELECT vd.articulo_id, vd.u_c AS u, vd.imp_c AS imp, vd.s2_c AS s2, vd.sem_c AS sem, vd.tickets, vd.ultima, art.clave, art.nombre, art.unidad,
          ov.clase AS clase_f, ov.proveedor_id AS prov_f, ov.empaque, ov.minimo AS min_f, ov.maximo AS max_f,
          NULL::numeric AS acum, NULL::numeric AS tot, 'C'::text AS clase_c
   FROM vd LEFT JOIN art USING (articulo_id) LEFT JOIN ov USING (articulo_id)
@@ -114,12 +115,12 @@ c8 AS (SELECT c7.*, greatest(c7.mx0, c7.pr + 1) AS mx,
        FROM c7)
 INSERT INTO compras_maxmin (mes, base, articulo_id, clave, articulo, unidad, proveedor_id, proveedor, clase, venta, unidades, pct, pct_acum,
   venta_diaria, dias_entrega, dias_seguridad, dias_inventario, empaque, minimo, maximo, origen, alerta, periodo_ini, periodo_fin, dias_periodo, por, calculado,
-  punto_reorden, rotacion, semanas_venta, semanas, tickets, desv_diaria, nivel_servicio, dias_revision, metodo)
+  punto_reorden, rotacion, semanas_venta, semanas, tickets, desv_diaria, nivel_servicio, dias_revision, metodo, ultima_venta)
 SELECT m.mes, cfg.base, c8.articulo_id, c8.clave, c8.nombre, c8.unidad, c8.prov_id, c8.prov_nom, c8.clase, round(c8.imp, 2), c8.u,
        round(c8.imp / nullif(c8.tot, 0), 6), round(c8.acum / nullif(c8.tot, 0), 6), round(c8.vdia, 4), c8.ent, c8.seg, c8.inv, c8.empaque,
        c8.ss, c8.mx, CASE WHEN c8.min_f IS NOT NULL OR c8.max_f IS NOT NULL THEN 'manual' ELSE 'calculado' END, nullif(c8.alerta, ''),
        CASE WHEN c8.clase_c = 'C' THEN nd.desde_c ELSE nd.desde END, (m.mes - 1), c8.ndias, cfg.por, now(),
-       c8.pr, c8.rotacion, c8.sem, c8.nsem, c8.tickets, round(c8.sd::numeric, 4), c8.ns, c8.rev, c8.met
+       c8.pr, c8.rotacion, c8.sem, c8.nsem, c8.tickets, round(c8.sd::numeric, 4), c8.ns, c8.rev, c8.met, c8.ultima
 FROM c8, cfg, m, nd;
 -- @fin_calculo
 WITH /*CTX*/,

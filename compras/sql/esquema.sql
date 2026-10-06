@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS compras_maxmin_prov ON compras_maxmin (base, mes, pro
 ALTER TABLE compras_maxmin ADD COLUMN IF NOT EXISTS punto_reorden NUMERIC, ADD COLUMN IF NOT EXISTS rotacion TEXT,
   ADD COLUMN IF NOT EXISTS semanas_venta INT, ADD COLUMN IF NOT EXISTS semanas INT, ADD COLUMN IF NOT EXISTS tickets INT,
   ADD COLUMN IF NOT EXISTS desv_diaria NUMERIC, ADD COLUMN IF NOT EXISTS nivel_servicio NUMERIC, ADD COLUMN IF NOT EXISTS dias_revision NUMERIC,
-  ADD COLUMN IF NOT EXISTS metodo TEXT;
+  ADD COLUMN IF NOT EXISTS metodo TEXT, ADD COLUMN IF NOT EXISTS ultima_venta DATE;
 CREATE TABLE IF NOT EXISTS compras_revision (base TEXT NOT NULL, articulo_id BIGINT NOT NULL, tipo TEXT NOT NULL, decision TEXT NOT NULL,
   grupo TEXT, nota TEXT, por TEXT, fecha TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (base, articulo_id, tipo));
 CREATE TABLE IF NOT EXISTS compras_planes (id BIGSERIAL PRIMARY KEY, base TEXT NOT NULL, fecha DATE NOT NULL, proveedor_id TEXT, proveedor TEXT,

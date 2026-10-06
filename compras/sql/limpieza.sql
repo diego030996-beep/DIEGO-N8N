@@ -14,7 +14,8 @@ una AS (
          r.decision, r.por, r.fecha
   FROM mm LEFT JOIN ex USING (articulo_id)
   LEFT JOIN rev r ON r.articulo_id = mm.articulo_id AND r.tipo = 'una_venta'
-  WHERE mm.tickets <= 1 AND ((SELECT todos FROM ver) OR r.decision IS NULL)),
+  WHERE mm.tickets <= 1 AND NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = mm.articulo_id)
+    AND ((SELECT todos FROM ver) OR r.decision IS NULL)),
 art AS (  -- candidatos a duplicado: con venta en los últimos meses o con existencia, sin excluidos
   SELECT a.articulo_id, a.clave, a.nombre, a.unidad, a.linea FROM ms_articulos a, cfg
   WHERE a.base = cfg.base AND NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = a.articulo_id)
@@ -44,8 +45,18 @@ grupos AS (
          json_agg(json_build_object('articulo_id', articulo_id, 'clave', clave, 'articulo', articulo, 'unidad', unidad, 'clase', clase,
                   'unidades', unidades, 'venta', venta, 'tickets', tickets, 'proveedor', proveedor, 'existencia', existencia, 'decision', decision)
                   ORDER BY venta DESC NULLS LAST) AS articulos
-  FROM miembros GROUP BY k)
+  FROM miembros GROUP BY k),
+pausados AS (
+  SELECT o.articulo_id, a.clave, a.nombre AS articulo, a.unidad, coalesce(ex.e, 0) AS existencia, o.nota, o.por, o.actualizado AS fecha,
+         (SELECT string_agg(r.tipo, ',') FROM rev r WHERE r.articulo_id = o.articulo_id AND r.decision = 'se_va') AS tipos,
+         (SELECT x.ultima_venta FROM compras_maxmin x WHERE x.base = cfg.base AND x.articulo_id = o.articulo_id AND x.ultima_venta IS NOT NULL
+          ORDER BY x.mes DESC LIMIT 1) AS ultima_venta
+  FROM compras_articulos o CROSS JOIN cfg
+  LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = o.articulo_id
+  LEFT JOIN ex ON ex.articulo_id = o.articulo_id
+  WHERE o.base = cfg.base AND o.excluir)
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'meses_c', cfg.meses_c,
+  'pausados', (SELECT coalesce(json_agg(pausados ORDER BY pausados.fecha DESC), '[]'::json) FROM pausados),
   'una_venta', (SELECT coalesce(json_agg(una ORDER BY una.existencia DESC, una.venta DESC), '[]'::json) FROM una),
   'duplicados', (SELECT coalesce(json_agg(json_build_object('llave', k, 'marcas', marcas, 'articulos', articulos) ORDER BY venta DESC), '[]'::json)
                  FROM (SELECT * FROM grupos WHERE pendiente OR (SELECT todos FROM ver) ORDER BY venta DESC LIMIT 150) g),

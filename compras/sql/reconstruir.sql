@@ -90,7 +90,7 @@ INSERT INTO compras_decisiones (plan_id, articulo_id, clave, articulo, unidad, c
   razon, oc_unidades, fuente, por)
 SELECT z.plan_id, z.articulo_id, coalesce(z.clave, z.a_clave), coalesce(z.articulo, z.a_nombre), coalesce(z.unidad, z.a_unidad),
        coalesce(z.clase, 'sin venta'), z.existencia, z.pendiente, z.minimo, z.pr, z.maximo, z.sugerido, z.u,
-       CASE WHEN z.sugerido = z.u THEN 'igual' END, z.u, 'reconstruido: ' || z.metodo, cfg.por
+       CASE WHEN z.sugerido = z.u THEN 'igual' ELSE 'gerencia' END, z.u, 'reconstruido: ' || z.metodo, cfg.por
 FROM z, cfg
 ON CONFLICT (plan_id, articulo_id) DO NOTHING;
 

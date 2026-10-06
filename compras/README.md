@@ -36,6 +36,17 @@ Mínimo, punto de reorden y máximo (método recomendado; se cambia en la págin
 Planeador: vista **Por proveedor** o **Todos los productos** (todo lo que hay que pedir, agrupado por proveedor; "Guardar todo"
 guarda un plan por proveedor).
 
+**Compras de más**: si lo que compras pasa del sugerido o te deja arriba del máximo, el planeador lo marca en rojo y pide
+confirmación al guardar; en el registro se marca cada renglón de OC con compra de más (y si la OC trae más que lo planeado).
+Sale también en el Excel.
+
+**OC anteriores al planeador** (reconstruidas de Microsip): la razón por omisión es «Autorizó gerencia»; hay un botón para
+ponérsela a las que se quedaron sin razón. Se puede cambiar renglón por renglón.
+
+**Casi no se vende**: en el planeador, a los productos que rotan poco, se vendieron una vez, llevan más de 90 días sin venta
+o cuya existencia alcanza para más de 90 días, aparece el aviso con **Se queda** / **Se va (pausar)**. Lo pausado sale del
+planeador y del cálculo hasta que lo regreses en **Limpieza de catálogo → Pausados**.
+
 **Limpieza de catálogo**: lista lo que se vendió una sola vez en 12 meses y los posibles duplicados donde solo cambia la marca
 (medidas, números, colores y materiales no cuentan como marca). "Ya no comprar" / "Se va" excluye el artículo; se puede deshacer.
 

@@ -84,6 +84,10 @@ textarea{width:100%;min-height:200px;resize:vertical}
 .rot{display:inline-block;white-space:nowrap;font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:6px;border:1px solid var(--line);color:var(--soft);vertical-align:1px}
 .rot.alta{color:var(--green);border-color:var(--green)} .rot.baja{color:var(--red);border-color:var(--red)}
 .tbl tr.grp td{background:var(--bg);padding:8px 6px}
+.mas{display:inline-block;margin:0 0 6px;color:#fff;background:var(--red);border-radius:6px;padding:2px 7px;font-size:.76rem;font-weight:700}
+.tbl tr.lentorow td{padding-top:0}
+.lento{background:var(--warn);color:var(--warnink);border-radius:10px;padding:8px 10px;font-size:.86rem;margin-top:6px}
+.lento .btn{margin:6px 6px 0 0}
 .alert{color:var(--warnink);background:var(--warn);border-radius:6px;padding:1px 6px;font-size:.76rem;display:inline-block;margin-top:2px}
 .plan{border-top:1.5px solid var(--line);padding-top:12px;margin-top:12px}
 .plan:first-child{border-top:0;margin-top:0;padding-top:0}
@@ -102,6 +106,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
   #prov{width:100%}
   .tbl.cards thead{display:none}
   .tbl.cards tr.grp{display:block}
+  .tbl.cards tr.lentorow{display:block}
   .tbl.cards tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .tbl.cards td{border:0;padding:0}
   .tbl.cards td.art{grid-column:1/-1}
@@ -174,6 +179,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
         <span class="grow"></span>
         <button class="btn btn-y" id="xlsReg">Exportar a Excel</button>
       </div>
+      <div class="row" style="margin-top:10px"><button class="btn btn-ghost" id="btnGerencia" hidden></button></div>
       <div class="warn" id="notaReconstruir" hidden>La razón tiene que ser la verdadera. El auditor la coteja contra Microsip y puede preguntar. Si no te acuerdas, elige <b>No documentado</b>: es mejor que inventar.</div>
       <div class="kpis" id="kpisReg"></div>
     </div>
@@ -238,6 +244,11 @@ textarea{width:100%;min-height:200px;resize:vertical}
       <h3>Posibles duplicados: el mismo producto en otra marca</h3>
       <p class="muted" style="margin:0 0 10px">Solo se juntan artículos cuyo nombre es igual salvo una palabra que parece marca (ej. <i>cinta aislar negra Pretul</i> y <i>cinta aislar negra Nitto</i>). Si cambia la medida, el número, el color o el material no se juntan (ej. <i>llave 3/8</i> y <i>llave 5/16</i>). Decide cuál se queda.</p>
       <div id="dups"></div>
+    </div>
+    <div class="card">
+      <h3>Pausados: lo que ya no compramos</h3>
+      <p class="muted" style="margin:0 0 10px">Productos que marcaste como <b>Se va</b> o <b>Ya no comprar</b> (aquí o en el planeador). No se calculan ni salen en el planeador. Si vuelves a traer alguno, pulsa <b>Regresar</b>.</p>
+      <div class="scroll"><table class="tbl cards" id="tblPaus"><thead><tr><th>Artículo</th><th>Por qué</th><th class="n">Existencia</th><th>Última venta</th><th>Pausado</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
   </section>
 
@@ -313,6 +324,10 @@ async function ocupado(btn, fn){
 let D = null, clase = "A", P = null, REG = null, ABC = null, filtroAbc = "";
 const soloLectura = () => D && D.rol === "auditor";
 function razones(){
+  const r = razones0(); if(!r.some(x => x.id === "gerencia")) r.splice(Math.max(r.findIndex(x => x.id === "no_documentado"), 0), 0, {id: "gerencia", t: "Autorizó gerencia"});
+  return r;
+}
+function razones0(){
   const txt = (D && D.cfg && D.cfg.razones) || "";
   return txt.split(/\n+/).map(l => l.trim()).filter(Boolean).map(l => { const i = l.indexOf("="); return i > 0 ? {id: l.slice(0, i).trim(), t: l.slice(i + 1).trim()} : {id: l, t: l}; });
 }
@@ -405,6 +420,24 @@ function ponerVista(v){
 }
 $$("#segVista button").forEach(b => b.addEventListener("click", () => { ponerVista(b.dataset.v); ponerClase(vista === "todos" ? "" : (clase || "A")); cargarPlan(); }));
 $("#qPlan").addEventListener("input", () => { clearTimeout(pintarPlan._t); pintarPlan._t = setTimeout(pintarPlan, 250); });
+function deMas(f, c){   // cuánto se compra arriba del sugerido y cuánto quedaría arriba del máximo
+  c = num(c); if(c === null) return null;
+  const sobre = num(f.sugerido) === null ? null : c - num(f.sugerido);
+  const arriba = Math.max(f.existencia || 0, 0) + (f.pendiente || 0) + c - (f.maximo ?? Infinity);
+  return (sobre > 0 || arriba > 0) ? {sobre: Math.max(sobre || 0, 0), arriba: Math.max(arriba, 0)} : null;
+}
+function avisoMas(m, u){ return m ? `<span class="mas">⚠ Compras de más${m.sobre ? ": +" + n0(m.sobre) + " " + esc(u || "") + " sobre lo sugerido" : ""}${m.arriba ? " · quedarías " + n0(m.arriba) + " arriba del máximo" : ""}</span>` : ""; }
+function casiNoSeVende(f){
+  if(f.lento === "queda" || !f.rotacion || f.rotacion === "nuevo") return null;
+  const lim = Number(D.cfg.dias_lento || 90), dsv = f.ultima_venta ? dias(f.ultima_venta, D.hoy) : null;
+  const alcanza = f.vd > 0 ? Math.round(Math.max(f.existencia, 0) / f.vd) : null;
+  const motivos = [];
+  if(f.rotacion === "baja") motivos.push(`vendió solo en ${n0(f.semanas_venta)} de ${n0(f.semanas)} semanas`);
+  if(f.tickets !== null && f.tickets <= 1) motivos.push("se vendió una sola vez");
+  if(dsv !== null && dsv > lim) motivos.push(`última venta hace ${dsv} días`);
+  if(alcanza !== null && alcanza > lim) motivos.push(`lo que tienes alcanza para ${n0(alcanza)} días`);
+  return motivos.length ? motivos : null;
+}
 const necesita = f => Math.max(f.existencia, 0) + f.pendiente <= (f.punto_reorden ?? f.minimo);
 const ROT = {alta: "rota mucho", media: "rota medio", baja: "rota poco", nuevo: "nuevo"};
 async function cargarPlan(){
@@ -444,13 +477,22 @@ function pintarPlan(){
       <td class="n" data-l="Máx">${n0(f.maximo)}</td>
       <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span></td>
       <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar"></td>
-      <td class="wide" data-l="Razón">${sinProv ? `<span class="muted">asigna proveedor en Configuración</span>` : dist ? selRazon(f._r, `class="r" ${soloLectura() ? "disabled" : ""}`) + `<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}" ${soloLectura() ? "disabled" : ""}>` : `<span class="muted">igual al sugerido</span>`}</td>
-    </tr>`; }).join("") : `<tr><td colspan="9" class="muted">${total ? "Nada que pedir. Quita la palomita de arriba para ver todos." : vista === "todos" ? "No hay nada que pedir." : "Este proveedor no tiene " + cl + "."}</td></tr>`;
+      <td class="wide" data-l="Razón">${avisoMas(deMas(f, f._c), f.unidad)}${sinProv ? `<span class="muted">asigna proveedor en Configuración</span>` : dist ? selRazon(f._r, `class="r" ${soloLectura() ? "disabled" : ""}`) + `<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}" ${soloLectura() ? "disabled" : ""}>` : `<span class="muted">igual al sugerido</span>`}</td>
+    </tr>${(() => { const m = casiNoSeVende(f); return m ? `<tr class="lentorow" data-li="${i}"><td colspan="9"><div class="lento"><b>⚠ Este producto casi no se vende</b>: ${m.join(" · ")}. Valora si se queda o se va.${soloLectura() ? "" : ` <button class="btn btn-ghost btn-sm" data-lento="queda">Se queda</button><button class="btn btn-y btn-sm" data-lento="se_va">Se va (pausar)</button>`}</div></td></tr>` : ""; })()}`; }).join("") : `<tr><td colspan="9" class="muted">${total ? "Nada que pedir. Quita la palomita de arriba para ver todos." : vista === "todos" ? "No hay nada que pedir." : "Este proveedor no tiene " + cl + "."}</td></tr>`;
   $$("#tblPlan tbody tr[data-i]").forEach(tr => {
     const f = P.filas[tr.dataset.i];
     tr.querySelector(".c").addEventListener("change", e => { f._c = num(e.target.value); pintarPlan(); });
     const r = tr.querySelector(".r"); if(r) r.addEventListener("change", e => { f._r = e.target.value; });
     const nt = tr.querySelector(".nota"); if(nt) nt.addEventListener("input", e => { f._n = e.target.value; });
+  });
+  $$("#tblPlan tbody tr[data-li]").forEach(tr => {
+    const f = P.filas[tr.dataset.li];
+    tr.querySelectorAll("button[data-lento]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+      await api("revision", {articulo_id: f.articulo_id, tipo: "lento", decision: b.dataset.lento, grupo: "", nota: (casiNoSeVende(f) || []).join(" · ")});
+      if(b.dataset.lento === "se_va"){ P.filas.splice(P.filas.indexOf(f), 1); toast("Pausado: ya no se calcula ni sale aquí. Lo regresas en Limpieza de catálogo → Pausados."); }
+      else { f.lento = "queda"; toast("Se queda ✓"); }
+      pintarPlan();
+    })));
   });
   const sinProv = vista === "prov" && !$("#prov").value;
   $("#guardar").disabled = sinProv;
@@ -466,6 +508,10 @@ $("#guardar").addEventListener("click", () => ocupado($("#guardar"), async () =>
       if(f._r === "otra" && !f._n.trim()) throw new Error("Escribe la nota de " + f.articulo + " (elegiste Otra).");
     }
   }
+  const mas = lineas.filter(f => deMas(f, f._c));
+  if(mas.length && !confirm("⚠ Estás comprando de más en " + mas.length + " producto" + (mas.length > 1 ? "s" : "") + ":\n\n"
+      + mas.slice(0, 12).map(f => { const m = deMas(f, f._c); return "• " + f.articulo + (m.sobre ? ": +" + n0(m.sobre) + " sobre lo sugerido" : "") + (m.arriba ? " (quedarías " + n0(m.arriba) + " arriba del máximo)" : ""); }).join("\n")
+      + (mas.length > 12 ? "\n…" : "") + "\n\n¿Guardar de todos modos?")) return;
   const grupos = {};   // un plan por proveedor y por clase revisada
   for(const f of lineas) (grupos[f.proveedor_id + "|" + f.clase] ||= []).push(f);
   let n = 0, ligadas = [];
@@ -478,7 +524,7 @@ $("#guardar").addEventListener("click", () => ocupado($("#guardar"), async () =>
     n += L.length; if(r.plan && r.plan.folio_oc) ligadas.push(r.plan.folio_oc);
     const p = D.proveedores.find(x => x.proveedor_id === pid); if(p) p["ult_" + cl.toLowerCase()] = D.hoy;
   }
-  toast("Guardado ✓ " + n + " renglones" + (Object.keys(grupos).length > 1 ? " en " + Object.keys(grupos).length + " planes" : "") + (ligadas.length ? " · ligado a " + ligadas.join(", ") : " · se ligará solo cuando captures la OC en Microsip"));
+  toast((mas.length ? "⚠ " + mas.length + " con compra de más · " : "") + "Guardado ✓ " + n + " renglones" + (Object.keys(grupos).length > 1 ? " en " + Object.keys(grupos).length + " planes" : "") + (ligadas.length ? " · ligado a " + ligadas.join(", ") : " · se ligará solo cuando captures la OC en Microsip"));
   REG = null; pintarToca(); cargarPlan();
 }));
 
@@ -491,15 +537,24 @@ async function cargarReg(){
   pintarReg();
 }
 $("#mesReg").addEventListener("change", cargarReg);
+function masReg(l, p){   // compra de más en el registro: contra lo sugerido y, si la OC trae más que lo planeado, contra el plan
+  const c = num(l.oc_unidades ?? l.comprado), s = num(l.sugerido), pl = num(l.comprado);
+  const sobre = c !== null && s !== null && c > s ? c - s : 0, ocMas = p.folio_oc && l.oc_unidades !== null && pl !== null && l.oc_unidades > pl ? l.oc_unidades - pl : 0;
+  return sobre || ocMas ? {sobre, ocMas} : null;
+}
 function faltaRazon(l){ return !l.razon && num(l.oc_unidades ?? l.comprado ?? 0) !== num(l.sugerido); }
 function pintarReg(){
   const L = REG.planes.flatMap(p => p.lineas);
   const sinOc = REG.planes.filter(p => !p.folio_oc && p.lineas.some(l => l.comprado > 0)).length;
   $("#kpisReg").innerHTML = [
     [REG.planes.length, "planes / órdenes"], [L.length, "renglones"], [L.filter(l => l.razon === "igual").length, "iguales al sugerido"],
-    [L.filter(faltaRazon).length, "sin razón", true], [sinOc, "planes sin OC", true], [REG.oc_sin_plan.length, "OCs sin plan", true],
+    [L.filter(faltaRazon).length, "sin razón", true], [REG.planes.flatMap(p => p.lineas.filter(l => masReg(l, p))).length, "compras de más", true],
+    [sinOc, "planes sin OC", true], [REG.oc_sin_plan.length, "OCs sin plan", true],
   ].map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
   $("#notaReconstruir").hidden = !REG.planes.some(p => p.origen === "reconstruido");
+  const faltanRec = REG.planes.filter(p => p.origen === "reconstruido").flatMap(p => p.lineas).filter(faltaRazon).length;
+  $("#btnGerencia").hidden = soloLectura() || !faltanRec;
+  $("#btnGerencia").textContent = `Poner «Autorizó gerencia» a ${faltanRec} renglones de OC anteriores sin razón`;
   $("#planesReg").innerHTML = REG.planes.length ? REG.planes.map(p => `<div class="plan">
       <div class="row"><h4 class="grow">${esc(p.proveedor || "Proveedor " + p.proveedor_id)} <span class="muted">· ${p.origen === "reconstruido" ? "reconstruido de la OC" : "planeado el " + fecha(p.fecha)}${p.clase && p.clase !== "OC" ? " · revisión " + esc(p.clase) : ""}</span></h4>
         ${p.folio_oc ? `<span><b>OC ${esc(p.folio_oc)}</b> <span class="muted">${fecha(p.fecha_oc)}</span></span>`
@@ -510,7 +565,8 @@ function pintarReg(){
         <td class="n" data-l="Exist."><span class="${l.existencia < 0 ? "neg" : ""}">${n0(l.existencia)}</span></td><td class="n" data-l="Pend.">${n0(l.pendiente)}</td>
         <td class="n" data-l="Mín">${n0(l.minimo)}</td><td class="n" data-l="Máx">${n0(l.maximo)}</td><td class="n" data-l="Sugerido"><b>${n0(l.sugerido)}</b></td>
         <td class="n" data-l="Compré">${n0(l.comprado)}</td><td class="n" data-l="En la OC">${p.folio_oc ? n0(l.oc_unidades ?? 0) : "–"}</td>
-        <td class="wide" data-l="Razón">${l.razon === "igual" ? `<span class="muted">igual al sugerido</span>`
+        <td class="wide" data-l="Razón">${(() => { const m = masReg(l, p);
+          return m ? `<span class="mas" style="margin:0 0 4px">⚠ De más${m.sobre ? ": +" + n0(m.sobre) + " sobre lo sugerido" : ""}${m.ocMas ? " · la OC trae " + n0(m.ocMas) + " más de lo planeado" : ""}</span>` : ""; })()}${l.razon === "igual" ? `<span class="muted">igual al sugerido</span>`
           : soloLectura() ? esc(razonTxt(l.razon)) + (l.nota ? `<div class="muted">${esc(l.nota)}</div>` : "")
           : selRazon(l.razon, `class="r" data-id="${l.id}"`) + `<input type="text" class="nota" maxlength="300" placeholder="nota" value="${esc(l.nota || "")}" data-id="${l.id}">`}</td>
       </tr>`).join("")}</tbody></table></div></div>`).join("")
@@ -535,6 +591,11 @@ async function guardarRazon(id){
     sel.closest("tr").classList.toggle("miss", !!(l && faltaRazon(l)));
   } catch(e) { toast(e.message); }
 }
+$("#btnGerencia").addEventListener("click", () => ocupado($("#btnGerencia"), async () => {
+  if(!confirm("Se pondrá «Autorizó gerencia» como razón en las OC anteriores al planeador (reconstruidas de Microsip) de " + mesTxt($("#mesReg").value) + " que no tienen razón. Las que ya tienen una no cambian. ¿Continuar?")) return;
+  const r = await api("gerencia", {mes: $("#mesReg").value + "-01"});
+  toast("Listo ✓ " + r.con_gerencia + " renglones con «Autorizó gerencia»"); cargarReg();
+}));
 $("#reconstruir").addEventListener("click", () => ocupado($("#reconstruir"), async () => {
   const m = $("#mesReg").value;
   if(!confirm("Se van a tomar las órdenes de compra de " + mesTxt(m) + " que ya están en Microsip. Para cada renglón se calcula la existencia que había ese día, lo pendiente por recibir y el sugerido con los máximos y mínimos de ese mes. Solo tendrás que poner la razón donde compraste distinto. ¿Continuar?")) return;
@@ -621,7 +682,7 @@ function pintarLim(){
   const pend = U.filter(x => !x.decision).length + G.filter(g => g.articulos.some(a => !a.decision)).length;
   $("#nlim").hidden = !pend; $("#nlim").textContent = pend;
   $("#kpisLim").innerHTML = [[U.filter(x => !x.decision).length, "vendidos una sola vez", true], [G.filter(g => g.articulos.some(a => !a.decision)).length, "grupos de posibles duplicados", true],
-    [rv.se_va || 0, "marcados para ya no comprar"], [rv.queda || 0, "revisados que se quedan"]]
+    [(LIM.pausados || []).length, "pausados"], [rv.queda || 0, "revisados que se quedan"]]
     .map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
   $("#unaTxt").textContent = `Artículos con una sola venta en los últimos ${LIM.meses_c || 12} meses. Si fue un pedido especial, conviene dejar de tenerlos en existencia y pedirlos solo cuando un cliente los pida.`;
   $("#tblUna tbody").innerHTML = U.length ? U.map(x => `<tr>
@@ -637,6 +698,18 @@ function pintarLim(){
         <td data-l="Proveedor">${esc(a.proveedor || "—")}</td><td class="n" data-l="Vendido">${n0(a.unidades || 0)}<div class="muted">${money(a.venta)}</div></td>
         <td class="n" data-l="Existencia">${n0(a.existencia)}</td><td class="wide">${botonesDec(a.articulo_id, "duplicado", a.decision, g.llave)}</td></tr>`).join("")}
       </tbody></table></div>`).join("") : `<p class="muted">No encontré posibles duplicados por revisar.</p>`;
+  const PZ = LIM.pausados || [], TIPO = {una_venta: "vendido una sola vez", duplicado: "duplicado de otra marca", lento: "casi no se vende"};
+  $("#tblPaus tbody").innerHTML = PZ.length ? PZ.map(x => `<tr>
+      <td class="art"><b>${esc(x.articulo || "Artículo " + x.articulo_id)}</b><div class="muted">${esc(x.clave || "")}</div></td>
+      <td data-l="Por qué">${esc(x.tipos ? x.tipos.split(",").map(t => TIPO[t] || t).join(", ") : (x.nota || "excluido a mano"))}</td>
+      <td class="n" data-l="Existencia">${n0(x.existencia)}</td><td data-l="Última venta">${x.ultima_venta ? fecha(x.ultima_venta) : "–"}</td>
+      <td data-l="Pausado">${fecha(x.fecha)}<div class="muted">${esc(x.por || "")}</div></td>
+      <td>${soloLectura() ? "" : `<button class="btn btn-main btn-sm" data-reactivar="${x.articulo_id}">Regresar</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="muted">No hay productos pausados.</td></tr>`;
+  $$("#t-lim button[data-reactivar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    await api("reactivar", {articulo_id: Number(b.dataset.reactivar)});
+    toast("Regresó ✓ Vuelve a salir en el planeador; su mínimo y máximo se calculan en el siguiente cálculo del mes."); cargarLim();
+  })));
   $$("#t-lim button[data-dec]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
     await api("revision", {articulo_id: Number(b.dataset.id), tipo: b.dataset.tipo, decision: b.dataset.dec, grupo: b.dataset.grupo || ""});
     toast(b.dataset.dec === "se_va" ? "Listo: ya no se calcula ni sale en el planeador (desde el siguiente cálculo del mes)." : "Guardado ✓");
@@ -682,13 +755,13 @@ $("#xlsReg").addEventListener("click", () => ocupado($("#xlsReg"), async () => {
   if(!REG) await cargarReg();
   const filas = REG.planes.flatMap(p => p.lineas.map(l => [p.fecha, p.fecha_oc || "", p.folio_oc || "SIN OC", p.proveedor || "", l.clave || "", l.articulo || "", l.clase || "",
     num(l.existencia), num(l.pendiente), num(l.minimo), num(l.punto_reorden ?? l.minimo), num(l.maximo), num(l.sugerido), num(l.comprado), p.folio_oc ? num(l.oc_unidades ?? 0) : null,
-    p.folio_oc ? num(l.oc_unidades ?? 0) - num(l.sugerido ?? 0) : null, l.razon === "igual" ? "Igual al sugerido" : (l.razon ? razonTxt(l.razon) : "FALTA RAZÓN"), l.nota || "",
+    p.folio_oc ? num(l.oc_unidades ?? 0) - num(l.sugerido ?? 0) : null, masReg(l, p) ? "SÍ" : "", l.razon === "igual" ? "Igual al sugerido" : (l.razon ? razonTxt(l.razon) : "FALTA RAZÓN"), l.nota || "",
     p.origen === "reconstruido" ? "Reconstruido de Microsip" : "Planeador", l.por || p.por || ""]));
-  const o = REG.oc_sin_plan.map(x => [ "", x.fecha, x.folio, x.proveedor || "", "", "OC SIN PLAN", "", null, null, null, null, null, null, null, null, null, "FALTA PLAN", "", "Microsip", ""]);
+  const o = REG.oc_sin_plan.map(x => [ "", x.fecha, x.folio, x.proveedor || "", "", "OC SIN PLAN", "", null, null, null, null, null, null, null, null, null, "", "FALTA PLAN", "", "Microsip", ""]);
   const m = $("#mesReg").value;
   await excel(`Registro de compras ${m}.xlsx`, "Registro de compras", "Registro mensual de compras: decisión de compra contra orden de compra", "1.2.2.3, 1.2.2.4 y 1.3.1.1", mesTxt(m),
-    ["Fecha del plan", "Fecha OC", "Folio OC", "Proveedor", "Clave", "Artículo", "Clase", "Existencia", "Pendiente por recibir", "Mínimo", "Punto de reorden", "Máximo", "Sugerido", "Compré (plan)", "Unidades en la OC", "Diferencia vs sugerido", "Razón", "Nota", "Origen", "Capturó"],
-    [...filas, ...o], [12, 12, 12, 26, 12, 40, 7, 11, 11, 9, 11, 9, 10, 11, 11, 11, 28, 30, 22, 16]);
+    ["Fecha del plan", "Fecha OC", "Folio OC", "Proveedor", "Clave", "Artículo", "Clase", "Existencia", "Pendiente por recibir", "Mínimo", "Punto de reorden", "Máximo", "Sugerido", "Compré (plan)", "Unidades en la OC", "Diferencia vs sugerido", "Compra de más", "Razón", "Nota", "Origen", "Capturó"],
+    [...filas, ...o], [12, 12, 12, 26, 12, 40, 7, 11, 11, 9, 11, 9, 10, 11, 11, 11, 10, 28, 30, 22, 16]);
 }));
 $("#xlsAb").addEventListener("click", () => ocupado($("#xlsAb"), async () => {
   const F = ABC.filas, f0 = F.find(f => f.clase !== "C") || {};
@@ -735,6 +808,7 @@ const GEN = [
   ["almacenes", "Almacenes que cuentan (vacío = todos)", "text", "Ej.: GENERAL|BODEGA"],
   ["excluir", "Excluir artículos cuyo nombre diga", "text", "Ej.: servicio|flete"],
   ["monto_maximo", "Ignorar tickets mayores a ($)", "number", "Ventas anómalas"],
+  ["dias_lento", "Avisar «casi no se vende» a partir de (días)", "number", "Sin venta en estos días o existencia que alcanza para más de estos días"],
   ["empresa", "Empresa (para los reportes)", "text", ""], ["tienda", "Tienda", "text", ""],
   ["palabras_distintas", "Palabras que NO son marca (para buscar duplicados)", "area", "Colores, tamaños, materiales, tipos… Si dos artículos difieren en una de estas, no se juntan."],
 ];
