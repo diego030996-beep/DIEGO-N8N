@@ -70,6 +70,8 @@ textarea{width:100%;min-height:200px;resize:vertical}
 .pill{display:inline-block;font-size:.72rem;font-weight:800;padding:1px 7px;border-radius:6px;color:#fff;background:var(--b);vertical-align:1px}
 .pill.A{background:var(--a)} .pill.C{background:var(--c)}
 .tbl{width:100%;border-collapse:collapse;font-size:.9rem}
+.scroll.alto{max-height:75vh;overflow:auto}
+.tbl thead th{position:sticky;top:0;z-index:2;background:var(--panel)}
 .tbl th{text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--soft);font-weight:700;padding:6px 6px;border-bottom:1.5px solid var(--line);white-space:nowrap}
 .tbl td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
 .tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -154,7 +156,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
         <label class="muted"><input type="checkbox" id="soloSug" checked> Solo lo que hay que pedir</label>
       </div>
       <p class="muted" id="planInfo" style="margin:10px 0 0"></p>
-      <div class="scroll" style="margin-top:10px">
+      <div class="scroll alto" style="margin-top:10px">
         <table class="tbl cards" id="tblPlan">
           <thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n" title="Stock de seguridad">Mín</th><th class="n" title="Cuando existencia + por recibir llega aquí, se pide">P. reorden</th><th class="n">Máx</th><th class="n">Sugerido</th><th class="n">Compro</th><th>Razón si es distinto</th></tr></thead>
           <tbody></tbody>
@@ -217,7 +219,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
         <input type="text" id="fAbc" class="grow" placeholder="Buscar artículo o proveedor">
         <div class="seg" id="segAbc"><button data-c="" aria-pressed="true">Todos</button><button data-c="A" aria-pressed="false">A</button><button data-c="B" aria-pressed="false">B</button><button data-c="C" aria-pressed="false">C</button><button data-c="!" aria-pressed="false">Con alerta</button></div>
       </div>
-      <div class="scroll" style="margin-top:10px">
+      <div class="scroll alto" style="margin-top:10px">
         <table class="tbl" id="tblAbc">
           <thead><tr><th>#</th><th>Artículo</th><th>Proveedor</th><th class="n">Venta</th><th class="n">% acum.</th><th class="n">Venta/día</th><th>Rotación</th><th class="n">Entrega</th><th class="n">Revisión</th><th class="n">Mín</th><th class="n">P. reorden</th><th class="n">Máx</th><th></th></tr></thead>
           <tbody></tbody>
@@ -428,11 +430,12 @@ function deMas(f, c){   // cuánto se compra arriba del sugerido y cuánto queda
 }
 function avisoMas(m, u){ return m ? `<span class="mas">⚠ Compras de más${m.sobre ? ": +" + n0(m.sobre) + " " + esc(u || "") + " sobre lo sugerido" : ""}${m.arriba ? " · quedarías " + n0(m.arriba) + " arriba del máximo" : ""}</span>` : ""; }
 function casiNoSeVende(f){
-  if(f.lento === "queda" || !f.rotacion || f.rotacion === "nuevo") return null;
+  if(f.lento === "queda" || f.rotacion === "nuevo") return null;
   const lim = Number(D.cfg.dias_lento || 90), dsv = f.ultima_venta ? dias(f.ultima_venta, D.hoy) : null;
   const alcanza = f.vd > 0 ? Math.round(Math.max(f.existencia, 0) / f.vd) : null;
   const motivos = [];
   if(f.rotacion === "baja") motivos.push(`vendió solo en ${n0(f.semanas_venta)} de ${n0(f.semanas)} semanas`);
+  else if(f.vd > 0 && f.vd * 30 < 1) motivos.push(`vende menos de 1 al mes (${n0(f.vd * 30)} al mes)`);
   if(f.tickets !== null && f.tickets <= 1) motivos.push("se vendió una sola vez");
   if(dsv !== null && dsv > lim) motivos.push(`última venta hace ${dsv} días`);
   if(alcanza !== null && alcanza > lim) motivos.push(`lo que tienes alcanza para ${n0(alcanza)} días`);
@@ -737,7 +740,7 @@ function reglasTxt(){
       : `<b>Mínimo (stock de seguridad)</b> = Z × variación de la venta diaria × √(días de entrega + días entre revisiones), con nivel de servicio A ${c.ns_a || 95}% · B ${c.ns_b || 90}% · C ${c.ns_c || 85}%. ` +
         `<b>Punto de reorden</b> = venta diaria × (días de entrega + días entre revisiones) + mínimo: cuando existencia + por recibir llega aquí, se pide. ` +
         `<b>Máximo</b> = punto de reorden + venta diaria × días de inventario (A ${c.inv_a} · B ${c.inv_b} · C ${c.inv_c}). Revisión: A cada ${c.rev_a || 7} días, B y C cada ${c.frec_b || 15}.`,
-    `<b>Rotación</b> = % de semanas con venta: rota mucho ≥ ${c.rot_alta || 50}%, medio ≥ ${c.rot_media || 20}%, poco abajo de eso. Los que rotan poco no llevan colchón por variación: mínimo ${c.min_c || 1} pieza y se piden solo cuando se acaban (mín ${c.min_c || 1}, máx 2 o lo que dé su venta). Ninguno queda en cero y el máximo siempre es mayor que el punto de reorden.`,
+    `<b>Rotación</b> = % de semanas con venta: rota mucho ≥ ${c.rot_alta || 50}%, medio ≥ ${c.rot_media || 20}%, poco abajo de eso. Los que rotan poco (se venden de vez en cuando) no llevan colchón: se tiene ${c.max_lento || 1} pieza y se pide solo cuando se acaba (mínimo ${c.max_lento || 1}, punto de reorden ${(Number(c.max_lento) || 1) - 1}, máximo ${c.max_lento || 1}). Ninguno queda en cero y el máximo siempre es mayor que el punto de reorden.`,
   ];
 }
 const txtPlano = h => h.replace(/<[^>]+>/g, "");
@@ -808,6 +811,7 @@ const GEN = [
   ["almacenes", "Almacenes que cuentan (vacío = todos)", "text", "Ej.: GENERAL|BODEGA"],
   ["excluir", "Excluir artículos cuyo nombre diga", "text", "Ej.: servicio|flete"],
   ["monto_maximo", "Ignorar tickets mayores a ($)", "number", "Ventas anómalas"],
+  ["max_lento", "Piezas a tener de los que casi no se venden", "number", "1 = tener uno y pedir solo cuando se venda"],
   ["dias_lento", "Avisar «casi no se vende» a partir de (días)", "number", "Sin venta en estos días o existencia que alcanza para más de estos días"],
   ["empresa", "Empresa (para los reportes)", "text", ""], ["tienda", "Tienda", "text", ""],
   ["palabras_distintas", "Palabras que NO son marca (para buscar duplicados)", "area", "Colores, tamaños, materiales, tipos… Si dos artículos difieren en una de estas, no se juntan."],

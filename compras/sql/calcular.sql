@@ -103,9 +103,13 @@ c5 AS (   -- stock de seguridad (= mínimo), punto de reorden y máximo
   FROM c4),
 c6 AS (
   SELECT c5.*,
-         CASE WHEN c5.met = 'simple' THEN c5.ss ELSE greatest(c5.dem_lt + CASE WHEN c5.rotacion = 'baja' THEN 0 ELSE c5.ss END, c5.ss) END AS pr
+         CASE WHEN c5.met = 'simple' THEN c5.ss
+              -- rota poco: tener pocas piezas (1 de fábrica) y pedir solo cuando se acaben: punto de reorden = máximo − 1
+              WHEN c5.rotacion = 'baja' THEN greatest(coalesce(c5.max_f, (SELECT max_lento FROM cfg)), c5.ss) - 1
+              ELSE greatest(c5.dem_lt + c5.ss, c5.ss) END AS pr
   FROM c5),
-c7 AS (SELECT c6.*, coalesce(c6.max_f, c6.pr + ceil(c6.vdia * c6.inv)) AS mx0 FROM c6),
+c7 AS (SELECT c6.*, coalesce(c6.max_f, CASE WHEN c6.met <> 'simple' AND c6.rotacion = 'baja' THEN c6.pr + 1
+                                         ELSE c6.pr + ceil(c6.vdia * c6.inv) END) AS mx0 FROM c6),
 c8 AS (SELECT c7.*, greatest(c7.mx0, c7.pr + 1) AS mx,
               concat_ws('; ',
                 CASE WHEN c7.tickets <= 1 THEN 'solo 1 venta en ' || (SELECT meses_c FROM cfg) || ' meses' END,

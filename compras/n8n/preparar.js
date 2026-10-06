@@ -120,7 +120,7 @@ switch (op) {
       min_c: v => numOk(v, 1, 1000),
       metodo: v => ['retail', 'simple'].includes(v), ns_a: v => numOk(v, 50, 99.9), ns_b: v => numOk(v, 50, 99.9), ns_c: v => numOk(v, 50, 99.9),
       rev_a: v => numOk(v, 1, 60), rot_alta: v => numOk(v, 1, 100), rot_media: v => numOk(v, 0, 100),
-      palabras_distintas: v => String(v).length <= 3000, dias_lento: v => numOk(v, 7, 1000),
+      palabras_distintas: v => String(v).length <= 3000, dias_lento: v => numOk(v, 7, 1000), max_lento: v => numOk(v, 1, 100),
       lineas_excluidas: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       entrega_def: v => numOk(v, 0, 120), dia_a: v => ['1', '2', '3', '4', '5', '6', '7'].includes(String(v)), frec_b: v => numOk(v, 1, 90),
       regla: v => ['bajo_minimo', 'hasta_maximo'].includes(v), gracia_oc: v => numOk(v, 0, 60), dias_ligar: v => numOk(v, 0, 30),
@@ -130,7 +130,7 @@ switch (op) {
       razones: v => String(v).length <= 3000 && /^no_documentado=/m.test(v) && /^otra=/m.test(v),
       base: v => String(v).length <= 80,
     };
-    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'dias_lento', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
+    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'dias_lento', 'max_lento', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
     const general = {};
     for (const [k, v0] of Object.entries(b.general || {})) {
       if (!REGLAS[k]) continue;

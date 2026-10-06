@@ -28,9 +28,10 @@ Mínimo, punto de reorden y máximo (método recomendado; se cambia en la págin
   llega aquí, se pide. Revisión: A cada 7 días, B y C cada 15.
 - **Máximo** = punto de reorden + venta diaria × días de inventario (A 7, B 15, C 30). El sugerido es máximo − existencia − por recibir,
   redondeado al empaque.
-- **Rotación** = % de semanas con venta: mucho ≥ 50 %, medio ≥ 20 %, poco abajo. Los que rotan poco no llevan colchón por variación:
-  mínimo 1, punto de reorden 1 y máximo 2 (o lo que dé su venta).
-- Ninguno queda en 0 y siempre máximo > punto de reorden ≥ mínimo. También está el **método simple**
+- **Rotación** = % de semanas con venta: mucho ≥ 50 %, medio ≥ 20 %, poco abajo. Los que rotan poco (se venden de vez en cuando)
+  no llevan colchón: se tiene **1 pieza y se pide solo cuando se acaba** (mínimo 1, punto de reorden 0, máximo 1; el número
+  de piezas se cambia en Configuración).
+- Ningún mínimo queda en 0 y siempre máximo > punto de reorden y máximo ≥ mínimo. También está el **método simple**
   (mínimo = venta diaria × (entrega + días de seguridad)) por si el auditor pide ese.
 
 Planeador: vista **Por proveedor** o **Todos los productos** (todo lo que hay que pedir, agrupado por proveedor; "Guardar todo"
