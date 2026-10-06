@@ -38,6 +38,11 @@ En cada renglón del planeador se ve la **última venta** (al día de hoy) y la 
 si fue otro). Planeador: vista **Por proveedor** o **Todos los productos** (todo lo que hay que pedir, agrupado por proveedor; "Guardar todo"
 guarda un plan por proveedor).
 
+**Archivo para importar la OC en Microsip**: en el planeador (después de guardar) y en cada plan del registro hay un botón
+que descarga un `.txt` con el formato de Microsip, sin encabezado: `CLAVE,UNIDADES,PRECIO` (ej. `CEM1B,40,1`). Las unidades son las
+que confirmaste y el precio es el **último costo** del artículo en Microsip; si no tiene, el precio de su última compra (y avisa si
+alguno queda en 0).
+
 **Compras de más**: si lo que compras pasa del sugerido o te deja arriba del máximo, el planeador lo marca en rojo y pide
 confirmación al guardar; en el registro se marca cada renglón de OC con compra de más (y si la OC trae más que lo planeado).
 Sale también en el Excel.

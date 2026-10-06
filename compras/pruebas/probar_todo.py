@@ -59,6 +59,7 @@ pl = [x for x in r['planes'] if x['origen'] == 'planeador'][0]
 ok(pl['folio_oc'] == 'O0000078', 'la OC capturada en Microsip se liga sola al plan')
 L = {x['clave']: x for x in pl['lineas']}
 ok(L['CEM50']['oc_unidades'] == s['sugerido'] + 20 and L['MOR25']['fuente'].startswith('en la OC'), 'unidades de la OC y renglón no planeado')
+ok(L['CEM50']['costo'] == 168.0 and L['CEM50']['costo_fuente'] == 'último costo' and L['CEM50']['clave'] == 'CEM50', 'archivo para Microsip: clave y último costo de Microsip')
 ok(d['falta_razon'] == 1, 'pide razón del renglón no planeado')
 for m in ('2026-08-01', '2026-09-01'):
     x = correr('reconstruir', {'mes': m, 'solo_si_falta': 'si'}, hoy='2026-10-07')

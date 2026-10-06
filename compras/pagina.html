@@ -165,6 +165,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
       <div class="foot" id="footPlan">
         <label class="muted" id="lblFolio">Folio de la OC <input type="text" id="folio" maxlength="30" placeholder="opcional, se liga solo" style="width:170px"></label>
         <span class="grow muted" id="planEstado"></span>
+        <button class="btn btn-y" id="bajarHoy" hidden title="Archivo CLAVE,UNIDADES,PRECIO para importar la orden de compra en Microsip">Archivo para Microsip</button>
         <button class="btn btn-main" id="guardar">Guardar decisión</button>
       </div>
     </div>
@@ -502,8 +503,11 @@ function pintarPlan(){
   });
   const sinProv = vista === "prov" && !$("#prov").value;
   $("#guardar").disabled = sinProv;
+  $("#bajarHoy").hidden = soloLectura() || !(vista === "todos" ? P.filas.some(f => f.comprado > 0) : (P.plan && P.filas.some(f => f.comprado > 0)));
+  $("#bajarHoy").textContent = vista === "todos" ? "Archivos para Microsip (de hoy)" : "Archivo para Microsip";
   $("#planEstado").textContent = sinProv ? "Asigna proveedor a estos productos en Configuración para poder planearlos." : "";
 }
+$("#bajarHoy").addEventListener("click", () => ocupado($("#bajarHoy"), () => bajarTxtHoy(vista === "prov" ? $("#prov").value : "")));
 $("#guardar").addEventListener("click", () => ocupado($("#guardar"), async () => {
   const lineas = P.filas.filter(f => (!clase || f.clase === clase) && f.proveedor_id && ((f.sugerido || 0) > 0 || (f._c || 0) > 0 || f.comprado !== null));
   if(!lineas.length) throw new Error("No hay renglones para guardar.");
@@ -564,7 +568,8 @@ function pintarReg(){
   $("#planesReg").innerHTML = REG.planes.length ? REG.planes.map(p => `<div class="plan">
       <div class="row"><h4 class="grow">${esc(p.proveedor || "Proveedor " + p.proveedor_id)} <span class="muted">· ${p.origen === "reconstruido" ? "reconstruido de la OC" : "planeado el " + fecha(p.fecha)}${p.clase && p.clase !== "OC" ? " · revisión " + esc(p.clase) : ""}</span></h4>
         ${p.folio_oc ? `<span><b>OC ${esc(p.folio_oc)}</b> <span class="muted">${fecha(p.fecha_oc)}</span></span>`
-          : (soloLectura() || p.origen !== "planeador" ? `<span class="neg">sin OC</span>` : `<label class="muted">Folio OC <input type="text" maxlength="30" style="width:110px" value="${esc(p.folio || "")}" data-plan="${p.id}" class="fol"></label><button class="btn btn-ghost btn-sm" data-plan="${p.id}">Ligar</button>`)}</div>
+          : (soloLectura() || p.origen !== "planeador" ? `<span class="neg">sin OC</span>` : `<label class="muted">Folio OC <input type="text" maxlength="30" style="width:110px" value="${esc(p.folio || "")}" data-plan="${p.id}" class="fol"></label><button class="btn btn-ghost btn-sm" data-plan="${p.id}">Ligar</button>`)}
+        ${p.origen === "planeador" && p.lineas.some(l => l.comprado > 0) ? `<button class="btn btn-y btn-sm" data-txt="${p.id}" title="Archivo CLAVE,UNIDADES,PRECIO para importar la orden de compra en Microsip">Archivo para Microsip</button>` : ""}</div>
       <div class="scroll"><table class="tbl cards"><thead><tr><th>Artículo</th><th class="n">Exist.</th><th class="n">Pend.</th><th class="n">Mín</th><th class="n">Máx</th><th class="n">Sugerido</th><th class="n">Compré</th><th class="n">En la OC</th><th>Razón</th></tr></thead><tbody>
       ${p.lineas.map(l => `<tr class="${faltaRazon(l) ? "miss" : ""}">
         <td class="art"><span class="pill ${esc(l.clase)}">${esc(l.clase || "")}</span> ${esc(l.articulo)}<div class="muted">${esc(l.clave || "")}${l.fuente && l.fuente !== "planeador" ? " · " + esc(l.fuente) : ""}</div></td>
@@ -579,6 +584,9 @@ function pintarReg(){
     : `<p class="muted">No hay planes ni OCs ligadas en ${mesTxt($("#mesReg").value)}. Si es un mes anterior al planeador, usa <b>Reconstruir desde Microsip</b>.</p>`;
   $$("#planesReg select.r").forEach(s => s.addEventListener("change", () => guardarRazon(s.dataset.id)));
   $$("#planesReg input.nota").forEach(s => s.addEventListener("change", () => guardarRazon(s.dataset.id)));
+  $$("#planesReg button[data-txt]").forEach(b => b.addEventListener("click", () => {
+    const p = REG.planes.find(x => String(x.id) === b.dataset.txt); if(p) bajarTxt(p);
+  }));
   $$("#planesReg button[data-plan]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
     const r = await api("folio", {plan_id: Number(b.dataset.plan), folio: $(`input.fol[data-plan="${b.dataset.plan}"]`).value.trim()});
     toast(r.folio_oc ? "Ligado a la OC " + r.folio_oc + " ✓" : "Folio guardado. No encontré esa OC de este proveedor todavía; se ligará cuando llegue de Microsip.");
@@ -725,6 +733,28 @@ function pintarLim(){
     for(const id of b.dataset.todos.split(",")) await api("revision", {articulo_id: Number(id), tipo: "duplicado", decision: "queda", grupo: b.dataset.grupo});
     toast("Guardado: se quedan todos ✓"); cargarLim();
   })));
+}
+
+/* ================= archivo para importar la OC en Microsip ================= */
+// Formato de Microsip (texto, sin encabezado): CLAVE,UNIDADES,PRECIO  — precio = último costo del artículo en Microsip
+const numTxt = v => String(Math.round(Number(v) * 10000) / 10000);
+function bajarTxt(p){
+  const L = p.lineas.filter(l => num(l.comprado) > 0);
+  if(!L.length){ toast("Este plan no tiene nada comprado."); return; }
+  const sinCosto = L.filter(l => !(num(l.costo) > 0)), sinClave = L.filter(l => !String(l.clave || "").trim());
+  if(sinClave.length){ toast("Falta la clave de Microsip en: " + sinClave.map(l => l.articulo).join(", ")); return; }
+  if(sinCosto.length && !confirm("Estos artículos no tienen último costo en Microsip y van con precio 0:\n\n" + sinCosto.map(l => "• " + l.articulo).join("\n") + "\n\n¿Descargar de todos modos? (corrige el precio al importar)")) return;
+  const txt = L.map(l => [String(l.clave).replace(/,/g, " ").trim(), numTxt(l.comprado), num(l.costo) > 0 ? numTxt(l.costo) : "0"].join(",")).join("\r\n");
+  const nombre = ("OC " + (p.proveedor || p.proveedor_id) + " " + String(p.fecha).slice(0, 10)).replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() + ".txt";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], {type: "text/plain"})); a.download = nombre;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast("Descargado " + nombre + " · " + L.length + " renglones" + (sinCosto.length ? " (" + sinCosto.length + " sin costo)" : ""));
+}
+async function bajarTxtHoy(provId){   // los planes guardados hoy (de un proveedor o de todos)
+  const r = await api("registro", {mes: D.hoy.slice(0, 8) + "01"});
+  const ps = r.planes.filter(p => p.origen === "planeador" && String(p.fecha).slice(0, 10) === D.hoy && (!provId || p.proveedor_id === provId) && p.lineas.some(l => l.comprado > 0));
+  if(!ps.length){ toast("No hay compras guardadas hoy para descargar."); return; }
+  for(const p of ps){ bajarTxt(p); await new Promise(ok => setTimeout(ok, 600)); }
 }
 
 /* ================= Excel ================= */

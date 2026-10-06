@@ -58,8 +58,9 @@ VENTANA = {17: (date(2026, 1, 5), date(2026, 2, 28)), 18: (date(2026, 10, 1), da
 sql = [ddl]
 q = lambda s: "NULL" if s is None else "'" + str(s).replace("'", "''") + "'"
 for a in arts:
-    sql.append(f"INSERT INTO ms_articulos (base, articulo_id, clave, nombre, estatus, unidad, linea, grupo, precio_lista) VALUES "
-               f"({q(B)}, {a[0]}, {q(a[1])}, {q(a[2])}, 'A', {q(a[3])}, {q('TINACOS Y CISTERNAS' if a[0] == 16 else 'MATERIALES')}, '', {a[4]});")
+    sql.append(f"INSERT INTO ms_articulos (base, articulo_id, clave, nombre, estatus, unidad, linea, grupo, precio_lista, costo_ultimo) VALUES "
+               f"({q(B)}, {a[0]}, {q(a[1])}, {q(a[2])}, 'A', {q(a[3])}, {q('TINACOS Y CISTERNAS' if a[0] == 16 else 'MATERIALES')}, '', {a[4]}, "
+               f"{'NULL' if a[0] in (5, 15) else round(a[4] * 0.7, 4)});")
     sql.append(f"INSERT INTO ms_existencias (base, articulo_id, almacen_id, almacen, clave, articulo, existencia, valor) VALUES "
                f"({q(B)}, {a[0]}, 1, 'GENERAL', {q(a[1])}, {q(a[2])}, {round(a[5] * random.uniform(2, 20))}, 1);")
 for k, v in prov.items():
