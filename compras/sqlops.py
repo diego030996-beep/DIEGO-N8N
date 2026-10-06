@@ -35,6 +35,7 @@ def expandir(s, nivel=0):
         '/*OC*/': lambda: leer('_oc'),
         '/*OCD*/': lambda: leer('_ocd'),
         '/*EXI*/': lambda: leer('_exi'),
+        '/*EXCL*/': lambda: leer('_excl'),
         '/*LIGAR*/': lambda: leer('_ligar'),
         '/*CALCULAR_SOLO_SI_FALTA*/': calculo_solo_si_falta,
     }

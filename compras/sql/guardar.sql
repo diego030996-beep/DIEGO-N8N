@@ -1,12 +1,12 @@
 -- Guarda lo que decides comprar (y la razón si es distinto al sugerido).
--- p = {proveedor_id, proveedor, clase: 'A'|'B', folio, lineas: [{articulo_id, clave, articulo, unidad, clase, existencia, pendiente, minimo, maximo, sugerido, comprado, razon, nota}]}
+-- p = {proveedor_id, proveedor, clase: 'A'|'B'|'C', folio, lineas: [{articulo_id, clave, articulo, unidad, clase, existencia, pendiente, minimo, maximo, sugerido, comprado, razon, nota}]}
 SET LOCAL statement_timeout = '30s';
 SET LOCAL lock_timeout = '5s';
 WITH /*CTX*/
 INSERT INTO compras_planes (base, fecha, proveedor_id, proveedor, clase, origen, folio, por)
 SELECT cfg.base, cfg.hoy, cfg.p->>'proveedor_id', cfg.p->>'proveedor', cfg.p->>'clase', 'planeador', nullif(cfg.p->>'folio', ''), cfg.por FROM cfg
 ON CONFLICT (base, fecha, proveedor_id) WHERE origen = 'planeador' DO UPDATE
-  SET clase = CASE WHEN position(EXCLUDED.clase IN compras_planes.clase) > 0 THEN compras_planes.clase ELSE 'AB' END,
+  SET clase = (SELECT string_agg(DISTINCT ch, '' ORDER BY ch) FROM regexp_split_to_table(compras_planes.clase || EXCLUDED.clase, '') AS ch),
       folio = coalesce(EXCLUDED.folio, compras_planes.folio),
       docto_cm_id = CASE WHEN EXCLUDED.folio IS NOT NULL AND EXCLUDED.folio IS DISTINCT FROM compras_planes.folio THEN NULL ELSE compras_planes.docto_cm_id END,
       por = EXCLUDED.por, modificado = now();

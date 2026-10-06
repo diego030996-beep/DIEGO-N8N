@@ -4,13 +4,16 @@ SET LOCAL statement_timeout = '180s';
 SET LOCAL lock_timeout = '10s';
 /*CALCULAR_SOLO_SI_FALTA*/
 WITH /*CTX*/, /*OC*/,
-m AS (SELECT date_trunc('month', coalesce(nullif(p->>'mes', '')::date, hoy))::date AS mes FROM cfg)
+m AS (SELECT date_trunc('month', coalesce(nullif(p->>'mes', '')::date, hoy))::date AS mes FROM cfg),
+ids AS (SELECT o.id FROM oc o, m WHERE o.fecha >= m.mes AND o.fecha < (m.mes + interval '1 month')::date), /*OCD*/, /*EXCL*/
 INSERT INTO compras_planes (base, fecha, proveedor_id, proveedor, clase, origen, docto_cm_id, folio, folio_oc, fecha_oc, ligado, por)
 SELECT cfg.base, o.fecha, o.prov, coalesce(nullif(cp.nombre, ''), prv.nombre), 'OC', 'reconstruido', o.id, o.folio, o.folio, o.fecha, now(), cfg.por
 FROM oc o CROSS JOIN cfg CROSS JOIN m
 LEFT JOIN compras_proveedores cp ON cp.base = cfg.base AND cp.proveedor_id = o.prov
 LEFT JOIN prv ON prv.proveedor_id = o.prov
 WHERE o.fecha >= m.mes AND o.fecha < (m.mes + interval '1 month')::date
+  AND NOT (EXISTS (SELECT 1 FROM ocd WHERE ocd.id = o.id)   -- OCs solo de artículos excluidos (tinacos) no entran
+           AND NOT EXISTS (SELECT 1 FROM ocd WHERE ocd.id = o.id AND ocd.articulo_id NOT IN (SELECT articulo_id FROM excl)))
 ON CONFLICT (base, docto_cm_id) WHERE docto_cm_id IS NOT NULL DO NOTHING;
 
 WITH /*CTX*/, /*OC*/,
@@ -18,7 +21,9 @@ m AS (SELECT date_trunc('month', coalesce(nullif(p->>'mes', '')::date, hoy))::da
 pl AS (SELECT pl.id, pl.docto_cm_id, pl.fecha_oc AS f, pl.proveedor_id FROM compras_planes pl, cfg, m
        WHERE pl.base = cfg.base AND pl.origen = 'reconstruido' AND pl.fecha_oc >= m.mes AND pl.fecha_oc < (m.mes + interval '1 month')::date),
 ids AS (SELECT o.id FROM oc o, m WHERE o.fecha >= m.mes - 60 AND o.fecha < (m.mes + interval '1 month')::date), /*OCD*/,
-ln AS (SELECT pl.id AS plan_id, pl.f, pl.proveedor_id, d.articulo_id, d.u FROM pl JOIN ocd d ON d.id = pl.docto_cm_id),
+/*EXCL*/,
+ln AS (SELECT pl.id AS plan_id, pl.f, pl.proveedor_id, d.articulo_id, d.u FROM pl JOIN ocd d ON d.id = pl.docto_cm_id
+       WHERE d.articulo_id NOT IN (SELECT articulo_id FROM excl)),
 arts AS (SELECT DISTINCT articulo_id FROM ln),
 desde AS (SELECT coalesce(min(f), current_date) AS d FROM ln),
 ahora AS (SELECT e.articulo_id, sum(coalesce(e.existencia, 0)) AS e FROM ms_existencias e, cfg

@@ -12,6 +12,9 @@ cfg AS (SELECT b.*,
              coalesce(nullif(c->>'dia_a', '')::int, 1) AS dia_a, coalesce(nullif(c->>'frec_b', '')::int, 15) AS frec_b,
              coalesce(nullif(c->>'regla', ''), 'bajo_minimo') AS regla, coalesce(nullif(c->>'gracia_oc', '')::int, 5) AS gracia,
              coalesce(nullif(c->>'dias_ligar', '')::int, 7) AS dias_ligar,
-             coalesce(c->>'almacenes', '') AS alm, coalesce(c->>'excluir', '') AS excl,
+             coalesce(c->>'almacenes', '') AS alm, coalesce(c->>'excluir', '') AS excl, coalesce(c->>'lineas_excluidas', '') AS excl_lin,
+             greatest(least(coalesce(nullif(c->>'meses_c', '')::int, 12), 36), 1) AS meses_c,
+             coalesce(nullif(c->>'seg_c', '')::numeric, 5) AS seg_c, coalesce(nullif(c->>'inv_c', '')::numeric, 30) AS inv_c,
+             greatest(coalesce(nullif(c->>'min_c', '')::numeric, 1), 1) AS min_c,
              coalesce(nullif(c->>'monto_maximo', '')::numeric, 500000) AS maxm
         FROM b)

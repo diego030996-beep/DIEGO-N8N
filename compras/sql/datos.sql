@@ -6,13 +6,19 @@ SET LOCAL lock_timeout = '5s';
 WITH /*CTX*/, /*OC*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
 mm AS (SELECT x.* FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes),
-ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EXI*/,
+ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EXI*/, /*EXCL*/,
+solo_excl AS (  -- OCs cuyos renglones son todos de artículos excluidos (ej. tinacos): no cuentan
+  SELECT ocd.id FROM ocd GROUP BY ocd.id
+  HAVING bool_and(EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = ocd.articulo_id))),
 est AS (SELECT mm.proveedor_id, count(*) FILTER (WHERE mm.clase = 'A') AS n_a, count(*) FILTER (WHERE mm.clase = 'B') AS n_b,
+               count(*) FILTER (WHERE mm.clase = 'C') AS n_c,
+               count(*) FILTER (WHERE mm.clase = 'C' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= mm.minimo) AS bajo_c,
                count(*) FILTER (WHERE mm.clase = 'A' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= mm.minimo) AS bajo_a,
                count(*) FILTER (WHERE mm.clase = 'B' AND greatest(coalesce(exi.e, 0), 0) + coalesce(pend.u, 0) <= mm.minimo) AS bajo_b,
                max(mm.proveedor) AS nombre
         FROM mm LEFT JOIN exi USING (articulo_id) LEFT JOIN pend USING (articulo_id) GROUP BY 1),
-ult AS (SELECT pl.proveedor_id, max(pl.fecha) FILTER (WHERE pl.clase LIKE '%A%') AS ult_a, max(pl.fecha) FILTER (WHERE pl.clase LIKE '%B%') AS ult_b
+ult AS (SELECT pl.proveedor_id, max(pl.fecha) FILTER (WHERE pl.clase LIKE '%A%') AS ult_a, max(pl.fecha) FILTER (WHERE pl.clase LIKE '%B%') AS ult_b,
+               max(pl.fecha) FILTER (WHERE pl.clase LIKE '%C%') AS ult_c
         FROM compras_planes pl, cfg WHERE pl.base = cfg.base AND pl.origen = 'planeador' GROUP BY 1),
 recientes AS (SELECT DISTINCT r.datos->>'PROVEEDOR_ID' AS proveedor_id FROM ms_raw r, cfg
               WHERE r.base = cfg.base AND r.tabla = 'DOCTOS_CM' AND coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) >= cfg.hoy - 365),
@@ -22,8 +28,9 @@ todos AS (SELECT proveedor_id FROM est WHERE proveedor_id IS NOT NULL
 pv AS (
   SELECT t.proveedor_id, coalesce(nullif(cp.nombre, ''), prv.nombre, est.nombre, 'Proveedor ' || t.proveedor_id) AS nombre,
          cp.dias_entrega, cp.dia_a, cp.frec_b, coalesce(cp.activo, true) AS activo, cp.nota,
-         coalesce(est.n_a, 0) AS n_a, coalesce(est.n_b, 0) AS n_b, coalesce(est.bajo_a, 0) AS bajo_a, coalesce(est.bajo_b, 0) AS bajo_b,
-         ult.ult_a, ult.ult_b,
+         coalesce(est.n_a, 0) AS n_a, coalesce(est.n_b, 0) AS n_b, coalesce(est.n_c, 0) AS n_c,
+         coalesce(est.bajo_a, 0) AS bajo_a, coalesce(est.bajo_b, 0) AS bajo_b, coalesce(est.bajo_c, 0) AS bajo_c,
+         ult.ult_a, ult.ult_b, ult.ult_c,
          coalesce(cp.dia_a, cfg.dia_a) AS dia_rev_a, coalesce(cp.frec_b, cfg.frec_b) AS frec_rev_b
   FROM todos t CROSS JOIN cfg
   LEFT JOIN compras_proveedores cp ON cp.base = cfg.base AND cp.proveedor_id = t.proveedor_id
@@ -37,6 +44,7 @@ falta AS (  -- decisiones donde lo comprado es distinto a lo sugerido y no tiene
 sin_oc AS (SELECT count(*) AS n FROM compras_planes pl, cfg WHERE pl.base = cfg.base AND pl.docto_cm_id IS NULL
              AND pl.fecha < cfg.hoy - cfg.dias_ligar AND EXISTS (SELECT 1 FROM compras_decisiones d WHERE d.plan_id = pl.id AND d.comprado > 0)),
 oc_sin_plan AS (SELECT count(*) AS n FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 60
+                  AND oc.id NOT IN (SELECT id FROM solo_excl)
                   AND NOT EXISTS (SELECT 1 FROM compras_planes q WHERE q.base = cfg.base AND q.docto_cm_id = oc.id))
 SELECT json_build_object(
   'ok', true, 'base', cfg.base, 'hoy', cfg.hoy::text, 'dow', extract(isodow FROM cfg.hoy)::int, 'cfg', cfg.c,
@@ -47,7 +55,12 @@ SELECT json_build_object(
              SELECT mes::text AS mes, count(*) AS productos, count(*) FILTER (WHERE clase = 'A') AS a, count(*) FILTER (WHERE alerta IS NOT NULL) AS alertas,
                     max(calculado) AS calculado
              FROM compras_maxmin WHERE base = cfg.base GROUP BY mes ORDER BY mes DESC LIMIT 24) x),
-  'proveedores', (SELECT coalesce(json_agg(pv ORDER BY (pv.n_a + pv.n_b) DESC, pv.nombre), '[]'::json) FROM pv),
+  'proveedores', (SELECT coalesce(json_agg(pv ORDER BY (pv.n_a + pv.n_b + pv.n_c) DESC, pv.nombre), '[]'::json) FROM pv),
+  'excluidos', (SELECT coalesce(json_agg(x ORDER BY x.articulos DESC), '[]'::json) FROM (
+       SELECT coalesce(excl.linea_excl, 'Marcados a mano, dados de baja o por nombre') AS linea, count(DISTINCT excl.articulo_id) AS articulos,
+              count(DISTINCT excl.articulo_id) FILTER (WHERE exi.e > 0) AS con_existencia
+       FROM excl LEFT JOIN exi ON exi.articulo_id = excl.articulo_id
+       GROUP BY 1 HAVING count(DISTINCT excl.articulo_id) FILTER (WHERE exi.e <> 0) > 0 OR max(excl.linea_excl) IS NOT NULL) x),
   'sin_proveedor', (SELECT count(*) FROM mm WHERE proveedor_id IS NULL),
   'falta_razon', (SELECT n FROM falta), 'planes_sin_oc', (SELECT n FROM sin_oc), 'oc_sin_plan', (SELECT n FROM oc_sin_plan),
   'oc_detalle', EXISTS (SELECT 1 FROM ms_raw WHERE base = cfg.base AND tabla = 'DOCTOS_CM_DET' LIMIT 1),

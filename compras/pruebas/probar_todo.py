@@ -13,14 +13,19 @@ def ok(c, msg):
         sys.exit(1)
 
 d = correr('datos')
-ok(d['ok'] and d['mes'] is None and d['oc_total'] == 10, 'datos sin cálculo previo')
+ok(d['ok'] and d['mes'] is None and d['oc_total'] == 12, 'datos sin cálculo previo')
+ok([x['linea'] for x in d['excluidos']] == ['TINACOS Y CISTERNAS'], 'avisa que la línea de tinacos no se toma en cuenta')
 c = correr('calcular', {'mes': '2026-10-01'})
-ok(c['productos'] == 15 and c['a'] == 3 and c['b'] == 12, 'A/B: 3 A, 12 B (tinaco excluido)')
+ok(c['productos'] == 16 and c['a'] == 3 and c['b'] == 12 and c['c'] == 1, 'A/B/C: 3 A, 12 B, 1 C (tinaco excluido)')
 mm = {f['clave']: f for f in correr('reporte', {})['filas']}
 f = mm['CEM25']
 ok(f['minimo'] == -(-f['vd'] * (f['entrega'] + f['seguridad']) // 1) and f['maximo'] == f['minimo'] + -(-f['vd'] * f['inventario'] // 1), 'fórmula de mín/máx')
 ok(all(x['minimo'] >= 1 and x['maximo'] > x['minimo'] for x in mm.values()), 'ningún mínimo en 0 y máximo > mínimo')
 ok(mm['MARTILLO']['alerta'] == 'sin proveedor', 'alerta sin proveedor')
+ok('TINACO' not in mm, 'tinacos fuera del cálculo')
+ok(mm['BROCHA4']['clase'] == 'C' and mm['BROCHA4']['minimo'] >= 1 and mm['BROCHA4']['maximo'] > mm['BROCHA4']['minimo'], 'C: vendido fuera de los 6 meses, mínimo 1 pieza')
+n = {x['clave']: x for x in correr('planeador', {'proveedor_id': ''})['filas']}
+ok(n['TALADRO']['clase'] == 'C' and n['TALADRO']['alerta'].startswith('nuevo'), 'artículo nuevo de este mes entra como C provisional')
 p = correr('planeador', {'proveedor_id': '14'})
 cem = {x['clave']: x for x in p['filas']}
 ok(cem['CEM25']['pendiente'] == 100 and 'O0000077' in cem['CEM25']['folios'], 'pendiente por recibir de la OC abierta')
@@ -42,11 +47,12 @@ ok(L['CEM50']['oc_unidades'] == s['sugerido'] + 20 and L['MOR25']['fuente'].star
 ok(d['falta_razon'] == 1, 'pide razón del renglón no planeado')
 for m in ('2026-08-01', '2026-09-01'):
     x = correr('reconstruir', {'mes': m, 'solo_si_falta': 'si'}, hoy='2026-10-07')
-    ok(x['ocs'] == (5 if m < '2026-09' else 4), 'reconstruir ' + m + f" ({x['renglones']} renglones)")
+    ok(x['ocs'] == 5, 'reconstruir ' + m + f" ({x['renglones']} renglones, sin la OC de tinacos)")
 x = correr('reconstruir', {'mes': '2026-08-01', 'solo_si_falta': 'si'}, hoy='2026-10-07')
 ok(x['renglones'] == 13, 'reconstruir dos veces no duplica')
 o = correr('ocs', {'desde': '2026-08-01', 'hasta': '2026-09-30'})
-ok(len(o['ocs']) == 9 and all(z['plan'] == 'reconstruido' for z in o['ocs']), '9 OCs de ago-sep, como el Diario de compras')
+ok(len(o['ocs']) == 11 and all(bool(z['plan']) != z['excluida'] for z in o['ocs']), 'todas las OCs ligadas menos la de tinacos (marcada como excluida)')
+ok(correr('registro', {'mes': '2026-08-01'})['oc_sin_plan'] == [], 'la OC de tinacos no sale como OC sin plan')
 did = correr('registro', {'mes': '2026-08-01'})['planes'][0]['lineas'][0]['id']
 ok(correr('razon', {'id': did, 'razon': 'no_documentado', 'nota': ''})['razon'] == 'no_documentado', 'guardar razón')
 ok(correr('articulo', {'articulo_id': 2, 'proveedor_id': '14', 'clase': '', 'empaque': '10', 'minimo': '', 'maximo': '', 'excluir': 'false', 'nota': ''})['ok'], 'ajuste por artículo')

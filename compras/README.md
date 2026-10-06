@@ -5,16 +5,27 @@ páginas: un flujo de n8n que lee las tablas de Microsip que ya se copian a Post
 
 | Pestaña | Qué hace | Lineamiento |
 |---|---|---|
-| A/B y máximos-mínimos | Cada mes (día 1, 3:40 a.m.) calcula el 80/20 con la venta de los últimos 6 meses y los máximos/mínimos | 1.2.1.1 · 1.2.2.2 |
-| Planeador | Según el calendario (A cada semana, B cada 15 días por proveedor) muestra existencia, por recibir, mínimo, máximo y sugerido. Capturas lo que compras y la razón si es distinto | 1.2.2.3 · 1.2.2.4 |
+| A/B/C y máximos-mínimos | Cada mes (día 1, 3:40 a.m.) calcula el 80/20 con la venta de los últimos 6 meses, los C y los máximos/mínimos | 1.2.1.1 · 1.2.2.2 |
+| Planeador | Según el calendario (A cada semana, B y C cada 15 días por proveedor) muestra existencia, por recibir, mínimo, máximo y sugerido. Capturas lo que compras y la razón si es distinto | 1.2.2.3 · 1.2.2.4 |
 | Registro de compras | Liga cada plan con su orden de compra de Microsip (sola o por folio), reconstruye meses pasados y exporta el registro mensual | 1.3.1.1 |
 | Configuración | Todas las reglas, los proveedores, los ajustes por artículo y la lista de razones. **Todo se guarda en la base de datos** | — |
 
-Reglas (se cambian en la página):
+Cómo se clasifica (se explica también en la página y en el Excel):
+
+- **A**: los artículos que juntos suman el primer **80%** de la venta (importe sin IVA) de los últimos **6 meses**
+  completos. Cuentan tickets de punto de venta menos devoluciones y remisiones; no cuentan cancelados ni tickets de más de $500,000.
+- **B**: el resto de los que se vendieron en esos 6 meses.
+- **C**: los que se vendieron en los últimos **12 meses** pero no en esos 6, y los que se venden por primera vez en el mes
+  (entran como C provisional en el planeador hasta el siguiente cálculo). No cuentan para el 80/20.
+- **No entran**: las líneas o grupos de Microsip que digan `tinaco|cisterna` (fabricación propia), los dados de baja y los
+  marcados a mano. La página lo avisa y sus OCs no salen como pendientes en el registro.
+
+Reglas de máximos y mínimos (se cambian en la página):
 
 - **Mínimo** = venta diaria × (días de entrega del proveedor + días de seguridad)
 - **Máximo** = mínimo + venta diaria × días de inventario deseado
-- De fábrica: A = 3 días de seguridad y 15 de inventario; B = 5 y 30. Ningún mínimo queda en 0 y el máximo siempre es mayor que el mínimo.
+- De fábrica: A = 3 días de seguridad y 15 de inventario; B = 5 y 30; C = 5 y 30 con mínimo de al menos 1 pieza.
+  Ningún mínimo queda en 0 y el máximo siempre es mayor que el mínimo.
 - **Sugerido** = máximo − existencia − por recibir, cuando existencia + por recibir llega al mínimo (o siempre, si eliges “completar hasta el máximo”). Se redondea al empaque.
 
 ## Instalar
@@ -30,7 +41,7 @@ Reglas (se cambian en la página):
 ## Primer uso
 
 1. **Configuración → Proveedores**: pon los días de entrega de cada proveedor (CEMEX, Grupo Acerero, Ferremax, Truper…), aunque sea aproximado, y qué día revisas sus productos A. Guarda.
-2. **A/B y máximos-mínimos → Recalcular este mes.**
+2. **A/B/C y máximos-mínimos → Recalcular este mes.**
 3. **Registro de compras** → mes de agosto → **Reconstruir desde Microsip**. Repite con septiembre.
    Solo llena la razón donde compraste distinto al sugerido. La razón tiene que ser la verdadera: si no te acuerdas, elige **No documentado**.
 4. En **Validar contra el Diario de compras**, pon del 1 de agosto al 30 de septiembre y compara con el reporte de Microsip:

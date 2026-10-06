@@ -2,8 +2,43 @@
 SET LOCAL statement_timeout = '30s';
 WITH /*CTX*/, /*OC*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
-mm AS (SELECT x.* FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes
+mm0 AS (SELECT x.articulo_id, x.clave, x.articulo, x.unidad, x.clase, x.venta_diaria, x.minimo, x.maximo, x.alerta, x.empaque
+        FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes
          AND coalesce(x.proveedor_id, '') = coalesce(cfg.p->>'proveedor_id', '')),
+/*EXCL*/,
+nv AS (   -- vendidos desde que se calculó el mes y que no estaban en la lista (productos nuevos): entran como C provisional
+  SELECT d.articulo_id, sum(CASE WHEN upper(v.tipo) = 'D' THEN -1 ELSE 1 END * abs(d.unidades)) AS u
+  FROM ms_ventas v JOIN ms_ventas_det d ON d.base = v.base AND d.origen = v.origen AND d.docto_id = v.docto_id, cfg, ms
+  WHERE v.base = cfg.base AND v.fecha >= ms.mes AND coalesce(v.estatus, '') <> 'C' AND d.articulo_id IS NOT NULL
+    AND ((v.origen = 'PV' AND upper(v.tipo) IN ('V', 'D')) OR (v.origen = 'VE' AND v.tipo = 'R'))
+    AND NOT EXISTS (SELECT 1 FROM compras_maxmin x WHERE x.base = cfg.base AND x.mes = ms.mes AND x.articulo_id = d.articulo_id)
+    AND NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = d.articulo_id)
+  GROUP BY 1 HAVING sum(CASE WHEN upper(v.tipo) = 'D' THEN -1 ELSE 1 END * abs(d.unidades)) > 0),
+nvc AS (  -- proveedor de la última compra de esos artículos
+  SELECT DISTINCT ON (z.articulo_id) z.articulo_id, z.prov FROM (
+    SELECT (d.datos->>'ARTICULO_ID')::bigint AS articulo_id, r.datos->>'PROVEEDOR_ID' AS prov, coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) AS fecha
+    FROM ms_raw d JOIN cfg ON d.base = cfg.base
+    JOIN ms_raw r ON r.base = d.base AND r.tabla = 'DOCTOS_CM' AND r.datos->>'DOCTO_CM_ID' = d.datos->>'DOCTO_CM_ID'
+    WHERE d.tabla = 'DOCTOS_CM_DET' AND (d.datos->>'ARTICULO_ID') ~ '^[0-9]+$' AND (SELECT count(*) FROM nv) > 0
+      AND (d.datos->>'ARTICULO_ID')::bigint IN (SELECT articulo_id FROM nv)
+      AND upper(coalesce(r.datos->>'TIPO_DOCTO', '')) IN ('O', 'R', 'C') AND upper(coalesce(r.datos->>'ESTATUS', '')) <> 'C') z
+  ORDER BY z.articulo_id, z.fecha DESC),
+nv2 AS (
+  SELECT nv.articulo_id, a.clave, a.nombre AS articulo, a.unidad, nv.u / greatest(cfg.hoy - ms.mes + 1, 1) AS vd,
+         coalesce(cp.dias_entrega, cfg.ent_def) AS ent, ov.minimo AS min_f, ov.maximo AS max_f, ov.empaque
+  FROM nv CROSS JOIN cfg CROSS JOIN ms
+  LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = nv.articulo_id
+  LEFT JOIN compras_articulos ov ON ov.base = cfg.base AND ov.articulo_id = nv.articulo_id
+  LEFT JOIN nvc ON nvc.articulo_id = nv.articulo_id
+  LEFT JOIN compras_proveedores cp ON cp.base = cfg.base AND cp.proveedor_id = coalesce(nullif(ov.proveedor_id, ''), nvc.prov)
+  WHERE coalesce(nullif(ov.proveedor_id, ''), nvc.prov, '') = coalesce(cfg.p->>'proveedor_id', '')),
+nv3 AS (SELECT nv2.*, greatest(coalesce(nv2.min_f, ceil(nv2.vd * (nv2.ent + cfg.seg_c))), cfg.min_c) AS mn FROM nv2, cfg),
+mm AS (SELECT * FROM mm0
+       UNION ALL
+       SELECT nv3.articulo_id, nv3.clave, nv3.articulo, nv3.unidad, 'C', round(nv3.vd, 4), nv3.mn,
+              greatest(coalesce(nv3.max_f, nv3.mn + ceil(nv3.vd * cfg.inv_c)), nv3.mn + 1),
+              'nuevo: se vendió este mes y aún no tiene clase (entra como C hasta el próximo cálculo)', nv3.empaque
+       FROM nv3, cfg),
 ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EXI*/,
 pl AS (SELECT pl.* FROM compras_planes pl, cfg WHERE pl.base = cfg.base AND pl.fecha = cfg.hoy AND pl.origen = 'planeador'
          AND pl.proveedor_id = cfg.p->>'proveedor_id'),

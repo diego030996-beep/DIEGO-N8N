@@ -41,7 +41,7 @@ switch (op) {
     break;
   case 'guardar': {
     if (!provOk(b.proveedor_id) || !b.proveedor_id) return fail('Elige el proveedor.');
-    if (!['A', 'B'].includes(b.clase)) return fail('Elige productos A o B.');
+    if (!['A', 'B', 'C'].includes(b.clase)) return fail('Elige productos A, B o C.');
     const L = Array.isArray(b.lineas) ? b.lineas : [];
     if (L.length > 800) return fail('Demasiados renglones.');
     const lineas = [];
@@ -55,7 +55,7 @@ switch (op) {
       if (razon === 'otra' && !nota) return fail('Escribe la nota de ' + txt(l.articulo, 60) + '.');
       const n = k => (l[k] === null || l[k] === undefined || l[k] === '' || !isFinite(Number(l[k]))) ? null : Number(l[k]);
       lineas.push({ articulo_id: Number(l.articulo_id), clave: txt(l.clave, 40), articulo: txt(l.articulo, 160), unidad: txt(l.unidad, 30),
-        clase: l.clase === 'A' ? 'A' : 'B', existencia: n('existencia'), pendiente: n('pendiente'), minimo: n('minimo'), maximo: n('maximo'),
+        clase: ['A', 'B', 'C'].includes(l.clase) ? l.clase : 'C', existencia: n('existencia'), pendiente: n('pendiente'), minimo: n('minimo'), maximo: n('maximo'),
         sugerido: n('sugerido'), comprado: Number(l.comprado), razon, nota });
     }
     p = { proveedor_id: String(b.proveedor_id), proveedor: txt(b.proveedor, 120), clase: b.clase, folio: txt(b.folio, 30), lineas };
@@ -93,7 +93,7 @@ switch (op) {
     const mn = b.minimo === '' ? null : Number(b.minimo), mx = b.maximo === '' ? null : Number(b.maximo);
     if (mn === 0 || mx === 0) return fail('El mínimo y el máximo no pueden ser cero.');
     if (mn !== null && mx !== null && mx <= mn) return fail('El máximo debe ser mayor que el mínimo.');
-    p = { articulo_id: Number(b.articulo_id), proveedor_id: String(b.proveedor_id || ''), clase: ['A', 'B'].includes(b.clase) ? b.clase : '',
+    p = { articulo_id: Number(b.articulo_id), proveedor_id: String(b.proveedor_id || ''), clase: ['A', 'B', 'C'].includes(b.clase) ? b.clase : '',
           empaque: String(b.empaque ?? ''), minimo: String(b.minimo ?? ''), maximo: String(b.maximo ?? ''),
           excluir: b.excluir === 'true' ? 'true' : 'false', nota: txt(b.nota, 200) };
     break;
@@ -102,6 +102,9 @@ switch (op) {
     const REGLAS = {
       meses_abc: v => numOk(v, 1, 24) && Number.isInteger(Number(v)), corte_a: v => numOk(v, 50, 95),
       seg_a: v => numOk(v, 0, 120), inv_a: v => numOk(v, 1, 365), seg_b: v => numOk(v, 0, 120), inv_b: v => numOk(v, 1, 365),
+      meses_c: v => numOk(v, 1, 36) && Number.isInteger(Number(v)), seg_c: v => numOk(v, 0, 120), inv_c: v => numOk(v, 1, 365),
+      min_c: v => numOk(v, 1, 1000),
+      lineas_excluidas: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       entrega_def: v => numOk(v, 0, 120), dia_a: v => ['1', '2', '3', '4', '5', '6', '7'].includes(String(v)), frec_b: v => numOk(v, 1, 90),
       regla: v => ['bajo_minimo', 'hasta_maximo'].includes(v), gracia_oc: v => numOk(v, 0, 60), dias_ligar: v => numOk(v, 0, 30),
       almacenes: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
@@ -110,7 +113,7 @@ switch (op) {
       razones: v => String(v).length <= 3000 && /^no_documentado=/m.test(v) && /^otra=/m.test(v),
       base: v => String(v).length <= 80,
     };
-    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
+    const NUM = ['meses_abc', 'corte_a', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
     const general = {};
     for (const [k, v0] of Object.entries(b.general || {})) {
       if (!REGLAS[k]) continue;

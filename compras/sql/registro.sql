@@ -2,6 +2,8 @@
 SET LOCAL statement_timeout = '30s';
 WITH /*CTX*/, /*OC*/,
 m AS (SELECT date_trunc('month', coalesce(nullif(p->>'mes', '')::date, hoy))::date AS mes FROM cfg),
+ids AS (SELECT o.id FROM oc o, m WHERE o.fecha >= m.mes AND o.fecha < (m.mes + interval '1 month')::date), /*OCD*/, /*EXCL*/,
+solo_excl AS (SELECT ocd.id FROM ocd GROUP BY ocd.id HAVING bool_and(ocd.articulo_id IN (SELECT articulo_id FROM excl))),
 pl AS (SELECT pl.* FROM compras_planes pl, cfg, m WHERE pl.base = cfg.base
          AND coalesce(pl.fecha_oc, pl.fecha) >= m.mes AND coalesce(pl.fecha_oc, pl.fecha) < (m.mes + interval '1 month')::date)
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM m)::text, 'razones', cfg.c->>'razones',
@@ -18,5 +20,6 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM m)::text, 'razones'
        'importe', o.importe) ORDER BY o.fecha), '[]'::json)
      FROM oc o CROSS JOIN m LEFT JOIN prv ON prv.proveedor_id = o.prov
      WHERE o.fecha >= m.mes AND o.fecha < (m.mes + interval '1 month')::date
+       AND o.id NOT IN (SELECT id FROM solo_excl)
        AND NOT EXISTS (SELECT 1 FROM compras_planes q WHERE q.base = cfg.base AND q.docto_cm_id = o.id))) AS r
 FROM cfg;

@@ -28,7 +28,7 @@ INSERT INTO tablero_acceso VALUES ('k-compras', 'compras', true), ('k-auditor', 
 """
 
 prov = {'10': 'FERRECORRECAMINOS', '11': 'CIMAEP DE CONTADO', '12': 'CASA BLANCA', '13': 'DISTRIBUIDORA FERREMAX',
-        '14': 'CEMEX S.A.B DE CV', '15': 'DISTRIBUIDORA LUMAR', '16': 'TRUPER'}
+        '14': 'CEMEX S.A.B DE CV', '15': 'DISTRIBUIDORA LUMAR', '16': 'TRUPER', '17': 'FABRICA TINACOS'}
 arts = [  # id, clave, nombre, unidad, precio, ventas por día aprox, proveedor
     (1, 'CEM25', 'CEMENTO GRIS TOLTECA 25KG', 'Saco', 135, 12, '14'),
     (2, 'CEM50', 'CEMENTO GRIS TOLTECA 50KG', 'SACO', 240, 9, '14'),
@@ -46,23 +46,30 @@ arts = [  # id, clave, nombre, unidad, precio, ventas por día aprox, proveedor
     (14, 'DISCO', 'DISCO SABLE CORTE DE METAL 4 1/2', 'Pieza', 18, 0.9, '13'),
     (15, 'MARTILLO', 'MARTILLO TRUPER 16OZ', 'Pieza', 180, 0.05, '16'),
     (16, 'TINACO', 'TINACO 1100 LTS', 'Pieza', 2500, 0.1, None),
+    (17, 'BROCHA4', 'BROCHA 4 PULGADAS', 'Pieza', 60, 0.3, '16'),      # C: solo vendió en enero-febrero
+    (18, 'TALADRO', 'TALADRO TRUPER 1/2', 'Pieza', 900, 0.4, '16'),    # nuevo: solo vendió en octubre
 ]
+VENTANA = {17: (date(2026, 1, 5), date(2026, 2, 28)), 18: (date(2026, 10, 1), date(2026, 10, 31))}
 sql = [ddl]
 q = lambda s: "NULL" if s is None else "'" + str(s).replace("'", "''") + "'"
 for a in arts:
     sql.append(f"INSERT INTO ms_articulos (base, articulo_id, clave, nombre, estatus, unidad, linea, grupo, precio_lista) VALUES "
-               f"({q(B)}, {a[0]}, {q(a[1])}, {q(a[2])}, 'A', {q(a[3])}, {q('TINACOS' if a[0] == 16 else 'MATERIALES')}, '', {a[4]});")
+               f"({q(B)}, {a[0]}, {q(a[1])}, {q(a[2])}, 'A', {q(a[3])}, {q('TINACOS Y CISTERNAS' if a[0] == 16 else 'MATERIALES')}, '', {a[4]});")
     sql.append(f"INSERT INTO ms_existencias (base, articulo_id, almacen_id, almacen, clave, articulo, existencia, valor) VALUES "
                f"({q(B)}, {a[0]}, 1, 'GENERAL', {q(a[1])}, {q(a[2])}, {round(a[5] * random.uniform(2, 20))}, 1);")
 for k, v in prov.items():
     sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'PROVEEDORES', {q(k)}, {q(json.dumps({'PROVEEDOR_ID': int(k), 'NOMBRE': v}))});")
 
 # ventas diarias de marzo a hoy
-d, docto, det = date(2026, 3, 1), 1000, 1
+d, docto, det = date(2026, 1, 1), 1000, 1
 fin = date(2026, 10, 6)
 while d <= fin:
     if d.weekday() < 6:
         for a in arts:
+            if a[0] in VENTANA and not (VENTANA[a[0]][0] <= d <= VENTANA[a[0]][1]):
+                continue
+            if a[0] not in VENTANA and d < date(2026, 3, 1):
+                continue
             u = sum(1 for _ in range(int(a[5] * 3)) if random.random() < 1 / 3)
             if a[5] < 1 and random.random() < a[5]:
                 u += 1
@@ -87,6 +94,8 @@ ocs = [
     (74, '2026-09-22', '14', [(1, 360), (2, 20)]),
     (76, '2026-09-29', '14', [(2, 200)]),
     (77, '2026-10-05', '14', [(1, 100)]),
+    (63, '2026-08-20', '17', [(16, 10)]),   # OC de tinacos: no debe entrar
+    (68, '2026-09-10', '16', [(17, 3)]),
 ]
 precio = {a[0]: a[4] * 0.75 for a in arts}
 for folio, f, p, lineas in ocs:
