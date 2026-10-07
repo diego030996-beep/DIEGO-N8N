@@ -39,6 +39,18 @@ CREATE TABLE IF NOT EXISTS mov_retiro_dueno (id BIGSERIAL PRIMARY KEY, base TEXT
   anulado BOOLEAN NOT NULL DEFAULT false, anulado_nota TEXT, anulado_en TIMESTAMPTZ);
 CREATE UNIQUE INDEX IF NOT EXISTS mov_retiro_dueno_ms ON mov_retiro_dueno (base, retiro_id) WHERE retiro_id IS NOT NULL AND NOT anulado;
 CREATE TABLE IF NOT EXISTS mov_aviso (clave TEXT PRIMARY KEY, enviado TIMESTAMPTZ NOT NULL DEFAULT now());
+-- índices para que la página cargue rápido (se crean una sola vez sobre la copia de Microsip)
+DO 'BEGIN
+  IF to_regclass(''ms_raw'') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = ''ms_raw_pv_cobro'') THEN
+    CREATE INDEX ms_raw_pv_cobro ON ms_raw (base, (datos->>''DOCTO_PV_ID'')) WHERE tabla = ''DOCTOS_PV_COBROS'';
+  END IF;
+  IF to_regclass(''ms_raw'') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = ''ms_raw_cm_det'') THEN
+    CREATE INDEX ms_raw_cm_det ON ms_raw (base, (datos->>''DOCTO_CM_ID'')) WHERE tabla = ''DOCTOS_CM_DET'';
+  END IF;
+  IF to_regclass(''ms_ventas'') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = ''ms_ventas_pv_tipo'') THEN
+    CREATE INDEX ms_ventas_pv_tipo ON ms_ventas (base, origen, upper(tipo), fecha);
+  END IF;
+END';
 -- la auditoría empieza el día que se instala (no revisa todo el pasado de Microsip)
 INSERT INTO mov_config (clave, valor, por) SELECT 'desde', to_char((now() AT TIME ZONE 'America/Mexico_City')::date, 'YYYY-MM-DD'), 'instalación'
 WHERE NOT EXISTS (SELECT 1 FROM mov_config WHERE clave = 'desde');

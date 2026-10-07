@@ -23,6 +23,14 @@ El empleado reporta y sube la foto, el sistema cruza todo y la auditora solo rev
 
 Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
 
+## Comprobar rápido (📷 foto y listo)
+Cada cobro o retiro pendiente tiene un botón 📷: se toma la foto y queda guardado.
+- El importe, el folio y la hora salen de Microsip.
+- En los retiros, el motivo es la descripción de caja y el tipo se adivina con "Retiros que son gasto".
+- Al momento dice el resultado (🟢 comprobado, o qué falta). La recepción de compra se busca sola.
+
+Si hace falta algo más (pedido, varias fotos, otro importe), se escoge el pendiente y se usa el formulario, o se completa después en el movimiento.
+
 ## Corte de caja (pestaña "Corte de caja")
 Reporte del día listo para imprimir:
 - **Totales**: cobrado en caja, cobrado en efectivo, retiros (y cuántos no piden comprobante) y efectivo neto (efectivo − retiros; sin fondo de caja).
@@ -57,6 +65,12 @@ Muestra todos los retiros de un mes, aunque sean de antes de empezar la auditor�
 
 Sirve para ajustar en Ajustes qué retiros no piden comprobante y cuáles son gasto.
 Al escoger un retiro para comprobarlo, si su descripción es de gasto, el tipo se pone solo en "Gasto".
+
+## Rendimiento
+- La página crea, una sola vez, índices sobre la copia de Microsip: cobros por ticket (`ms_raw_pv_cobro`), renglones de compra (`ms_raw_cm_det`) y ventas por tipo y fecha (`ms_ventas_pv_tipo`).
+- Los cobros se buscan ticket por ticket. Con 200 mil cobros en la copia, cada pantalla tarda menos de 0.6 s; antes no terminaba en 30 s.
+- Solo se revisan los cobros de los últimos 90 días.
+- Los días anteriores a "Auditar desde" se muestran en el corte como **"sin auditar"**: no se dicen comprobados ni pendientes.
 
 ## De dónde sale cada dato
 - **Retiros de caja**: Punto de venta, documentos tipo `R` de `ms_ventas`, sin cancelados. El importe sale de `DOCTOS_PV_COBROS`.

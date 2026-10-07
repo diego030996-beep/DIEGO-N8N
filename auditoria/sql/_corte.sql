@@ -4,7 +4,7 @@ tc AS (   -- todo lo cobrado en caja ese día, por forma (incluye efectivo); dev
          CASE WHEN upper(v.tipo) = 'D' THEN -1 ELSE 1 END * CASE WHEN upper(coalesce(c.datos->>'TIPO', 'C')) = 'A' THEN -1 ELSE 1 END
            * CASE WHEN jsonb_typeof(c.datos->'IMPORTE') = 'number' THEN (c.datos->>'IMPORTE')::numeric ELSE 0 END AS importe
   FROM ms_ventas_v v CROSS JOIN cfg CROSS JOIN f
-  JOIN ms_raw c ON c.base = v.base AND c.tabla = 'DOCTOS_PV_COBROS' AND c.datos->>'DOCTO_PV_ID' = v.docto_id::text
+  CROSS JOIN LATERAL (SELECT c.datos FROM ms_raw c WHERE c.base = v.base AND c.tabla = 'DOCTOS_PV_COBROS' AND (c.datos->>'DOCTO_PV_ID') = v.docto_id::text) c
   LEFT JOIN ms_raw fc ON fc.base = v.base AND fc.tabla = 'FORMAS_COBRO' AND fc.pk = c.datos->>'FORMA_COBRO_ID'
   WHERE v.base = cfg.base AND v.origen = 'PV' AND upper(v.tipo) IN ('V', 'P', 'D') AND NOT v.cancelado AND v.fecha = f.d),
 kd AS (   -- estado de cada cobro que pide comprobante
@@ -27,7 +27,9 @@ rt AS (   -- todos los retiros del día, también los que no piden comprobante
   FROM ms_ventas_v v CROSS JOIN cfg CROSS JOIN f
   WHERE v.base = cfg.base AND v.origen = 'PV' AND upper(v.tipo) = 'R' AND NOT v.cancelado AND v.fecha = f.d),
 dd AS (SELECT d.* FROM mov_retiro_dueno d, cfg, f WHERE d.base = cfg.base AND d.fecha = f.d AND NOT d.anulado),
-rts AS (SELECT rt.*, CASE WHEN dd.id IS NOT NULL THEN 'dueno' WHEN rt.exento THEN 'exento' ELSE coalesce(e.estado, m.estado, 'pendiente') END AS estado,
+-- los días antes de empezar la auditoría ("Auditar desde") solo se muestran: no se dicen comprobados ni pendientes
+rts AS (SELECT rt.*, CASE WHEN dd.id IS NOT NULL THEN 'dueno' WHEN rt.exento THEN 'exento'
+                          ELSE coalesce(e.estado, m.estado, CASE WHEN (SELECT d FROM f) < (SELECT desde FROM cfg) THEN 'sin_auditar' ELSE 'pendiente' END) END AS estado,
                coalesce(CASE WHEN dd.id IS NOT NULL THEN 'Retiro del dueño RD-' || dd.id END, e.motivo, m.motivo, CASE WHEN rt.exento THEN 'No pide comprobante' END) AS motivo,
                e.tipo, e.cm_folio, e.id AS registro_id
         FROM rt LEFT JOIN dd ON dd.retiro_id = rt.id LEFT JOIN est e ON e.retiro_id = rt.id LEFT JOIN mov m ON m.clase = 'retiro' AND m.ref = rt.id),

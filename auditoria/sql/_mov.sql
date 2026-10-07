@@ -8,17 +8,20 @@ rcob AS (   -- importe del retiro según sus cobros (efectivo que salió)
   SELECT c.datos->>'DOCTO_PV_ID' AS id, abs(sum(CASE WHEN jsonb_typeof(c.datos->'IMPORTE') = 'number' THEN (c.datos->>'IMPORTE')::numeric ELSE 0 END)) AS importe
   FROM ms_raw c, cfg WHERE c.base = cfg.base AND c.tabla = 'DOCTOS_PV_COBROS' AND c.datos->>'DOCTO_PV_ID' IN (SELECT id FROM ret0) GROUP BY 1),
 ret AS (SELECT r.*, coalesce(nullif(rc.importe, 0), r.total) AS importe FROM ret0 r LEFT JOIN rcob rc ON rc.id = r.id),
+tk AS MATERIALIZED (   -- tickets de caja desde que empezó la auditoría (primero los tickets, luego sus cobros por índice: así no recorre toda la copia)
+  SELECT v.base, v.docto_id::text AS docto, v.folio, v.fecha, left(coalesce(v.hora, ''), 5) AS hora, coalesce(v.usuario, '') AS usuario, coalesce(v.cliente, '') AS cliente
+  FROM ms_ventas_v v, cfg
+  WHERE v.base = cfg.base AND v.origen = 'PV' AND upper(v.tipo) IN ('V', 'P') AND NOT v.cancelado AND v.fecha >= cfg.desde AND v.fecha >= cfg.hoy - 90),
 cob0 AS (   -- cobros de caja con formas que piden comprobante (tarjeta → voucher, transferencia, Mercado Pago), por ticket y forma
-  SELECT v.docto_id::text AS docto, v.folio, v.fecha, left(coalesce(v.hora, ''), 5) AS hora, coalesce(v.usuario, '') AS usuario, coalesce(v.cliente, '') AS cliente,
+  SELECT v.docto, v.folio, v.fecha, v.hora, v.usuario, v.cliente,
          c.datos->>'FORMA_COBRO_ID' AS forma_id, coalesce(fc.datos->>'NOMBRE', 'Forma ' || (c.datos->>'FORMA_COBRO_ID')) AS forma,
          sum(CASE WHEN upper(coalesce(c.datos->>'TIPO', 'C')) = 'A' THEN -1 ELSE 1 END
              * CASE WHEN jsonb_typeof(c.datos->'IMPORTE') = 'number' THEN (c.datos->>'IMPORTE')::numeric ELSE 0 END) AS importe,
          max(nullif(trim(coalesce(c.datos->>'REFERENCIA', c.datos->>'NUM_AUTORIZACION', '')), '')) AS referencia
-  FROM ms_ventas_v v CROSS JOIN cfg
-  JOIN ms_raw c ON c.base = v.base AND c.tabla = 'DOCTOS_PV_COBROS' AND c.datos->>'DOCTO_PV_ID' = v.docto_id::text
+  FROM tk v CROSS JOIN cfg
+  CROSS JOIN LATERAL (SELECT c.datos FROM ms_raw c WHERE c.base = v.base AND c.tabla = 'DOCTOS_PV_COBROS' AND (c.datos->>'DOCTO_PV_ID') = v.docto) c
   JOIN ms_raw fc ON fc.base = v.base AND fc.tabla = 'FORMAS_COBRO' AND fc.pk = c.datos->>'FORMA_COBRO_ID'
-  WHERE v.base = cfg.base AND v.origen = 'PV' AND upper(v.tipo) IN ('V', 'P') AND NOT v.cancelado AND v.fecha >= cfg.desde
-    AND (cfg.formas = '' OR coalesce(fc.datos->>'NOMBRE', '') ~* cfg.formas)
+  WHERE (cfg.formas = '' OR coalesce(fc.datos->>'NOMBRE', '') ~* cfg.formas)
     AND (cfg.formas_sin = '' OR NOT (coalesce(fc.datos->>'NOMBRE', '') ~* cfg.formas_sin))
   GROUP BY 1, 2, 3, 4, 5, 6, 7, 8),
 cob AS (
@@ -78,7 +81,8 @@ ped AS (   -- pedidos / remisiones / facturas de Ventas que se mencionan
   SELECT DISTINCT ON (fn) v.docto_id, v.folio, v.tipo, v.fecha, v.cliente, v.total, v.cancelado, x.fn
   FROM ms_ventas_v v CROSS JOIN cfg
   CROSS JOIN LATERAL (SELECT upper(regexp_replace(v.folio, '[^A-Za-z]', '', 'g')) || coalesce(nullif(ltrim(regexp_replace(v.folio, '[^0-9]', '', 'g'), '0'), ''), '') AS fn) x
-  WHERE v.base = cfg.base AND v.origen = 'VE' AND v.tipo IN ('P', 'R', 'F') AND x.fn IN (SELECT ped_norm FROM reg0 WHERE ped_norm <> '')
+  WHERE v.base = cfg.base AND v.origen = 'VE' AND v.tipo IN ('P', 'R', 'F') AND v.fecha >= cfg.desde - 365
+    AND EXISTS (SELECT 1 FROM reg0 WHERE ped_norm <> '') AND x.fn IN (SELECT ped_norm FROM reg0 WHERE ped_norm <> '')
   ORDER BY fn, v.cancelado, (v.tipo = 'P') DESC, v.fecha DESC),
 pdet AS (   -- artículos de cada pedido mencionado
   SELECT p.fn, d.articulo_id, max(d.articulo) AS articulo, sum(abs(d.unidades)) AS u

@@ -75,7 +75,10 @@ label.l{display:block;font-size:.8rem;font-weight:600;color:var(--soft);margin:0
 .retiros{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-height:380px;overflow:auto;margin-bottom:6px}
 .ret{display:flex;min-width:0;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;background:var(--panel)}
 .ret input{width:18px;height:18px;flex:none} .ret .q{flex:1;min-width:0} .ret b{font-size:.92rem} .ret span{display:block;color:var(--soft);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ret:has(input:checked){border-color:var(--blue);background:var(--blue2)}
+.ret:has(input[type=radio]:checked){border-color:var(--blue);background:var(--blue2)}
+.ret label.sel{display:flex;gap:10px;align-items:center;flex:1;min-width:0;cursor:pointer}
+.ret .rapido{flex:none;width:46px;height:46px;border-radius:12px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;cursor:pointer}
+.ret .rapido:active{transform:scale(.95)}
 .grupo{font-size:.76rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.05em;margin:6px 2px 0}
 .ret span.forma{display:inline-block;white-space:nowrap}
 .forma{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--blue2);color:var(--blue);margin-left:6px;vertical-align:1px}
@@ -104,7 +107,7 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
 .miniaturas img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;background:var(--panel2)}
 .acciones{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .bit{font-size:.82rem;color:var(--soft)} .bit li{margin:2px 0}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;z-index:30}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:92vw;text-align:center;background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;z-index:30}
 .cargando{opacity:.5;pointer-events:none}
 .barra{height:8px;border-radius:5px;background:var(--line);overflow:hidden;min-width:80px}.barra i{display:block;height:100%;background:var(--verde)}
 .firma{border:2px dashed var(--line);border-radius:14px;padding:14px;margin-top:14px}
@@ -484,11 +487,13 @@ let FOTOS = [];
 const QUE = { voucher: 'voucher', transferencia: 'transferencia', 'Mercado Pago': 'mercado pago' };
 function pintarRetiros() {
   const C = D.cobros || [], L = D.retiros || [];
+  // 📷 = foto y listo: guarda el comprobante con los datos de Microsip, sin llenar nada (lo demás se completa después si hace falta)
+  const rapido = (k, x) => '<label class="rapido" title="Tomar foto y guardar"><input type="file" accept="image/*" capture="environment" hidden data-rk="' + k + '" data-id="' + esc(x.id) + '">📷</label>';
   $('retiros').innerHTML =
-    (C.length ? '<div class="grupo">💳 Cobros sin comprobante (' + C.length + ')</div>' + C.map(c => '<label class="ret"><input type="radio" name="ret" value="' + esc(c.id) + '" data-k="cobro" data-que="' + esc(c.que) + '" data-imp="' + c.importe + '"><div class="q"><b>' + esc(c.folio) + ' · ' + $$(c.importe) + '<span class="forma">' + esc(c.forma) + '</span></b><span>' + fCorta(c.fecha) + ' ' + esc(c.hora) + ' · ' + (c.que === 'voucher' ? 'sube el voucher' : 'sube el comprobante') + (c.referencia ? ' · ref ' + esc(c.referencia) : '') + (c.cliente && c.cliente !== 'PUBLICO' ? ' · ' + esc(c.cliente) : '') + '</span></div></label>').join('') : '') +
-    '<div class="grupo">💵 Retiros de caja' + (L.length ? ' (' + L.length + ')' : '') + '</div>' +
-    L.map(r => '<label class="ret"><input type="radio" name="ret" value="' + esc(r.id) + '" data-k="retiro" data-imp="' + r.importe + '"><div class="q"><b>' + esc(r.folio) + ' · ' + $$(r.importe) + '</b><span>' + fCorta(r.fecha) + ' ' + esc(r.hora) + ' · ' + esc(r.descripcion || 'sin descripción') + ' · ' + esc(r.usuario) + '</span></div></label>').join('') +
-    '<label class="ret"><input type="radio" name="ret" value="" data-k="otro"><div class="q"><b>Otro gasto (sin retiro de caja)</b><span>Se pagó con otro dinero</span></div></label>';
+    (C.length ? '<div class="grupo">💳 Cobros sin comprobante (' + C.length + ') · toca 📷 y listo</div>' + C.map(c => '<div class="ret"><label class="sel"><input type="radio" name="ret" value="' + esc(c.id) + '" data-k="cobro" data-que="' + esc(c.que) + '" data-imp="' + c.importe + '"><div class="q"><b>' + esc(c.folio) + ' · ' + $$(c.importe) + '<span class="forma">' + esc(c.forma) + '</span></b><span>' + fCorta(c.fecha) + ' ' + esc(c.hora) + ' · ' + (c.que === 'voucher' ? 'voucher' : c.que === 'ticket firmado' ? 'ticket firmado' : 'comprobante') + (c.referencia ? ' · ref ' + esc(c.referencia) : '') + (c.cliente && c.cliente !== 'PUBLICO' ? ' · ' + esc(c.cliente) : '') + '</span></div></label>' + rapido('cobro', c) + '</div>').join('') : '') +
+    '<div class="grupo">💵 Retiros de caja' + (L.length ? ' (' + L.length + ') · toca 📷 y listo' : '') + '</div>' +
+    L.map(r => '<div class="ret"><label class="sel"><input type="radio" name="ret" value="' + esc(r.id) + '" data-k="retiro" data-imp="' + r.importe + '"><div class="q"><b>' + esc(r.folio) + ' · ' + $$(r.importe) + '</b><span>' + fCorta(r.fecha) + ' ' + esc(r.hora) + ' · ' + esc(r.descripcion || 'sin descripción') + ' · ' + esc(r.usuario) + '</span></div></label>' + rapido('retiro', r) + '</div>').join('') +
+    '<div class="ret"><label class="sel"><input type="radio" name="ret" value="" data-k="otro"><div class="q"><b>Otro gasto (sin retiro de caja)</b><span>Se pagó con otro dinero</span></div></label></div>';
   $('retiros').onchange = () => {
     const k = kindSel();
     $('sinRetiro').hidden = k !== 'otro'; $('camposRet').hidden = k === 'cobro' || !k;
@@ -497,6 +502,28 @@ function pintarRetiros() {
     pintarTotal();
   };
 }
+// foto y listo
+$('retiros').addEventListener('change', async e => {
+  const f = e.target.closest('input[data-rk]');
+  if (!f || !f.files.length) return;
+  const k = f.dataset.rk, id = f.dataset.id, fila = f.closest('.ret');
+  const x = (k === 'cobro' ? D.cobros : D.retiros).find(z => String(z.id) === id);
+  fila.classList.add('cargando');
+  let foto;
+  try { foto = await comprimir(f.files[0]); } catch (er) { fila.classList.remove('cargando'); return toast('No pude leer la foto'); }
+  let tipo = 'compra';
+  try { if (D.gasto_re && new RegExp(D.gasto_re, 'i').test(x.descripcion || '')) tipo = 'gasto'; } catch (er) {}
+  const body = k === 'cobro'
+    ? { op: 'registrar', cobro_id: id, comprobantes: [{ importe: x.importe, tipo: QUE[x.que] || (x.que === 'ticket firmado' ? 'ticket firmado' : 'otro'), foto: foto.b64 }] }
+    : { op: 'registrar', retiro_id: id, tipo, concepto: (x.descripcion || '').length >= 3 ? x.descripcion : 'Retiro de caja', comprobantes: [{ importe: x.importe, tipo: 'ticket', foto: foto.b64 }] };
+  const r = await api(body);
+  fila.classList.remove('cargando');
+  if (!r.ok) return toast(r.msg || 'No se pudo guardar');
+  const dt = await api({ op: 'detalle', clase: 'registro', ref: String(r.id) });
+  const m = dt.ok ? dt.mov : null;
+  toast(x.folio + (m ? ' · ' + EMO[m.estado] + ' ' + (m.estado === 'verde' ? 'comprobado' : m.motivo) : ' · guardado'));
+  const d = await api({ op: 'datos' }); if (d.ok) { D.retiros = d.retiros; D.cobros = d.cobros; pintarRetiros(); pintarTotal(); }
+});
 const retSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i ? i.value : null; };
 const kindSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i ? i.dataset.k : ''; };
 const impSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i && i.value ? Number(i.dataset.imp) : Number($('rImporte').value || 0); };
@@ -574,27 +601,30 @@ async function cargarCorte() {
 }
 function pintarCorte() {
   const r = CORTE, t = r.totales, F = r.formas, R = r.retiros;
-  const est = e => e === 'exento' ? '<span class="chip c-exento">no pide</span>' : e === 'dueno' ? '<span class="chip c-dueno">💵 dueño</span>' : '<span class="chip c-' + e + '">' + EMO[e] + ' ' + NOM[e] + '</span>';
+  const est = (e, mt) => e === 'exento' ? '<span class="chip c-exento">no pide</span>' : e === 'sin_auditar' ? '<span class="chip c-exento">sin auditar</span>' : e === 'dueno' ? '<span class="chip c-dueno">💵 dueño</span>'
+    : '<span class="chip c-' + e + '">' + EMO[e] + ' ' + (e === 'rojo' && !/^INCONSISTENCIA/.test(mt || '') ? 'Falta' : NOM[e]) + '</span>';
   let h = '<div class="card"><h2>Corte de caja · ' + new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</h2>' +
     '<p class="sub">Todo lo que entró y salió de caja ese día según Microsip, con sus comprobantes.</p>' +
     '<div class="kpis" style="margin:0"><div class="kpi"><b>' + $$(t.vendido) + '</b><span>cobrado en caja</span></div>' +
     '<div class="kpi"><b>' + $$(t.efectivo_ventas) + '</b><span>💵 cobrado en efectivo</span></div>' +
     '<div class="kpi"><b>' + $$(t.retiros) + '</b><span>retiros' + (t.retiros_exentos ? ' (' + $$(t.retiros_exentos) + ' sin comprobante)' : '') + '</span></div>' +
     '<div class="kpi dinero"><b>' + $$(t.efectivo_neto) + '</b><span>efectivo neto (efectivo − retiros)</span></div></div></div>';
-  h += '<div class="card"><h2>Cobros por forma de pago</h2><div class="tw"><table class="tabla"><tr><th>Forma</th><th class="num">Tickets</th><th class="num">Importe</th><th>Comprobantes</th></tr>' +
-    F.map(f => '<tr><td><b>' + esc(f.forma) + '</b></td><td class="num">' + f.tickets + '</td><td class="num">' + $$(f.importe) + '</td><td>' +
+  h += '<div class="card"><h2>Cobros por forma de pago</h2><div><table class="tabla"><tr><th>Forma</th><th class="num">Importe</th><th>Comprobantes</th></tr>' +
+    F.map(f => '<tr><td><b>' + esc(f.forma) + '</b><div class="bit">' + f.tickets + ' ticket' + (f.tickets === 1 ? '' : 's') + '</div></td><td class="num">' + $$(f.importe) + '</td><td>' +
       (f.sin_comprobante ? '<span class="chip c-exento">lo firmas tú</span>' : (f.faltan ? '<span class="chip c-rojo">faltan ' + f.faltan + ' · ' + $$(f.faltan_monto) + '</span> ' : '') + (f.ok ? '<span class="chip c-verde">✓ ' + f.ok + '</span> ' : '') + (f.ignorados ? '<span class="chip c-exento">' + f.ignorados + ' no requiere</span>' : '')) +
-      '</td></tr>').join('') + (F.length ? '' : '<tr><td colspan="4" class="vacio">Sin cobros.</td></tr>') + '</table></div></div>';
-  h += '<div class="card"><h2>Retiros de caja</h2><div class="tw"><table class="tabla"><tr><th>Folio</th><th>Hora</th><th>Descripción</th><th class="num">Importe</th><th>Estado</th></tr>' +
-    R.map(x => '<tr class="' + (x.registro_id || x.estado !== 'exento' ? 'mov-t' : '') + '" data-c="' + (x.registro_id ? 'registro' : 'retiro') + '" data-r="' + esc(x.registro_id || x.ref) + '" style="cursor:' + (x.estado === 'exento' ? 'default' : 'pointer') + '"><td>' + esc(x.folio) + '</td><td>' + esc(x.hora) + '</td><td>' + esc(x.descripcion) +
-      (x.recepcion ? '<div class="bit">recepción ' + esc(x.recepcion) + '</div>' : '') + '</td><td class="num">' + $$(x.importe) + '</td><td>' + est(x.estado) +
-      (x.estado !== 'verde' && x.estado !== 'exento' ? '<div class="bit">' + esc(x.motivo || '') + '</div>' : '') + '</td></tr>').join('') +
-    (R.length ? '' : '<tr><td colspan="5" class="vacio">Sin retiros.</td></tr>') + '</table></div></div>';
+      '</td></tr>').join('') + (F.length ? '' : '<tr><td colspan="3" class="vacio">Sin cobros.</td></tr>') + '</table></div></div>';
+  const abre = x => x.registro_id || !['exento', 'sin_auditar', 'dueno'].includes(x.estado);
+  h += '<div class="card"><h2>Retiros de caja</h2><table class="tabla"><tr><th>Retiro</th><th class="num">Importe</th><th>Estado</th></tr>' +
+    R.map(x => '<tr class="' + (abre(x) ? 'mov-t' : '') + '" data-c="' + (x.registro_id ? 'registro' : 'retiro') + '" data-r="' + esc(x.registro_id || x.ref) + '" style="cursor:' + (abre(x) ? 'pointer' : 'default') + '"><td><b>' + esc(x.folio) + '</b> <span class="bit">' + esc(x.hora) + '</span><div>' + esc(x.descripcion) + '</div>' +
+      (x.recepcion ? '<div class="bit">recepción ' + esc(x.recepcion) + '</div>' : '') + '</td><td class="num">' + $$(x.importe) + '</td><td>' + est(x.estado, x.motivo) +
+      (!['verde', 'exento', 'sin_auditar'].includes(x.estado) && x.motivo ? '<div class="bit">' + esc(x.motivo) + '</div>' : '') + '</td></tr>').join('') +
+    (R.length ? '' : '<tr><td colspan="3" class="vacio">Sin retiros.</td></tr>') + '</table></div>';
   const DD = r.dueno || [];
   if (DD.length) h += '<div class="card"><h2>💵 Retiros del dueño</h2><div class="tw"><table class="tabla"><tr><th>Folio</th><th>Hora</th><th>Nota</th><th class="num">Importe</th><th>Microsip</th></tr>' +
     DD.map(x => '<tr><td>RD-' + x.id + '</td><td>' + esc(x.hora || '') + '</td><td>' + esc(x.nota || '') + '</td><td class="num">' + $$(x.importe) + '</td><td>' + (x.retiro_folio ? esc(x.retiro_folio) : '<span class="chip c-naranja">no capturado · se descuenta</span>') + '</td></tr>').join('') + '</table></div></div>';
   const fi = r.firma, pend = r.pendientes;
-  h += '<div class="card">' + (pend.n ? '<div class="aviso">⚠️ Quedan ' + pend.n + ' movimiento' + (pend.n > 1 ? 's' : '') + ' de este día sin comprobar · ' + $$(pend.monto) + '</div>' : '<div class="msg bien" style="margin:0 0 10px">✅ Todo lo de este día está comprobado.</div>');
+  h += '<div class="card">' + (!r.auditado ? '<div class="msg" style="margin:0 0 10px;background:var(--pendbg);color:var(--ink)">ℹ️ Este día es anterior al inicio de la auditoría (' + fCorta(r.desde) + '): se muestra pero no se revisan comprobantes. ' + (ROL === 'admin' ? 'Si quieres auditarlo, cambia "Auditar desde" en Ajustes.' : '') + '</div>'
+    : pend.n ? '<div class="aviso">⚠️ Quedan ' + pend.n + ' movimiento' + (pend.n > 1 ? 's' : '') + ' de este día sin comprobar · ' + $$(pend.monto) + '</div>' : '<div class="msg bien" style="margin:0 0 10px">✅ Todo lo de este día está comprobado.</div>');
   if (fi) h += '<div class="firma ok"><b>✍️ Corte firmado por ' + esc(fi.por) + '</b> · ' + new Date(fi.en).toLocaleString('es-MX') + '<br>Efectivo esperado ' + $$(fi.esperado) + ' · entregado <b>' + $$(fi.entregado) + '</b> · diferencia <b style="color:var(--' + (Math.abs(fi.diferencia) < 1 ? 'verde' : 'rojo') + ')">' + $$(fi.diferencia) + '</b>' +
     (fi.pendientes ? '<br>Al firmar quedaban ' + fi.pendientes + ' sin comprobar (' + $$(fi.pendiente_monto) + ')' : '') + (fi.nota ? '<br><i>' + esc(fi.nota) + '</i>' : '') +
     (fi.huella ? '<br><span class="bit">Huella ' + esc(fi.huella) + ' · copia enviada a Telegram</span>' : '') +

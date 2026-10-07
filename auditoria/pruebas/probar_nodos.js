@@ -93,5 +93,9 @@ ok(cn['Armar respuesta'].main[0].map(x => x.node).join() === 'Responder,¿Mandar
 const lg = pg(nodo('Ligas').parameters.query, []).trim().split('\n').pop().split('\t');
 const ligas = new Function('$', nodo('Ligas para abrir').parameters.jsCode)(n => ({ first: () => ({ json: n === 'Ligas' ? { t_aud: lg[0], t_dir: lg[1], t_admin: lg[2], empleados: lg[3] } : { url_n8n: 'https://ai.adhesipro.com.mx' } }) }))[0].json;
 ok(ligas.auditora.endsWith('?k=kaud') && ligas.directora.endsWith('?k=kdir') && ligas['empleado JUAN'].endsWith('?k=kjuan'), 'ver ligas', ligas);
+// la página no trae errores de sintaxis
+const html = nodo('Mostrar página').parameters.responseBody;
+let sintaxis = ''; try { new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'))); } catch (e) { sintaxis = e.message; }
+ok(!sintaxis, 'el código de la página no tiene errores de sintaxis', sintaxis);
 console.log(oks + ' OK, ' + fallas + ' fallas');
 process.exit(fallas ? 1 : 0);

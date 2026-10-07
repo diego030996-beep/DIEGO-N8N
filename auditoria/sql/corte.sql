@@ -3,6 +3,7 @@
 SET LOCAL statement_timeout = '30s';
 WITH /*CTX*/, /*MOV*/, /*CORTE*/
 SELECT json_build_object('ok', true, 'fecha', f.d, 'ahora', to_char(cfg.ahora, 'YYYY-MM-DD HH24:MI'), 'cierre', to_char(cfg.cierre, 'HH24:MI'),
+  'auditado', f.d >= cfg.desde, 'desde', cfg.desde,
   'puede_firmar', cfg.p->>'_rol' = 'admin' OR (cfg.p->>'_rol' = 'auditora' AND coalesce(cfg.c->>'auditora_firma', 'no') = 'si'),
   'formas', (SELECT coalesce(json_agg(x ORDER BY x.sin_comprobante DESC, x.importe DESC), '[]') FROM formas x),
   'retiros', (SELECT coalesce(json_agg(json_build_object('ref', id, 'folio', folio, 'hora', hora, 'descripcion', descripcion, 'usuario', usuario, 'importe', importe,

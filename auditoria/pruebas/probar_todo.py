@@ -243,6 +243,9 @@ an = correr('retiro_dueno', {'accion': 'anular', 'id': str(rd2['retiro']['id']),
 ok(an['ok'] and an['retiro']['anulado'] and correr('corte', {'fecha': '2026-10-07'})['totales']['dueno_fuera'] == 0, 'anular un retiro del dueño', an)
 rep = correr('retiros_dueno', {'desde': '2026-10-01', 'hasta': '2026-10-31'}, rol='directora', por='Directora')
 ok(rep['n'] == 1 and rep['total'] == 150 and len(rep['lista']) == 2 and any(x['anulado'] for x in rep['lista']), 'reporte de retiros del dueño (anulados se ven pero no suman)', rep)
+cv = correr('corte', {'fecha': '2026-09-20'})
+ok(cv['auditado'] is False and {x['folio']: x for x in cv['retiros']}['R-01849']['estado'] == 'sin_auditar', 'día antes de empezar: se muestra pero no se audita', cv['retiros'])
+ok(correr('corte', {'fecha': '2026-10-07'})['auditado'] is True, 'día auditado')
 # ---------- retiros del mes ----------
 rm = correr('retiros_mes', {'mes': '2026-10'})
 cat = {x['categoria']: x for x in rm['categorias']}
