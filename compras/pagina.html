@@ -602,12 +602,10 @@ function presupuesto(L){   // marca lo que no cabe, por prioridad: críticos A p
   }
   return {dentro, fuera, nF};
 }
-// lo que se guardó hoy se compara contra el sugerido que había al guardarlo (el sugerido puede cambiar después: una OC atrasada que ahora cuenta, etc.)
-const guardadoIgual = f => f.sug_guardado !== null && f.sug_guardado !== undefined && f.comprado !== null && f.comprado !== undefined && num(f._c) === num(f.comprado);
-const sugRef = f => guardadoIgual(f) ? num(f.sug_guardado) : num(f.sugerido);
+// siempre contra el sugerido de ahora (si cambió después de guardar, el renglón dice "antes N")
+const sugRef = f => num(f.sugerido);
 function deMas(f, c){   // compra de más contra redondeo por empaque
   c = num(c); if(c === null || c <= 0) return null;
-  if(guardadoIgual(f) && num(f.comprado) <= num(f.sug_guardado)) return null;
   const s = sugRef(f) ?? 0, sobre = c - s, emp = num(f.empaque) || 1;
   const arriba = Math.min(c, pos(f) + c - (f.maximo ?? Infinity));
   if(sobre > 0 && emp > 1 && c % emp === 0 && sobre < emp) return {redondeo: true, sobre};
