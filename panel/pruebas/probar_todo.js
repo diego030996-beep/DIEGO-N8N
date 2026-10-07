@@ -73,6 +73,6 @@ r = pedir({ op: 'entrar', pin: "1' OR '1'='1" }); ok(!r.sesion && /4 a 8/.test(r
 ok(pedir({ op: 'nada' }).msg === 'Operación desconocida.', 'op desconocida');
 // código de la liga
 const res = new Function('$', nodo('Ligas para abrir').parameters.jsCode)(n => ({ first: () => ({ json: n === 'Configuración (liga)' ? { url_n8n: 'https://ai.adhesipro.com.mx/' } : { t_admin: K, hay_pin: true } }) }))[0].json;
-ok(res.panel === 'https://ai.adhesipro.com.mx/webhook/panel' && res.poner_pin.endsWith('?k=' + K), 'ligas del nodo manual', res);
+ok(res.panel === 'https://ai.adhesipro.com.mx/webhook/mis-ligas' && res.poner_pin.endsWith('?k=' + K), 'ligas del nodo manual', res);
 console.log(oks + ' OK, ' + fallas + ' fallas');
 process.exit(fallas ? 1 : 0);

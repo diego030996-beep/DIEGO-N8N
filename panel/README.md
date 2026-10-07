@@ -16,7 +16,7 @@ Si a una página le falta la llave, el panel te dice en qué flujo se crea.
 2. Importa el archivo en n8n, revisa la credencial de Postgres y **activa** el flujo.
 3. Corre a mano el nodo **"Mi liga para poner PIN"**. Te da dos ligas:
    - `poner_pin`: ábrela **una vez** para crear tu PIN. Lleva la llave de administrador, así que no la compartas.
-   - `panel`: esta es la que guardas en tu celular. Te pide el PIN cada vez.
+   - `panel` (https://ai.adhesipro.com.mx/webhook/mis-ligas): esta es la que guardas en tu celular. Te pide el PIN cada vez.
 
 ## Seguridad
 - El PIN es de 4 a 8 números y se guarda con sal y hash SHA-256, nunca en texto. No acepta PIN fáciles (1234, 0000…).
@@ -32,4 +32,4 @@ Las tablas de llaves (`tablero_acceso`, `choferes_web`) son las mismas que usan 
 
 ## Pruebas
 `node panel/pruebas/probar_todo.js` corre 42 casos contra el Postgres de prueba: PIN, bloqueo, sesiones, ligas e inyección.
-`node panel/pruebas/servidor.js` levanta la página en http://localhost:5682/webhook/panel.
+`node panel/pruebas/servidor.js` levanta la página en http://localhost:5682/webhook/mis-ligas.

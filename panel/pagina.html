@@ -160,7 +160,7 @@ dialog h3{margin:0 0 6px}
 <script>
 (function () {
 'use strict';
-const API = location.origin + location.pathname.replace(/\/[^\/]*$/, '/') + 'panel-api';
+const API = location.origin + location.pathname.replace(/\/+$/, '') + '-api';   // .../webhook/mis-ligas → mis-ligas-api
 const BASE = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');   // .../webhook/
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

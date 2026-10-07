@@ -41,18 +41,18 @@ def armar():
     llave_js = (
         "// Liga del panel y liga para poner (o reponer) el PIN. La segunda trae la llave de administrador: no la compartas.\n"
         "const cfg = $('Configuración (liga)').first().json, a = $('Llave de administrador').first().json;\n"
-        "const url = String(cfg.url_n8n || '').replace(/\\/+$/, '') + '/webhook/panel';\n"
+        "const url = String(cfg.url_n8n || '').replace(/\\/+$/, '') + '/webhook/mis-ligas';\n"
         "return [{ json: { panel: url, poner_pin: url + '?k=' + a.t_admin,\n"
         "  nota: a.hay_pin ? 'Ya tienes PIN. Abre poner_pin solo si lo olvidaste: lo reemplaza y cierra las sesiones.' : 'Abre poner_pin una vez para crear tu PIN; luego entra siempre con la liga panel.' } }];")
     nodes = [
-        nodo('Página', 'n8n-nodes-base.webhook', 2, [0, -300], {'path': 'panel', 'responseMode': 'responseNode', 'options': {}},
-             webhookId=uid('webhook/panel')),
+        nodo('Página', 'n8n-nodes-base.webhook', 2, [0, -300], {'path': 'mis-ligas', 'responseMode': 'responseNode', 'options': {}},
+             webhookId=uid('webhook/mis-ligas')),
         nodo('Mostrar página', 'n8n-nodes-base.respondToWebhook', 1.1, [224, -300], {
             'respondWith': 'text', 'responseBody': leer('pagina.html'),
             'options': {'responseHeaders': {'entries': [{'name': 'Content-Type', 'value': 'text/html; charset=utf-8'}, NO_CACHE,
                                                         {'name': 'X-Robots-Tag', 'value': 'noindex'}, {'name': 'Referrer-Policy', 'value': 'no-referrer'}]}}}),
-        nodo('API', 'n8n-nodes-base.webhook', 2, [0, -60], {'httpMethod': 'POST', 'path': 'panel-api', 'responseMode': 'responseNode', 'options': {}},
-             webhookId=uid('webhook/panel-api')),
+        nodo('API', 'n8n-nodes-base.webhook', 2, [0, -60], {'httpMethod': 'POST', 'path': 'mis-ligas-api', 'responseMode': 'responseNode', 'options': {}},
+             webhookId=uid('webhook/mis-ligas-api')),
         nodo('Preparar', 'n8n-nodes-base.code', 2, [224, -60], {'jsCode': preparar}),
         nodo('¿Válido?', 'n8n-nodes-base.if', 2.2, [448, -60], {
             'conditions': {'options': {'caseSensitive': True, 'leftValue': '', 'typeValidation': 'loose', 'version': 2},

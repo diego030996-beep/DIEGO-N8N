@@ -1,8 +1,8 @@
-// Servidor de prueba que imita los webhooks: GET /webhook/panel y POST /webhook/panel-api
+// Servidor de prueba que imita los webhooks: GET /webhook/mis-ligas y POST /webhook/mis-ligas-api
 const http = require('http');
 const { pedir, nodo } = require('./nodos.js');
 http.createServer((req, res) => {
-  if (req.method === 'GET' && req.url.startsWith('/webhook/panel')) {
+  if (req.method === 'GET' && req.url.startsWith('/webhook/mis-ligas')) {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(nodo('Mostrar página').parameters.responseBody);
   }
