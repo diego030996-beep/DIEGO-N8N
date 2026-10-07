@@ -2,7 +2,7 @@
 const { pedir, nodo, psql } = require('./nodos.js');
 let fallas = 0, oks = 0;
 const ok = (c, t, extra) => { if (c) oks++; else { fallas++; console.log('FALLA:', t, extra !== undefined ? JSON.stringify(extra).slice(0, 400) : ''); } };
-psql("DROP TABLE IF EXISTS panel_pin, panel_sesion, panel_liga; DROP TABLE IF EXISTS tablero_acceso, choferes_web;");
+psql("DROP TABLE IF EXISTS panel_pin, panel_sesion, panel_liga, panel_rotacion; DROP TABLE IF EXISTS tablero_acceso, choferes_web;");
 // la liga para poner PIN crea la tabla y la llave de admin
 const sqlLlave = nodo('Llave de administrador').parameters.query;
 const llave = psql(sqlLlave).split('\n').pop().split('|');
@@ -71,8 +71,56 @@ ok(psql(sqlLlave).split('\n').pop() === K + '|t', 'liga para poner PIN no duplic
 // inyección
 r = pedir({ op: 'entrar', pin: "1' OR '1'='1" }); ok(!r.sesion && /4 a 8/.test(r.msg), 'PIN no numérico rechazado');
 ok(pedir({ op: 'nada' }).msg === 'Operación desconocida.', 'op desconocida');
+
+// ---------- regenerar llaves ----------
+// así revisan la llave los otros flujos (planeador / producción / vendedor y choferes / rutas)
+const rolDe = k => psql("SELECT coalesce((SELECT rol FROM tablero_acceso WHERE token = '" + k + "' AND activo LIMIT 1), 'DENEGADO')");
+const choferDe = k => psql("SELECT coalesce((SELECT nombre FROM choferes_web WHERE token = '" + k + "' AND activo LIMIT 1), 'DENEGADO')");
+let S = pedir({ op: 'entrar', pin: '7305' }).sesion;
+const otraS = pedir({ op: 'entrar', pin: '7305' }).sesion;
+const credenciales = psql("SELECT count(*) FROM pg_tables WHERE tablename NOT IN ('tablero_acceso','choferes_web','panel_pin','panel_sesion','panel_liga','panel_rotacion')");
+ok(rolDe('kcompras1') === 'compras', 'llave compras abre antes');
+ok(pedir({ op: 'regenerar', s: 'zzz', fuente: 'tablero', t: 'kcompras1' }).salir && rolDe('kcompras1') === 'compras', 'regenerar sin sesión no hace nada');
+r = pedir({ op: 'regenerar', s: S, fuente: 'tablero', t: 'kcompras1' });
+ok(r.ok && /^[0-9a-f]{64}$/.test(r.token) && r.etiqueta === 'compras', 'regenerar compras', r);
+ok(rolDe('kcompras1') === 'DENEGADO', 'llave vieja de compras ya no abre');
+ok(rolDe(r.token) === 'compras', 'llave nueva abre con el mismo rol');
+const nuevaCompras = r.token;
+ok(/ya había cambiado/.test(pedir({ op: 'regenerar', s: S, fuente: 'tablero', t: 'kcompras1' }).msg), 'regenerar llave vieja otra vez avisa');
+ok(!pedir({ op: 'regenerar', s: S, fuente: 'tablero', t: 'kviejo' }).ok, 'no regenera llaves desactivadas una por una');
+ok(!pedir({ op: 'regenerar', s: S, fuente: 'otra', t: 'kaud1' }).ok, 'fuente inválida');
+r = pedir({ op: 'ligas', s: S });
+let fila = r.tablero.find(t => t.token === nuevaCompras);
+ok(fila && fila.regenerada && !r.tablero.find(t => t.token === 'kaud1').regenerada, 'fecha de regeneración solo en la regenerada', r.tablero);
+ok(r.tablero.length === 4, 'mismo número de llaves (se reemplaza, no se duplica)');
+// chofer y oficina
+r = pedir({ op: 'regenerar', s: S, fuente: 'choferes', t: 'kjuan' }); ok(r.ok && choferDe('kjuan') === 'DENEGADO' && choferDe(r.token) === 'Juan', 'regenerar chofer', r);
+r = pedir({ op: 'regenerar', s: S, fuente: 'choferes', t: 'kofi' }); ok(r.ok && choferDe('kofi') === 'DENEGADO' && choferDe(r.token) === '*', 'regenerar oficina (rutas + choferes)', r);
+ok(psql("SELECT count(*) FROM choferes_web WHERE nombre = '*' AND activo") === '1', 'oficina no se duplica');
+// la bitácora no guarda llaves en claro
+ok(psql("SELECT count(*) FROM panel_rotacion WHERE token_hash IN (SELECT token FROM tablero_acceso UNION SELECT token FROM choferes_web)") === '0', 'bitácora sin llaves en claro');
+// regenerar todas: pide PIN
+ok(/PIN/.test(pedir({ op: 'regenerar_todas', s: S }).msg), 'todas sin PIN no deja');
+const antes = psql("SELECT string_agg(token, ',' ORDER BY token) FROM (SELECT token FROM tablero_acceso UNION ALL SELECT token FROM choferes_web) x");
+r = pedir({ op: 'regenerar_todas', s: S, pin: '1111' });
+ok(!r.ok && /incorrecto.*4/.test(r.msg), 'todas con PIN malo cuenta intento', r);
+ok(psql("SELECT string_agg(token, ',' ORDER BY token) FROM (SELECT token FROM tablero_acceso UNION ALL SELECT token FROM choferes_web) x") === antes, 'PIN malo no cambia nada');
+ok(pedir({ op: 'regenerar_todas', s: 'zzz', pin: '7305' }).salir, 'todas sin sesión no deja');
+const viejas = psql("SELECT string_agg(token, ',') FROM (SELECT token FROM tablero_acceso WHERE activo UNION ALL SELECT token FROM choferes_web WHERE activo) x").split(',');
+r = pedir({ op: 'regenerar_todas', s: S, pin: '7305' });
+ok(r.ok && r.llaves === 7 && r.cerradas >= 1, 'regenerar todas', r);
+ok(viejas.every(k => rolDe(k) === 'DENEGADO' && choferDe(k) === 'DENEGADO'), 'ninguna llave vieja abre');
+ok(rolDe('kviejo') === 'DENEGADO' && psql("SELECT count(*) FROM tablero_acceso WHERE token = 'kviejo'") === '0', 'también cambia las desactivadas');
+ok(psql("SELECT count(*) FROM tablero_acceso WHERE activo") === '4' && psql("SELECT count(*) FROM choferes_web WHERE activo") === '3', 'mismos accesos, mismos roles');
+ok(psql("SELECT bool_and(length(token) = 64 AND token ~ '^[0-9a-f]+$') AND count(DISTINCT token) = count(*) FROM (SELECT token FROM tablero_acceso UNION ALL SELECT token FROM choferes_web) x") === 't', 'llaves nuevas de 64 hex y únicas');
+ok(pedir({ op: 'ligas', s: S }).ok && pedir({ op: 'ligas', s: otraS }).salir, 'sigue mi sesión, se cierran las demás');
+r = pedir({ op: 'ligas', s: S });
+ok(r.ultima_todas && r.tablero.every(t => t.regenerada) && r.choferes.every(c => c.regenerada), 'fechas de regeneración', r);
+ok(psql('SELECT count(*) FROM pg_tables WHERE tablename NOT IN (\'tablero_acceso\',\'choferes_web\',\'panel_pin\',\'panel_sesion\',\'panel_liga\',\'panel_rotacion\')') === credenciales, 'no toca otras tablas');
+const Knueva = r.tablero.find(t => t.rol === 'admin').token;
+ok(!pedir({ op: 'crear_pin', k: K, nuevo: '7305' }).ok && pedir({ op: 'crear_pin', k: Knueva, nuevo: '7305' }).ok, 'liga para poner PIN usa la llave admin nueva');
 // código de la liga
-const res = new Function('$', nodo('Ligas para abrir').parameters.jsCode)(n => ({ first: () => ({ json: n === 'Configuración (liga)' ? { url_n8n: 'https://ai.adhesipro.com.mx/' } : { t_admin: K, hay_pin: true } }) }))[0].json;
-ok(res.panel === 'https://ai.adhesipro.com.mx/webhook/mis-ligas' && res.poner_pin.endsWith('?k=' + K), 'ligas del nodo manual', res);
+const res = new Function('$', nodo('Ligas para abrir').parameters.jsCode)(n => ({ first: () => ({ json: n === 'Configuración (liga)' ? { url_n8n: 'https://ai.adhesipro.com.mx/' } : { t_admin: Knueva, hay_pin: true } }) }))[0].json;
+ok(res.panel === 'https://ai.adhesipro.com.mx/webhook/mis-ligas' && res.poner_pin.endsWith('?k=' + Knueva), 'ligas del nodo manual', res);
 console.log(oks + ' OK, ' + fallas + ' fallas');
 process.exit(fallas ? 1 : 0);

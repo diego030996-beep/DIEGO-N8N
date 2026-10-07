@@ -7,3 +7,7 @@ CREATE TABLE IF NOT EXISTS panel_sesion (token TEXT PRIMARY KEY, vence TIMESTAMP
 CREATE TABLE IF NOT EXISTS panel_liga (id SERIAL PRIMARY KEY, titulo TEXT NOT NULL, url TEXT NOT NULL, grupo TEXT NOT NULL DEFAULT 'Otras ligas',
   creado TIMESTAMPTZ NOT NULL DEFAULT now());
 DELETE FROM panel_sesion WHERE vence < now();
+-- Bitácora de regeneraciones: guarda solo el hash de la llave nueva (nunca la llave) para saber cuándo se regeneró cada una.
+CREATE TABLE IF NOT EXISTS panel_rotacion (id SERIAL PRIMARY KEY, fuente TEXT NOT NULL, etiqueta TEXT NOT NULL, token_hash TEXT NOT NULL,
+  tipo TEXT NOT NULL DEFAULT 'una', fecha TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS panel_rotacion_hash ON panel_rotacion (token_hash);

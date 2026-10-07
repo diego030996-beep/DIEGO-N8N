@@ -78,6 +78,7 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
 .liga .q{flex:1;min-width:0}
 .liga .q b{display:block;font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .liga .q span{display:block;font-size:.74rem;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:ui-monospace,Menlo,monospace}
+.liga .q span.sub{white-space:normal}
 .liga .q .tag{display:inline;font-family:inherit}
 .liga.falta{opacity:.6}
 .liga.falta .q span{font-family:inherit}
@@ -85,6 +86,12 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
 .vacio{padding:14px 16px;color:var(--soft);font-size:.88rem;border-top:1px solid var(--line)}
 .alta{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel2)}
 .alta input:nth-child(2){grid-column:1/-1}
+.liga.nueva{animation:brilla 2.4s ease-out}
+@keyframes brilla{0%,40%{background:var(--greenbg)}100%{background:transparent}}
+.btn.peligro{background:var(--red);border-color:var(--red);color:#fff}
+.top .btn.peligro{background:transparent;color:#FCA5A5;border-color:rgba(252,165,165,.45)}
+.lista{margin:10px 0 0;padding-left:18px;font-size:.9rem} .lista li{margin:2px 0}
+.nota{font-size:.84rem;color:var(--soft);margin:10px 0 0}
 .pie{color:var(--soft);font-size:.8rem;margin-top:22px;text-align:center}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;z-index:20;box-shadow:var(--sh)}
 dialog{border:0;border-radius:18px;padding:22px;width:min(92vw,380px);background:var(--panel);color:var(--ink)}
@@ -129,6 +136,7 @@ dialog h3{margin:0 0 6px}
     <div><b>Mis ligas</b><small id="sub">Panel general</small></div>
     <div class="esp"></div>
     <input type="search" id="buscar" placeholder="Buscar página o persona…" aria-label="Buscar">
+    <button class="btn mini peligro" id="bTodas" type="button" title="Emergencia: cambia todas las llaves">Regenerar todas</button>
     <button class="btn mini" id="bPin" type="button">Cambiar PIN</button>
     <button class="btn mini" id="bSalir" type="button">Salir</button>
   </div></div>
@@ -151,6 +159,32 @@ dialog h3{margin:0 0 6px}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn" type="button" id="pCancel">Cancelar</button>
       <button class="btn pri" type="submit">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dRegen">
+  <h3 id="rTitulo">Regenerar liga</h3>
+  <p style="margin:0;font-size:.9rem">Se crea una llave nueva y <b>la liga anterior deja de funcionar de inmediato</b>. Esta llave abre:</p>
+  <ul class="lista" id="rAbre"></ul>
+  <p class="nota" id="rNota"></p>
+  <div id="msgRegen"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+    <button class="btn" type="button" id="rCancel">Cancelar</button>
+    <button class="btn peligro" type="button" id="rOk">Regenerar</button>
+  </div>
+</dialog>
+
+<dialog id="dTodas">
+  <form id="fTodas" autocomplete="off">
+    <h3>Regenerar todas las ligas</h3>
+    <p style="margin:0;font-size:.9rem">Para emergencias. Se cambian <b id="tCuantas">todas las llaves</b> de compras, producción, vendedor, rutas y choferes. <b>Todas las ligas anteriores dejan de funcionar de inmediato</b> y se cierran tus sesiones del panel en otros dispositivos.</p>
+    <p class="nota">No cambia direcciones de n8n ni credenciales (Microsip, Telegram, WhatsApp, OpenAI…). Después tendrás que mandar las ligas nuevas a cada persona.</p>
+    <div class="campos"><label for="tPin">Escribe tu PIN para confirmar</label><input id="tPin" type="password" inputmode="numeric" maxlength="8" required></div>
+    <div id="msgTodas"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" type="button" id="tCancel">Cancelar</button>
+      <button class="btn peligro" type="submit">Regenerar todas</button>
     </div>
   </form>
 </dialog>
@@ -248,9 +282,13 @@ const PAGINAS = [
   { id: 'monedero', titulo: 'Monedero', desc: 'App del monedero (pide su propio PIN)', ruta: 'monedero-app', libre: true },
 ];
 const corto = t => t ? String(t).slice(0, 4) + '…' + String(t).slice(-4) : '';
-function filaLiga(nombre, url, sub, extra) {
+const fecha = f => new Date(f).toLocaleString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const subLlave = x => 'llave ' + corto(x.token) + (x.regenerada ? ' · regenerada ' + fecha(x.regenerada) : x.creado ? ' · creada ' + new Date(x.creado).toLocaleDateString('es-MX') : '');
+// llave = { fuente: 'tablero' | 'choferes', t: token } para mostrar el botón de regenerar
+function filaLiga(nombre, url, sub, extra, llave) {
   const u = esc(url);
-  return '<div class="liga" data-q="' + esc((nombre + ' ' + (sub || '')).toLowerCase()) + '"><div class="q"><b>' + esc(nombre) + (extra || '') + '</b><span>' + esc(sub || url) + '</span></div>' +
+  const regen = llave ? '<button class="btn mini" type="button" data-regen="' + esc(llave.fuente) + '" data-t="' + esc(llave.t) + '" data-nombre="' + esc(nombre) + '" title="Regenerar liga (la anterior deja de servir)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></button>' : '';
+  return '<div class="liga" data-q="' + esc((nombre + ' ' + (sub || '')).toLowerCase()) + '"' + (llave ? ' data-llave="' + esc(llave.t) + '"' : '') + '><div class="q"><b>' + esc(nombre) + (extra || '') + '</b><span' + (llave ? ' class="sub"' : '') + '>' + esc(sub || url) + '</span></div>' + regen +
     '<button class="btn mini" type="button" data-copiar="' + u + '" title="Copiar liga"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="t">Copiar</span></button>' +
     '<a class="btn mini pri" href="' + u + '" target="_blank" rel="noopener noreferrer" title="Abrir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg><span class="t">Abrir</span></a></div>';
 }
@@ -260,7 +298,7 @@ function tarjeta(id, titulo, desc, cuerpo) {
 }
 function pintar() {
   const d = DATOS, porRol = {};
-  (d.tablero || []).forEach(t => (porRol[t.rol] = porRol[t.rol] || []).push(t.token));
+  (d.tablero || []).forEach(t => (porRol[t.rol] = porRol[t.rol] || []).push(t));
   const oficina = (d.choferes || []).find(c => c.nombre === '*');
   let html = '';
   for (const p of PAGINAS) {
@@ -270,16 +308,16 @@ function pintar() {
       for (const r of p.roles) {
         const ks = porRol[r] || [];
         if (!ks.length) { cuerpo += '<div class="liga falta"><div class="q"><b>' + esc(ROL[r] || r) + '</b><span>Sin liga. ' + esc(p.falta) + '</span></div></div>'; continue; }
-        ks.forEach((k, i) => cuerpo += filaLiga((ROL[r] || r) + (ks.length > 1 ? ' #' + (i + 1) : ''), url(k), 'llave ' + corto(k)));
+        ks.forEach((k, i) => cuerpo += filaLiga((ROL[r] || r) + (ks.length > 1 ? ' #' + (i + 1) : ''), url(k.token), subLlave(k), '', { fuente: 'tablero', t: k.token }));
       }
     } else if (p.oficina) {
-      cuerpo = oficina ? filaLiga('Oficina', url(oficina.token), 'llave ' + corto(oficina.token))
+      cuerpo = oficina ? filaLiga('Oficina', url(oficina.token), subLlave(oficina), '', { fuente: 'choferes', t: oficina.token })
         : '<div class="liga falta"><div class="q"><b>Oficina</b><span>Sin liga. Se crea en el flujo de choferes.</span></div></div>';
     } else if (p.choferes) {
       const L = d.choferes || [];
-      cuerpo = L.length ? L.map(c => filaLiga(c.nombre === '*' ? 'Oficina' : c.nombre, url(c.token), 'llave ' + corto(c.token), c.nombre === '*' ? '<span class="tag">todos</span>' : '')).join('')
+      cuerpo = L.length ? L.map(c => filaLiga(c.nombre === '*' ? 'Oficina' : c.nombre, url(c.token), subLlave(c), c.nombre === '*' ? '<span class="tag">todos</span>' : '', { fuente: 'choferes', t: c.token })).join('')
         : '<div class="vacio">Todavía no hay choferes con liga.</div>';
-    } else if (p.libre) cuerpo = filaLiga('Abrir monedero', url(''), 'entra con el PIN del monedero');
+    } else if (p.libre) cuerpo = filaLiga('Abrir monedero', url(''), 'no usa llave: entra con el PIN del monedero');
     html += tarjeta(p.id, p.titulo, p.desc, cuerpo);
   }
   // ligas propias, agrupadas
@@ -293,7 +331,7 @@ function pintar() {
     Object.keys(grupos).map(g => '<option value="' + esc(g) + '">').join('') + '</datalist></form>');
   $('grid').innerHTML = html;
   $('sub').textContent = (d.tablero || []).length + (d.choferes || []).length + (d.extra || []).length + ' ligas';
-  $('pie').textContent = 'Sesiones abiertas: ' + (d.sesiones || 1) + (d.pin_cambiado ? ' · PIN puesto el ' + new Date(d.pin_cambiado).toLocaleDateString('es-MX') : '') + ' · No compartas este panel: aquí están todas las llaves.';
+  $('pie').textContent = 'Sesiones abiertas: ' + (d.sesiones || 1) + (d.pin_cambiado ? ' · PIN puesto el ' + new Date(d.pin_cambiado).toLocaleDateString('es-MX') : '') + (d.ultima_todas ? ' · Última regeneración de todas: ' + fecha(d.ultima_todas) : '') + ' · No compartas este panel: aquí están todas las llaves.';
   $('fAlta').onsubmit = agregar;
   filtrar();
 }
@@ -315,6 +353,8 @@ $('grid').onclick = async e => {
     catch (x) { const i = document.createElement('textarea'); i.value = t; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); toast('Liga copiada'); } catch (y) { prompt('Copia la liga:', t); } i.remove(); }
     return;
   }
+  const g = e.target.closest('[data-regen]');
+  if (g) return abrirRegen(g.dataset.regen, g.dataset.t, g.dataset.nombre);
   const b = e.target.closest('[data-borrar]');
   if (b && confirm('¿Quitar esta liga del panel?')) {
     const r = await api({ op: 'liga_borrar', s: SES, id: b.dataset.borrar });
@@ -344,6 +384,54 @@ async function cargar() {
 $('bSalir').onclick = async () => {
   await api({ op: 'salir', s: SES });
   SES = null; guardarS(null); DATOS = null; $('grid').innerHTML = ''; ver('vCandado'); aviso('msgCandado', 'Sesión cerrada.', true);
+};
+/* ---------------- regenerar llaves ---------------- */
+let REGEN = null;
+function abre(fuente, t) {   // qué páginas abre esta llave
+  if (fuente === 'choferes') {
+    const c = (DATOS.choferes || []).find(x => x.token === t);
+    return c && c.nombre === '*' ? ['Asistente de rutas (oficina)', 'Choferes – vista de oficina (todos los choferes)'] : ['Choferes – liga de ' + (c ? c.nombre : 'este chofer')];
+  }
+  const k = (DATOS.tablero || []).find(x => x.token === t);
+  const L = k ? PAGINAS.filter(p => p.roles && p.roles.includes(k.rol)).map(p => p.titulo + ' (' + (ROL[k.rol] || k.rol) + ')') : [];
+  if (k && k.rol === 'admin') L.push('La liga para poner o reponer el PIN de este panel');
+  return L;
+}
+function abrirRegen(fuente, t, nombre) {
+  REGEN = { fuente, t };
+  const L = abre(fuente, t);
+  $('rTitulo').textContent = 'Regenerar liga: ' + nombre;
+  $('rAbre').innerHTML = L.map(x => '<li>' + esc(x) + '</li>').join('');
+  $('rNota').textContent = L.length > 1 ? 'Como esta llave abre varias páginas, todas cambian a la vez. Este panel se actualiza solo; manda la liga nueva a quien la use.' : 'Este panel se actualiza solo; manda la liga nueva a quien la use.';
+  aviso('msgRegen', ''); $('rOk').disabled = false; $('dRegen').showModal();
+}
+$('rCancel').onclick = () => $('dRegen').close();
+$('rOk').onclick = async () => {
+  $('rOk').disabled = true;
+  const r = await api({ op: 'regenerar', s: SES, fuente: REGEN.fuente, t: REGEN.t });
+  $('rOk').disabled = false;
+  if (sesionTerminada(r)) { $('dRegen').close(); return; }
+  if (!r.ok) return aviso('msgRegen', r.msg || 'No se pudo regenerar.');
+  $('dRegen').close(); await cargar();
+  document.querySelectorAll('[data-llave="' + CSS.escape(r.token) + '"]').forEach(el => el.classList.add('nueva'));
+  toast('Liga nueva lista. La anterior ya no abre.');
+};
+$('bTodas').onclick = () => {
+  const n = (DATOS.tablero || []).length + (DATOS.choferes || []).length;
+  $('tCuantas').textContent = 'las ' + n + ' llaves'; $('fTodas').reset(); aviso('msgTodas', ''); $('dTodas').showModal(); $('tPin').focus();
+};
+$('tCancel').onclick = () => $('dTodas').close();
+$('fTodas').onsubmit = async e => {
+  e.preventDefault();
+  const pinT = $('tPin').value;
+  if (!/^\d{4,8}$/.test(pinT)) return aviso('msgTodas', 'El PIN es de 4 a 8 números.');
+  const r = await api({ op: 'regenerar_todas', s: SES, pin: pinT });
+  $('tPin').value = '';
+  if (sesionTerminada(r)) { $('dTodas').close(); return; }
+  if (!r.ok) return aviso('msgTodas', r.msg || 'No se pudo regenerar.');
+  $('dTodas').close(); await cargar();
+  document.querySelectorAll('[data-llave]').forEach(el => el.classList.add('nueva'));
+  toast(r.llaves + ' llaves nuevas. Las anteriores ya no abren.');
 };
 $('bPin').onclick = () => { $('fPin').reset(); aviso('msgPin', ''); $('dPin').showModal(); };
 $('pCancel').onclick = () => $('dPin').close();
