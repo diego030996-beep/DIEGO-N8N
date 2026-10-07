@@ -198,6 +198,14 @@ input.sel{width:16px;height:16px;vertical-align:-3px;margin:0 4px 0 0}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .oc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px}
 .oc.atrasada{border-color:var(--c-red);background:linear-gradient(90deg,var(--c-redbg),var(--panel) 40%)}
+/* planeador: anchos fijos para que un texto largo (folios, avisos) no aplaste el nombre del artículo */
+.tbl td .meta,.tbl td.n .meta{white-space:normal;overflow-wrap:anywhere}
+@media (min-width:861px){
+  .tplan{table-layout:fixed;min-width:900px}
+  .tplan .c-art{width:auto} .tplan .c-ex{width:76px} .tplan .c-pr{width:110px} .tplan .c-sug{width:92px} .tplan .c-co{width:104px}
+  .tplan .c-cos{width:90px} .tplan .c-est{width:128px} .tplan .c-vc{width:104px}
+  .tplan td{overflow-wrap:anywhere} .tplan .sug{display:block} .tplan td .tag{margin-top:4px} .tplan select{max-width:100%}
+}
 @media (max-width:1100px){ .big5{grid-template-columns:repeat(3,1fr)} }
 @media (max-width:860px){
   .app{grid-template-columns:minmax(0,1fr)}
@@ -680,7 +688,7 @@ function tarjeta(k, F, r){
     </div>
     <div class="pb">
       ${estProv[k] ? `<div class="filtro-prov">Mostrando solo <b>${esc(EST[estProv[k]] || "Revisar datos")}</b> de este proveedor <button class="mas-link" data-ce="">Quitar filtro ✕</button></div>` : ""}
-      ${F.length ? `<div class="scroll"><table class="tbl cards"><thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Sugerido</th><th class="n">Compro</th><th class="n">Costo</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${F.length ? `<div class="scroll"><table class="tbl cards tplan"><colgroup><col class="c-art"><col class="c-ex"><col class="c-pr"><col class="c-sug"><col class="c-co"><col class="c-cos"><col class="c-est"><col class="c-vc"></colgroup><thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Sugerido</th><th class="n">Compro</th><th class="n">Costo</th><th>Estado</th><th></th></tr></thead><tbody>
         ${F.map(renglon).join("")}</tbody></table></div>` : `<p class="muted" style="padding:0 18px 12px">Nada con estos filtros en este proveedor.</p>`}
       <div class="pf">
         ${!full && nAll > F.length ? `<button class="mas-link" data-full="${esc(k)}">Ver los ${nAll} productos de este proveedor ⌄</button>` : ""}
@@ -693,6 +701,7 @@ function tarjeta(k, F, r){
       </div>
     </div></div>`;
 }
+function cortaFolios(t){ const a = String(t).split(", "); return a.length <= 2 ? t : a.slice(0, 2).join(", ") + " y " + (a.length - 2) + " más"; }
 function renglon(f){
   const k = llave(f), dist = num(f._c) !== num(f.sugerido), m = deMas(f, f._c), sinProv = !f.proveedor_id, rv = revisa(f);
   const linea = (f._c || 0) * (f.costo || 0);
@@ -702,7 +711,7 @@ function renglon(f){
       <div class="meta">Última venta: ${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " d)" : "—"} · Última recepción: ${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) : "—"}</div>
       ${f.presentaciones ? `<div class="meta">Incluye: ${esc(f.presentaciones)}</div>` : ""}</td>
     <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
-    <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="meta">${esc(f.folios)}</div>` : ""}${f.atr_u ? `<div class="meta neg">${f.atr_cuenta ? "incluye " + n0(f.atr_u) + " atrasado" : "+" + n0(f.atr_u) + " atrasado (no cuenta)"}</div>` : ""}</td>
+    <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="meta" title="${esc(f.folios)}">${esc(cortaFolios(f.folios))}</div>` : ""}${f.atr_u ? `<div class="meta neg">${f.atr_cuenta ? "incluye " + n0(f.atr_u) + " atrasado" : "+" + n0(f.atr_u) + " atrasado (no cuenta)"}</div>` : ""}</td>
     <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span>${rv ? `<div class="tag prov">provisional</div>` : ""}</td>
     <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar">
       ${dist && !sinProv && !soloLectura() ? `<div>${selRazon(f._r, 'class="r" style="margin-top:4px;max-width:150px"')}</div>` : ""}${avisoMas(m, f.unidad)}</td>
