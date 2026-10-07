@@ -111,7 +111,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
 .meter{flex:1;min-width:180px;height:10px;border-radius:6px;background:var(--empty);overflow:hidden}
 .meter i{display:block;height:100%;background:var(--blue);border-radius:6px}
 /* ---------- proveedor ---------- */
-.prov{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-top:16px;box-shadow:var(--sh);overflow:hidden}
+.prov{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-top:16px;box-shadow:var(--sh);overflow:clip}
 .ph{display:flex;align-items:center;gap:14px;padding:14px 18px;flex-wrap:wrap}
 .av{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:1rem;flex:none}
 .pn{flex:1;min-width:180px}
@@ -201,7 +201,11 @@ input.sel{width:16px;height:16px;vertical-align:-3px;margin:0 4px 0 0}
 /* planeador: anchos fijos para que un texto largo (folios, avisos) no aplaste el nombre del artículo */
 .tbl td .meta,.tbl td.n .meta{white-space:normal;overflow-wrap:anywhere}
 @media (min-width:861px){
-  .tplan{table-layout:fixed;min-width:900px}
+  .sp{overflow:visible}
+  .tplan{table-layout:fixed}
+  .tplan thead th{top:0;z-index:3;box-shadow:0 1px 0 var(--line)}
+  .tplan td.n{white-space:normal} .tplan .mas{display:block;white-space:normal;overflow-wrap:normal}
+  .tplan .tag,.tplan .est,.tplan .rot,.tplan .pill{overflow-wrap:normal;white-space:nowrap}
   .tplan .c-art{width:auto} .tplan .c-ex{width:76px} .tplan .c-pr{width:110px} .tplan .c-sug{width:92px} .tplan .c-co{width:104px}
   .tplan .c-cos{width:90px} .tplan .c-est{width:128px} .tplan .c-vc{width:104px}
   .tplan td{overflow-wrap:anywhere} .tplan .sug{display:block} .tplan td .tag{margin-top:4px} .tplan select{max-width:100%}
@@ -688,7 +692,7 @@ function tarjeta(k, F, r){
     </div>
     <div class="pb">
       ${estProv[k] ? `<div class="filtro-prov">Mostrando solo <b>${esc(EST[estProv[k]] || "Revisar datos")}</b> de este proveedor <button class="mas-link" data-ce="">Quitar filtro ✕</button></div>` : ""}
-      ${F.length ? `<div class="scroll"><table class="tbl cards tplan"><colgroup><col class="c-art"><col class="c-ex"><col class="c-pr"><col class="c-sug"><col class="c-co"><col class="c-cos"><col class="c-est"><col class="c-vc"></colgroup><thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Sugerido</th><th class="n">Compro</th><th class="n">Costo</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${F.length ? `<div class="scroll sp"><table class="tbl cards tplan"><colgroup><col class="c-art"><col class="c-ex"><col class="c-pr"><col class="c-sug"><col class="c-co"><col class="c-cos"><col class="c-est"><col class="c-vc"></colgroup><thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Sugerido</th><th class="n">Compro</th><th class="n">Costo</th><th>Estado</th><th></th></tr></thead><tbody>
         ${F.map(renglon).join("")}</tbody></table></div>` : `<p class="muted" style="padding:0 18px 12px">Nada con estos filtros en este proveedor.</p>`}
       <div class="pf">
         ${!full && nAll > F.length ? `<button class="mas-link" data-full="${esc(k)}">Ver los ${nAll} productos de este proveedor ⌄</button>` : ""}
