@@ -600,9 +600,13 @@ function presupuesto(L){   // marca lo que no cabe, por prioridad: críticos A p
   }
   return {dentro, fuera, nF};
 }
+// lo que se guardó hoy se compara contra el sugerido que había al guardarlo (el sugerido puede cambiar después: una OC atrasada que ahora cuenta, etc.)
+const guardadoIgual = f => f.sug_guardado !== null && f.sug_guardado !== undefined && f.comprado !== null && f.comprado !== undefined && num(f._c) === num(f.comprado);
+const sugRef = f => guardadoIgual(f) ? num(f.sug_guardado) : num(f.sugerido);
 function deMas(f, c){   // compra de más contra redondeo por empaque
   c = num(c); if(c === null || c <= 0) return null;
-  const s = num(f.sugerido) ?? 0, sobre = c - s, emp = num(f.empaque) || 1;
+  if(guardadoIgual(f) && num(f.comprado) <= num(f.sug_guardado)) return null;
+  const s = sugRef(f) ?? 0, sobre = c - s, emp = num(f.empaque) || 1;
   const arriba = Math.min(c, pos(f) + c - (f.maximo ?? Infinity));
   if(sobre > 0 && emp > 1 && c % emp === 0 && sobre < emp) return {redondeo: true, sobre};
   return (sobre > 0 || arriba > 0) ? {sobre: Math.max(sobre, 0), arriba: Math.max(arriba, 0)} : null;
@@ -707,7 +711,7 @@ function tarjeta(k, F, r){
 }
 function cortaFolios(t){ const a = String(t).split(", "); return a.length <= 2 ? t : a.slice(0, 2).join(", ") + " y " + (a.length - 2) + " más"; }
 function renglon(f){
-  const k = llave(f), dist = num(f._c) !== num(f.sugerido), m = deMas(f, f._c), sinProv = !f.proveedor_id, rv = revisa(f);
+  const k = llave(f), dist = num(f._c) !== sugRef(f), m = deMas(f, f._c), sinProv = !f.proveedor_id, rv = revisa(f);
   const linea = (f._c || 0) * (f.costo || 0);
   return `<tr data-k="${esc(k)}">
     <td class="art">${soloLectura() ? "" : `<input type="checkbox" class="sel" ${selec.has(f.articulo_id) ? "checked" : ""} aria-label="Seleccionar ${esc(f.articulo)}"> `}<b>${esc(f.articulo)}</b> <span class="pill ${f.clase}">${f.clase}</span> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}
@@ -716,7 +720,8 @@ function renglon(f){
       ${f.presentaciones ? `<div class="meta">Incluye: ${esc(f.presentaciones)}</div>` : ""}</td>
     <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
     <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="meta" title="${esc(f.folios)}">${esc(cortaFolios(f.folios))}</div>` : ""}${f.atr_u ? `<div class="meta neg">${f.atr_cuenta ? "incluye " + n0(f.atr_u) + " atrasado" : "+" + n0(f.atr_u) + " atrasado (no cuenta)"}</div>` : ""}</td>
-    <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span>${rv ? `<div class="tag prov">provisional</div>` : ""}</td>
+    <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span>${rv ? `<div class="tag prov">provisional</div>` : ""}${f.sug_guardado !== null && f.sug_guardado !== undefined && num(f.sug_guardado) !== num(f.sugerido)
+      ? `<div class="meta" title="Lo guardaste hoy cuando el sugerido era ${n0(f.sug_guardado)}. Cambió (por ejemplo, una OC atrasada que ahora cuenta como por recibir).">al guardar era ${n0(f.sug_guardado)}</div>${soloLectura() ? "" : `<button class="mas-link usar" title="Poner el sugerido nuevo en Compro">usar ${n0(f.sugerido)}</button>`}` : ""}</td>
     <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar">
       ${dist && !sinProv && !soloLectura() ? `<div>${selRazon(f._r, 'class="r" style="margin-top:4px;max-width:150px"')}</div>` : ""}${avisoMas(m, f.unidad)}</td>
     <td class="n" data-l="Costo">${f.costo ? money(linea) + `<div class="meta">${money(f.costo)} c/u</div>` : `<span class="meta">sin costo</span>`}</td>
@@ -759,7 +764,7 @@ function detalle(f){
         <button class="btn btn-ghost btn-sm" data-pol="pausar">Pausar resurtido</button>
         ${pol ? `<button class="btn btn-ghost btn-sm" data-pol="">Quitar política</button>` : ""}`}</div>
       <p class="muted" style="margin:6px 0 0">${pol ? "Política actual: <b>" + esc(POL[pol]) + "</b>" + (pol === "minimo" ? " de " + n0(f.pol_min) + " " + u : "") + ". Cuenta desde el siguiente cálculo del mes." : "Sin política: se calcula con la venta. Que venda poco no basta para pausarlo; decide tú."}</p></div>
-    ${num(f._c) !== num(f.sugerido) && !soloLectura() ? `<div class="box"><h4>Razón de comprar distinto</h4>${selRazon(f._r, 'class="r2"')}<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}"></div>` : ""}
+    ${num(f._c) !== sugRef(f) && !soloLectura() ? `<div class="box"><h4>Razón de comprar distinto</h4>${selRazon(f._r, 'class="r2"')}<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}"></div>` : ""}
   </div></td></tr>`;
 }
 const OCEST2 = {abierta: "en tiempo", parcial: "recibida en parte", atrasada: "atrasada", atrasada_confirmada: "atrasada, sigue en camino", completa: "recibida", cerrada: "cerrada"};
@@ -780,6 +785,7 @@ function conectar(){
   $$("#provs select.r, #provs select.r2").forEach(s => s.addEventListener("change", e => { filaDe(s)._r = e.target.value; }));
   $$("#provs input.nota").forEach(s => s.addEventListener("input", e => { filaDe(s)._n = e.target.value; }));
   $$("#provs .vc").forEach(b => b.addEventListener("click", () => { const k = b.closest("tr").dataset.k; abiertos.has(k) ? abiertos.delete(k) : abiertos.add(k); pintarPlan(); }));
+  $$("#provs button.usar").forEach(b => b.addEventListener("click", () => { const f = filaDe(b); f._c = num(f.sugerido); f._r = ""; pintarPlan(); }));
   $$("#provs input.sel").forEach(c => c.addEventListener("change", () => { const f = filaDe(c); c.checked ? selec.add(f.articulo_id) : selec.delete(f.articulo_id); pintarBulk(); }));
   $$("#provs [data-pprov]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
     const k = b.closest(".prov").dataset.p, act = b.dataset.pprov;
@@ -833,8 +839,8 @@ function lineasProv(pid, todasLas){
 function validar(L){
   for(const f of L){
     if(f._c === null || f._c === undefined || f._c < 0) throw new Error("Falta la cantidad de " + f.articulo + " (pon 0 si no compras).");
-    if(num(f._c) !== num(f.sugerido)){
-      if(!f._r) throw new Error("Elige la razón de " + f.articulo + ": compras " + n0(f._c) + " y el sugerido es " + n0(f.sugerido) + ".");
+    if(num(f._c) !== sugRef(f)){
+      if(!f._r) throw new Error("Elige la razón de " + f.articulo + ": compras " + n0(f._c) + " y el sugerido es " + n0(sugRef(f)) + ".");
       if(f._r === "otra" && !String(f._n || "").trim()) throw new Error("Escribe la nota de " + f.articulo + " (elegiste Otra).");
     }
   }
@@ -846,8 +852,8 @@ async function guardarLineas(pid, L, folio){
   for(const [cl, G] of Object.entries(grupos)){
     await api("guardar", {proveedor_id: pid, proveedor: prov.nombre || G[0].proveedor || "", clase: cl, folio,
       lineas: G.map(f => ({articulo_id: f.articulo_id, clave: f.clave, articulo: f.articulo, unidad: f.unidad, clase: f.clase, existencia: f.existencia,
-        pendiente: f.pendiente, minimo: f.minimo, punto_reorden: f.punto_reorden, maximo: f.maximo, sugerido: f.sugerido, comprado: f._c,
-        razon: num(f._c) === num(f.sugerido) ? "" : f._r, nota: f._n}))});
+        pendiente: f.pendiente, minimo: f.minimo, punto_reorden: f.punto_reorden, maximo: f.maximo, sugerido: sugRef(f), comprado: f._c,
+        razon: num(f._c) === sugRef(f) ? "" : f._r, nota: f._n}))});
   }
 }
 async function guardarProv(pid, folio, bajar){

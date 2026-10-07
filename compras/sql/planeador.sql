@@ -154,7 +154,7 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveed
       'ult_fecha', g.ult_fecha, 'ult_unidades', g.ult_unidades, 'rec_fecha', g.rec_fecha, 'rec_unidades', g.rec_unidades, 'rec_prov', g.rec_prov,
       'rec_proveedor', (SELECT p.datos->>'NOMBRE' FROM ms_raw p WHERE p.base = cfg.base AND p.tabla = 'PROVEEDORES' AND p.pk = g.rec_prov),
       'ult_venta', g.ult_venta)::jsonb || jsonb_build_object(
-      'comprado', dec.comprado, 'razon', dec.razon, 'nota', dec.nota,
+      'comprado', dec.comprado, 'sug_guardado', dec.sugerido, 'razon', dec.razon, 'nota', dec.nota,
       'estado', g.estado, 'revisar', g.revisar, 'costo', g.costo, 'costo_fuente', g.costo_fuente, 'lt', g.lt, 'lt_medido', g.lt_medido,
       'lt_n', g.lt_n, 'rev', g.rev, 'politica', g.politica, 'pol_min', g.pol_min, 'presentaciones', g.presentaciones, 'por_almacen', g.por_almacen,
       'atr_u', g.atr_u, 'atr_folios', g.atr_folios, 'atr_cuenta', g.atr_cuenta, 'plan_sin_oc', g.plan_sin_oc)
