@@ -58,4 +58,30 @@ c4 = correr('contar', {'articulo_id': 50, 'fecha': '2026-10-07', 'kg': '533'})
 ok(c4['teorico'] == 643 - 110 and c4['estado'] == 'ok', f"mismo día: lo producido después del pesaje anterior sí cuenta (debía haber {c4['teorico']})")
 a = correr('auditoria')['polimeros'][0]
 ok(a['teorico_hoy'] == 533 and a['consumo'] == 0, 'después del último pesaje no hay más consumo')
+# predicción: varios pesajes con distinta producción; faltan 0.5 kg por tinaco + 3 kg fijos
+correr('merma', {'marcar': 'si'})   # se ajusta lo de antes: la estadística empieza de cero
+correr('config', {'general': {'tolerancia_kg': '20'}})
+base = 533
+for i, pz in enumerate([2, 5, 3, 6]):
+    f = '2026-10-%02d' % (8 + i)
+    correr('capturar', {'fecha': f, 'nota': '', 'lineas': [{'articulo_id': 16, 'cantidad': pz}]})
+    base = base - 22 * pz - (0.5 * pz + 3)
+    correr('contar', {'articulo_id': 50, 'fecha': f, 'kg': str(round(base, 2))}, hoy='2026-10-12')
+a = correr('auditoria', hoy='2026-10-12')['polimeros'][0]
+pr = a['prediccion']
+ok(pr['kg_tinaco'] == 0.5 and pr['fijo'] == 3 and pr['r2'] >= 0.99,
+   f"predicción: {pr['kg_tinaco']} kg de más por tinaco + {pr['fijo']} kg fijos por pesaje (r² {pr['r2']})")
+ok(pr['desde_ajuste'] is True and pr['n'] == 4, 'la predicción usa los pesajes desde el último ajuste')
+ok(a['actual']['pesajes'] == 4 and a['actual']['desde'] == '2026-10-08', 'desde el último ajuste: solo lo que no se ha ajustado')
+ok(len(a['ajustes']) == 2 and a['ajustes'][1]['kg'] == -35 and a['ajustes'][0]['kg'] == -2, 'historial de ajustes por merma')
+e = correr('merma', {'marcar': 'si'}, hoy='2026-10-12')
+ok(correr('auditoria', hoy='2026-10-12')['polimeros'][0]['actual']['pesajes'] == 0, 'al ajustar, la cuenta empieza de cero (el historial se queda)')
+# Microsip ya trae el movimiento de inventario con el polímero: se sugiere su folio
+subprocess.run(['psql', '-h', '/var/tmp/pgc', '-p', '5544', '-U', 'postgres', '-q', '-c',
+  "INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ('LOMAS AJUSCO', 'RESUMEN_MOVTOS_IN', 'm1', current_date, "
+  "'{\"articulo_id\": 50, \"tipo\": \"S\", \"origen\": \"IN\", \"concepto\": \"SALIDA POR MERMA\", \"folio\": \"SM0000123\", \"costo\": 100}')"], check=True)
+f = correr('folio_ms', {'exporte_id': str(e['exporte_id'])})
+ok(f['hay_copia'] and f['candidatos'] and f['candidatos'][0]['folio'] == 'SM0000123', 'encuentra en Microsip el documento donde se importó')
+r = correr('importado', {'exporte_id': e['exporte_id'], 'folio': 'SM0000123'})
+ok(any(x['folio_ms'] == 'SM0000123' for x in correr('merma', {}, hoy='2026-10-12')['anteriores']), 'ligar el folio de Microsip al importar')
 print('Todo bien.')

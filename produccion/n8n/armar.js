@@ -14,7 +14,7 @@ function textoError(j) {
 const QUE = { datos: 'leer los datos', buscar: 'buscar', receta: 'guardar la receta', copiar: 'copiar la receta', capturar: 'guardar la producción',
   registros: 'leer la producción', borrar: 'borrar la captura', exportar: 'armar los archivos', importado: 'marcar como importado', materia: 'leer la materia prima',
   resumen: 'leer el resumen', precio: 'guardar el precio', extras: 'guardar los gastos', config: 'guardar la configuración',
-  contar: 'guardar el pesaje', auditoria: 'leer la auditoría de polímero', merma: 'armar el ajuste por merma' };
+  contar: 'guardar el pesaje', auditoria: 'leer la auditoría de polímero', merma: 'armar el ajuste por merma', folio_ms: 'buscar el folio en Microsip' };
 let respuesta;
 if (!r) {
   const m = textoError(err);

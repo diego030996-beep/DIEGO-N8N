@@ -55,7 +55,8 @@ switch (op) {
     if (b.exporte_id) { if (!idOk(b.exporte_id)) return fail('Exporte inválido.'); p = { exporte_id: String(Number(b.exporte_id)) }; }
     else { const r = rango(); if (!r) return fail('Fechas inválidas.'); p = { ...r, marcar: b.marcar === 'si' ? 'si' : '' }; }
     break;
-  case 'importado': if (!idOk(b.exporte_id)) return fail('Exporte inválido.'); p = { exporte_id: Number(b.exporte_id), quitar: b.quitar === 'si' ? 'si' : '' }; break;
+  case 'importado': if (!idOk(b.exporte_id)) return fail('Exporte inválido.'); p = { exporte_id: Number(b.exporte_id), quitar: b.quitar === 'si' ? 'si' : '', folio: txt(b.folio, 40) }; break;
+  case 'folio_ms': if (!idOk(b.exporte_id)) return fail('Exporte inválido.'); p = { exporte_id: Number(b.exporte_id) }; break;
   case 'precio': {
     if (!idOk(b.articulo_id)) return fail('Tinaco inválido.');
     const pr = v => v === '' || v == null ? '' : String(Number(v));

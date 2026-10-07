@@ -13,10 +13,11 @@ mov AS (SELECT (SELECT coalesce(sum(e.kg), 0) FROM entm e WHERE e.articulo_id = 
                -- producción después del pesaje anterior (mismo día: lo capturado después de ese pesaje) y hasta el día de este pesaje
                (SELECT coalesce(sum(u.kg), 0) FROM usom u WHERE u.articulo_id = prev.articulo_id AND (u.fecha, u.creado) > (prev.fecha, prev.creado) AND u.fecha <= pp.f) AS con,
                (SELECT sum(u.exceso) FROM usom u WHERE u.articulo_id = prev.articulo_id AND (u.fecha, u.creado) > (prev.fecha, prev.creado) AND u.fecha <= pp.f) AS exc,
+               (SELECT coalesce(sum(u.piezas), 0) FROM usom u WHERE u.articulo_id = prev.articulo_id AND (u.fecha, u.creado) > (prev.fecha, prev.creado) AND u.fecha <= pp.f) AS pz,
                prev.id AS base_id, prev.kg AS base_kg FROM prev, pp),
 nuevo AS (
-  INSERT INTO prod_conteo (base, articulo_id, fecha, kg, base_id, teorico, entradas, consumo, exceso, estado, reconteo_de, nota, por)
-  SELECT cfg.base, pp.art, pp.f, pp.kg, mov.base_id, mov.base_kg + mov.ent - mov.con, mov.ent, mov.con, mov.exc,
+  INSERT INTO prod_conteo (base, articulo_id, fecha, kg, base_id, teorico, entradas, consumo, exceso, piezas, estado, reconteo_de, nota, por)
+  SELECT cfg.base, pp.art, pp.f, pp.kg, mov.base_id, mov.base_kg + mov.ent - mov.con, mov.ent, mov.con, mov.exc, mov.pz,
          CASE WHEN mov.base_id IS NULL THEN 'inicial' WHEN pp.rec IS NOT NULL THEN 'confirmado'
               WHEN abs(pp.kg - (mov.base_kg + mov.ent - mov.con)) <= greatest(cfg.tol_kg, cfg.tol_pct * mov.con) THEN 'ok' ELSE 'revisar' END,
          pp.rec, nullif(cfg.p->>'nota', ''), cfg.por

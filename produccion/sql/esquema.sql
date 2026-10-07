@@ -37,3 +37,10 @@ CREATE INDEX IF NOT EXISTS prod_conteo_art ON prod_conteo (base, articulo_id, fe
 -- ajustes por merma (diferencias confirmadas) que se mandan a Microsip
 CREATE TABLE IF NOT EXISTS prod_ajuste (id BIGSERIAL PRIMARY KEY, base TEXT NOT NULL, conteo_id BIGINT NOT NULL UNIQUE, articulo_id BIGINT NOT NULL,
   kg NUMERIC NOT NULL, costo NUMERIC, exporte_id BIGINT, por TEXT, creado TIMESTAMPTZ NOT NULL DEFAULT now());
+-- piezas fabricadas entre un pesaje y el anterior (para la predicción) y folio del documento de Microsip donde se importó cada archivo
+DO 'BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = ''prod_conteo'' AND column_name = ''piezas'') THEN
+    ALTER TABLE prod_conteo ADD COLUMN piezas NUMERIC;
+    ALTER TABLE prod_exporte ADD COLUMN folio_ms TEXT;
+  END IF;
+END';

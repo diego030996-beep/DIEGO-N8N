@@ -31,10 +31,15 @@ Cómo cuenta:
    producción después de un pesaje, cuenta para el siguiente).
 3. Si la diferencia pasa la tolerancia (5 kg o 2 % de lo consumido, lo que sea mayor; se cambia en Configuración) sale la **alerta "vuelve a
    pesar"** en toda la página. El nuevo pesaje confirma y reemplaza al anterior.
-4. **¿Más polímero o merma?** Si al capturar la producción se anota el **peso real** del tinaco (sin tapa ni kit), la diferencia se separa en
-   "tinacos más pesados que la receta" y "merma sin explicar".
+4. **¿Más polímero o merma? (predicción, sin pesar tinacos)**: con 3 o más pesajes se ajusta *lo que falta = kg por tinaco × tinacos + kg fijos*.
+   La parte que crece con los tinacos es **exceso al llenar**; la fija es **merma** (purga, rebaba, desperdicio…). Usa los pesajes desde el
+   último ajuste (si hay menos de 3, los últimos 12 del historial). Si además se anota el **peso real** de algunos tinacos, se separa exacto.
 5. **Fin de semana**: las diferencias confirmadas se bajan como **ajuste por merma** (`CLAVE,KG,COSTO`: salida si faltó, entrada si sobró) para
-   importarlo en Microsip y marcarlo «Ya lo importé».
+   importarlo en Microsip. El ajuste **cierra el periodo**: las estadísticas empiezan de cero y el historial de ajustes se queda.
+6. **Ligar el folio de Microsip**: al marcar «Ya lo importé» (producción o merma) la página busca en la copia de Microsip (`RESUMEN_MOVTOS_IN`,
+   movimientos de inventario) el documento con esos artículos y sugiere su folio; también se puede escribir a mano.
+
+**Hoja para el quemador**: en Recetas, «🖨️ Hoja para el quemador» abre una tabla para imprimir con los kg de polímero de cada tinaco.
 
 ## Instalar
 

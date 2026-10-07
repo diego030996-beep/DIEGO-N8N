@@ -150,7 +150,8 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
 
   <!-- ============ RECETAS ============ -->
   <section id="t-rec" hidden>
-    <div class="head"><div><h1>Recetas</h1><p>Qué sale del inventario por cada tinaco: polímero (kg), tapa, kit… Elige los artículos de tu inventario de Microsip.</p></div></div>
+    <div class="head"><div><h1>Recetas</h1><p>Qué sale del inventario por cada tinaco: polímero (kg), tapa, kit… Elige los artículos de tu inventario de Microsip.</p></div>
+      <button class="btn btn-ghost" id="recImprimir">🖨️ Hoja para el quemador</button></div>
     <div class="grid2">
       <div class="card" style="margin-top:0">
         <input type="search" id="recQ" placeholder="Buscar tinaco…" style="width:100%" aria-label="Buscar tinaco">
@@ -428,6 +429,22 @@ function buscador(input, caja, elegir){
       caja.querySelectorAll("[data-i]").forEach(b => b.addEventListener("click", () => { elegir(r.articulos[Number(b.dataset.i)]); input.value = ""; caja.innerHTML = ""; }));
     } catch(e) { caja.innerHTML = `<p class="muted">${esc(e.message)}</p>`; } }, 300); });
 }
+// hoja para imprimir y pegar junto al quemador: cuántos kg de qué polímero lleva cada tinaco
+$("#recImprimir").addEventListener("click", () => {
+  const L = conReceta(); if(!L.length) return toast("Todavía no hay recetas.");
+  const fila = t => `<tr><td><b>${esc(t.nombre)}</b><br><small>${esc(t.clave)}</small></td>
+    <td class="kg">${t.receta.filter(esPol).map(c => `${n0(c.cantidad)} kg <small>${esc(c.nombre)}</small>`).join("<br>") || "—"}</td>
+    <td>${t.receta.filter(c => !esPol(c)).map(c => `${n0(c.cantidad)} ${esc(uni(c.unidad))} ${esc(c.nombre)}`).join("<br>") || "—"}</td></tr>`;
+  const w = window.open("", "_blank"); if(!w) return toast("Permite las ventanas emergentes para imprimir.");
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Recetas para el quemador</title><style>
+    body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:24px;color:#000} h1{margin:0 0 4px;font-size:22px} p{margin:0 0 14px;color:#444}
+    table{width:100%;border-collapse:collapse;font-size:16px} th,td{border:1px solid #999;padding:8px 10px;text-align:left;vertical-align:top}
+    th{background:#eee} td.kg{font-size:22px;font-weight:800;white-space:nowrap} small{font-size:12px;font-weight:400;color:#444} @media print{button{display:none}}
+  </style></head><body><button onclick="print()" style="float:right;padding:8px 14px;font-size:15px">Imprimir</button>
+    <h1>Recetas para el quemador</h1><p>${esc(D.cfg.tienda || "")} · actualizado ${esc(new Date().toLocaleDateString("es-MX"))} · pesa el polímero en la báscula antes de cargarlo</p>
+    <table><thead><tr><th>Tinaco</th><th>Polímero por tinaco</th><th>Además lleva</th></tr></thead><tbody>${L.map(fila).join("")}</tbody></table></body></html>`);
+  w.document.close();
+});
 function pintarCopiar(t){
   const box = $("#recCopiar");
   if(!t.receta.length || soloLectura()){ box.hidden = true; return; }
@@ -549,12 +566,14 @@ function pintarExport(){
       + (e.salida.some(x => !x.costo) ? `<div class="warn">Algún componente no tiene costo en Microsip: sale con costo 0.</div>` : "");
   $("#tblExp tbody").innerHTML = (e.anteriores || []).length ? e.anteriores.map(x => `<tr><td>${x.id}</td><td>${esc(fecha(x.desde))} – ${esc(fecha(x.hasta))}</td><td class="n">${n0(x.registros)}</td>
       <td>${esc(fecha(x.creado))}<div class="meta">${esc(x.por || "")}</div></td>
-      <td>${x.importado ? `<span class="pill ok">sí, ${esc(fecha(x.importado))}</span>` : `<span class="pill no">todavía no</span>`}</td>
+      <td>${x.importado ? `<span class="pill ok">sí, ${esc(fecha(x.importado))}</span>${x.folio_ms ? `<div class="meta">folio ${esc(x.folio_ms)}</div>` : ""}` : `<span class="pill no">todavía no</span>`}</td>
       <td class="row"><button class="btn btn-ghost btn-sm" data-rebajar="${x.id}">Bajar otra vez</button>${soloLectura() ? "" : x.importado ? `<button class="btn btn-ghost btn-sm" data-imp="${x.id}" data-q="si">Quitar marca</button>` : `<button class="btn btn-main btn-sm" data-imp="${x.id}">Ya lo importé en Microsip</button>`}</td></tr>`).join("")
     : `<tr><td colspan="6" class="muted">Todavía no se ha exportado nada.</td></tr>`;
   $$("#tblExp [data-rebajar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { const r = await api("exportar", {exporte_id: Number(b.dataset.rebajar)}); bajarArchivos(r); })));
   $$("#tblExp [data-imp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
-    await api("importado", {exporte_id: Number(b.dataset.imp), quitar: b.dataset.q || ""}); toast(b.dataset.q ? "Marca quitada" : "Listo ✓ Ya no se descuenta aparte."); await cargar(); verExport(false); })));
+    if(b.dataset.q){ await api("importado", {exporte_id: Number(b.dataset.imp), quitar: "si"}); toast("Marca quitada"); }
+    else if(!(await marcarImportado(Number(b.dataset.imp)))) return;
+    await cargar(); verExport(false); })));
 }
 function bajarArchivos(r){
   const tag = (r.desde || "") + (r.hasta && r.hasta !== r.desde ? "_a_" + r.hasta : "") + (r.exporte_id ? " #" + r.exporte_id : "");
@@ -586,10 +605,13 @@ function pintarAud(){
       ${ro ? "" : `<button class="btn btn-main btn-sm" data-recon="${c.id}" data-art="${p.articulo_id}">Ya lo volví a pesar</button>`}</div>`).join("")
     + viejos.map(p => `<div class="warn">🕒 El ${esc(p.nombre)} no se pesa desde hace <b>${p.dias_sin_pesar} días</b> (cada ${A.dias_conteo} días).</div>`).join("")
     + nunca.map(p => `<div class="warn">📍 El ${esc(p.nombre)} nunca se ha pesado: pésalo para tener el punto de partida.</div>`).join("");
-  const perd = P.reduce((a, p) => a + p.perdida.dinero, 0), kg = P.reduce((a, p) => a + p.perdida.kg, 0), exc = P.reduce((a, p) => a + p.perdida.exceso, 0), con = P.reduce((a, p) => a + p.perdida.consumo, 0);
-  $("#kpisAud").innerHTML = [[money0(perd), `perdido en ${A.dias} días (${n0(kg)} kg)`, perd > 0 ? "bad" : "good"], [con ? (kg / con * 100).toFixed(1) + "%" : "–", "del polímero consumido", kg > 0 ? "bad" : ""],
-    [n0(exc) + " kg", "por tinacos más pesados que la receta", exc > 0 ? "bad" : ""], [n0(Math.max(0, kg - Math.max(exc, 0))) + " kg", "merma sin explicar", ""],
-    [money0(-(A.pendiente_merma || {}).dinero || 0), `${(A.pendiente_merma || {}).conteos || 0} diferencias por ajustar`, ""]].map(([v, t, c]) => `<div class="kpi ${c}"><b>${v}</b><span>${t}</span></div>`).join("");
+  const act = P.map(p => p.actual || {}), perd = act.reduce((a, x) => a + (x.dinero || 0), 0), kg = act.reduce((a, x) => a + (x.kg || 0), 0), con = act.reduce((a, x) => a + (x.consumo || 0), 0);
+  const desde = act.map(x => x.desde).filter(Boolean).sort()[0];
+  const hist = P.reduce((a, p) => a + p.perdida.dinero, 0);
+  $("#kpisAud").innerHTML = [[money0(perd), `perdido desde el último ajuste${desde ? " (" + fecha(desde) + ")" : ""} · ${n0(kg)} kg`, perd > 0 ? "bad" : "good"],
+    [con ? (kg / con * 100).toFixed(1) + "%" : "–", "del polímero consumido desde el último ajuste", kg > 0 ? "bad" : ""],
+    [money0(-(A.pendiente_merma || {}).dinero || 0), `${(A.pendiente_merma || {}).conteos || 0} diferencias por ajustar`, ""],
+    [money0(hist), `perdido en los últimos ${A.dias} días (historial)`, ""]].map(([v, t, c]) => `<div class="kpi ${c}"><b>${v}</b><span>${t}</span></div>`).join("");
   $("#audPols").innerHTML = P.length ? P.map(p => polCard(p)).join("") : `<div class="card muted">No hay polímero en las recetas (se reconoce por el nombre: ${esc(D.cfg.auditar || "POLIMERO")}; se cambia en Configuración).</div>`;
   $$("#t-aud [data-recon]").forEach(b => b.addEventListener("click", () => { RECONTEO = Number(b.dataset.recon); const i = $(`#t-aud [data-kg="${b.dataset.art}"]`); pintarAud(); const j = $(`#t-aud [data-kg="${b.dataset.art}"]`); if(j){ j.scrollIntoView({behavior: "smooth", block: "center"}); j.focus(); } }));
   $$("#t-aud [data-pesar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
@@ -619,6 +641,7 @@ function polCard(p){
       <input type="text" data-no="${p.articulo_id}" maxlength="200" placeholder="nota (quién pesó, costales…)" class="grow">
       <button class="btn btn-main" data-pesar="${p.articulo_id}" data-rec="${rec || ""}">${rec ? "Confirmar pesaje" : "Guardar pesaje"}</button>${rec ? `<button class="btn btn-ghost" data-cancel="1">Cancelar</button>` : ""}</div>
       <p class="muted" style="margin:6px 0 0">El pesaje cuenta al <b>cierre del día</b>: incluye lo que se fabricó ese día.</p>`}
+    ${prediccion(p)}
     <h3 style="margin:16px 0 6px">Pesajes</h3>
     <div class="scroll"><table class="tbl"><thead><tr><th>Fecha</th><th class="n">Pesado</th><th class="n">Debía haber</th><th class="n">Diferencia</th><th class="n">Tinacos más pesados</th><th class="n">Merma</th><th>Estado</th></tr></thead><tbody>
     ${p.conteos.map(c => `<tr style="${c.estado === "reemplazado" ? "opacity:.55" : ""}"><td>${esc(fecha(c.fecha))}<div class="meta">${esc(c.por || "")}${c.nota ? " · " + esc(c.nota) : ""}</div></td>
@@ -628,12 +651,43 @@ function polCard(p){
       <td><span class="pill ${(EST_C[c.estado] || [])[1] || ""}">${esc((EST_C[c.estado] || [c.estado])[0])}</span>${c.ajuste ? `<div class="meta">${c.ajuste_importado ? "ajustado en Microsip" : "en ajuste #" + c.exporte_id}</div>` : ""}
         ${c.estado === "revisar" && !ro ? `<div><button class="btn btn-main btn-sm" data-recon="${c.id}" data-art="${p.articulo_id}" style="margin-top:4px">Volver a pesar</button></div>` : ""}</td></tr>`).join("")
       || `<tr><td colspan="7" class="muted">Sin pesajes en los últimos ${AUD.dias} días.</td></tr>`}</tbody></table></div>
+    ${p.ajustes.length ? `<details style="margin-top:12px"><summary class="muted">Historial de ajustes por merma (${p.ajustes.length})</summary>
+      <div class="scroll"><table class="tbl" style="margin-top:6px"><thead><tr><th>Ajuste</th><th>Pesajes del</th><th class="n">kg</th><th class="n">$</th><th>En Microsip</th></tr></thead><tbody>
+      ${p.ajustes.map(j => `<tr><td>#${j.id} · ${esc(fecha(j.creado))}</td><td>${esc(fecha(j.desde))} – ${esc(fecha(j.hasta))}</td><td class="n ${j.kg < 0 ? "neg" : ""}">${n0(j.kg)}</td><td class="n">${money(j.dinero)}</td>
+        <td>${j.importado ? `<span class="pill ok">${j.folio_ms ? esc(j.folio_ms) : "sí"}</span>` : `<span class="pill no">todavía no</span>`}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
     <details style="margin-top:12px"><summary class="muted">Trazabilidad día por día (${movs.length} movimientos)</summary>
       <div class="scroll"><table class="tbl" style="margin-top:6px"><thead><tr><th>Fecha</th><th>Movimiento</th><th class="n">kg</th><th class="n">Debe haber</th></tr></thead><tbody>
       ${movs.map(m => `<tr><td>${esc(fecha(m.fecha))}</td><td>${m.tipo === "entrada" ? "📥 Entró " + esc(m.ref || "") : m.tipo === "consumo" ? "🏭 Producción: " + n0(m.piezas) + " tinacos (" + esc(m.ref || "") + ")" : "⚖️ Pesaje (" + esc((EST_C[m.ref] || [m.ref])[0]) + ")"}</td>
         <td class="n ${m.tipo === "consumo" ? "neg" : ""}">${m.tipo === "pesaje" ? n0(m.kg) : (m.kg > 0 ? "+" : "") + n0(m.kg)}</td><td class="n">${m.saldo === null ? "—" : n0(m.saldo)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Sin movimientos.</td></tr>`}
       </tbody></table></div></details>
   </div>`;
+}
+// predicción sin pesar tinacos: lo que falta en cada pesaje contra los tinacos fabricados en ese lapso
+function prediccion(p){
+  const x = p.prediccion || {};
+  if(!x.n || x.n < 3 || x.kg_tinaco === null) return `<div class="warn" style="background:var(--panel2);color:var(--soft)">🔮 <b>Predicción:</b> con ${x.n || 0} pesajes todavía no alcanza. Con 3 o más (mejor si en cada uno se hizo distinta cantidad de tinacos) te digo si es <b>exceso al llenar</b> o <b>merma</b>, sin pesar los tinacos.</div>`;
+  const kgT = x.kg_tinaco, fijo = x.fijo, conf = x.r2 >= 0.6 ? "alta" : x.r2 >= 0.3 ? "media" : "baja";
+  const porT = kgT * (x.piezas_prom || 0), tot = Math.max(0.0001, Math.abs(porT) + Math.abs(fijo));
+  const pctT = Math.round(Math.max(0, porT) / tot * 100), pctF = Math.round(Math.max(0, fijo) / tot * 100);
+  const partes = [];
+  if(kgT > 0.05) partes.push(`se le echan ~<b>${n0(kgT)} kg de más a cada tinaco</b> (${money(kgT * (p.costo || 0))} por tinaco; ${pctT}% de lo que falta) → revisa la báscula y la receta del quemador`);
+  if(fijo > 0.5) partes.push(`hay <b>merma fija</b> de ~${n0(fijo)} kg cada vez (${pctF}%) que no depende de cuántos tinacos se hacen → purga, rebaba, desperdicio, derrame… o que se lo lleven`);
+  const dice = partes.length ? "Lo que falta se explica así: " + partes.join("; y ") + "." : "No se ve un patrón claro entre lo que falta y los tinacos fabricados.";
+  return `<div class="warn" style="background:var(--c-pubg);color:var(--ink)">🔮 <b>Predicción</b> (${x.n} pesajes${x.desde_ajuste ? " desde el último ajuste" : " del historial"}, confiabilidad ${conf}): ${dice}
+    <div class="meta" style="margin-top:4px">Por pesaje: ~${n0(kgT)} kg × tinaco (${Math.round(Math.abs(porT) / tot * 100)}%) + ~${n0(fijo)} kg fijos (${Math.round(Math.abs(fijo) / tot * 100)}%) · se pierde el ${n0(x.pct)}% del polímero · ${n0(x.piezas_prom)} tinacos y ${n0(x.dias_prom)} días entre pesajes en promedio.</div></div>`;
+}
+// al marcar "ya lo importé", busca el folio del documento de Microsip y lo liga
+async function marcarImportado(exporte_id){
+  let sug = "", txt = "";
+  try { const c = await api("folio_ms", {exporte_id});
+    if(c.candidatos.length){ sug = c.candidatos[0].folio; txt = "Encontré en Microsip:\n" + c.candidatos.slice(0, 4).map(x => `• ${x.folio} (${x.fecha}${x.concepto ? ", " + x.concepto : ""}): ${x.coinciden} de ${c.articulos} artículos`).join("\n") + "\n\n"; }
+    else if(!c.hay_copia) txt = "La copia de Microsip no trae los movimientos de inventario: escribe el folio a mano.\n\n";
+    else txt = "Todavía no veo ese documento en la copia de Microsip (puede tardar en copiarse). Puedes escribir el folio.\n\n";
+  } catch(e) {}
+  const folio = prompt(txt + "Folio del documento de Microsip donde lo importaste (opcional):", sug);
+  if(folio === null) return false;
+  await api("importado", {exporte_id, folio: folio.trim()});
+  toast("Listo ✓ " + (folio.trim() ? "ligado al folio " + folio.trim() : "marcado como importado")); return true;
 }
 let MERMA = null;
 async function verMerma(marcar, exporte_id){
@@ -650,11 +704,11 @@ function pintarMerma(){
     if(!confirm("Se baja el archivo del ajuste por merma y las diferencias quedan marcadas como ajustadas. ¿Continuar?")) return;
     const r = await verMerma(true); if(r) { bajarMerma(r); toast("Archivo bajado ✓ Impórtalo en Microsip y luego marca «Ya lo importé»."); await cargar(); cargarAud(); } }));
   $("#tblMerma tbody").innerHTML = (m.anteriores || []).length ? m.anteriores.map(x => `<tr><td>${x.id}</td><td>${esc(fecha(x.desde))} – ${esc(fecha(x.hasta))}</td><td class="n">${n0(x.registros)}</td>
-      <td>${esc(fecha(x.creado))}<div class="meta">${esc(x.por || "")}</div></td><td>${x.importado ? `<span class="pill ok">sí, ${esc(fecha(x.importado))}</span>` : `<span class="pill no">todavía no</span>`}</td>
+      <td>${esc(fecha(x.creado))}<div class="meta">${esc(x.por || "")}</div></td><td>${x.importado ? `<span class="pill ok">sí, ${esc(fecha(x.importado))}</span>${x.folio_ms ? `<div class="meta">folio ${esc(x.folio_ms)}</div>` : ""}` : `<span class="pill no">todavía no</span>`}</td>
       <td class="row"><button class="btn btn-ghost btn-sm" data-mbajar="${x.id}">Bajar otra vez</button>${ro ? "" : x.importado ? "" : `<button class="btn btn-main btn-sm" data-mimp="${x.id}">Ya lo importé en Microsip</button>`}</td></tr>`).join("")
     : `<tr><td colspan="6" class="muted">Todavía no hay ajustes por merma.</td></tr>`;
   $$("#tblMerma [data-mbajar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { const r = await api("merma", {exporte_id: Number(b.dataset.mbajar)}); bajarMerma(r); })));
-  $$("#tblMerma [data-mimp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { await api("importado", {exporte_id: Number(b.dataset.mimp)}); toast("Listo ✓"); await cargar(); cargarAud(); })));
+  $$("#tblMerma [data-mimp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { if(await marcarImportado(Number(b.dataset.mimp))){ await cargar(); cargarAud(); } })));
 }
 function bajarMerma(r){
   const tag = (r.desde || "") + (r.hasta && r.hasta !== r.desde ? "_a_" + r.hasta : "") + (r.exporte_id ? " #" + r.exporte_id : "");
