@@ -176,5 +176,10 @@ sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 
 sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5095-0', "
            f"{q(json.dumps({'DOCTO_CM_ID': 5095, 'ARTICULO_ID': 14, 'UNIDADES': 20, 'UNIDADES_REC_DEV': 5, 'PRECIO_UNITARIO': 10}))});")
 
+# OC O96 cancelada en Microsip (trae usuario de cancelación aunque el estatus no diga C): no debe contar.
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '5096', '2026-08-20', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 5096, 'TIPO_DOCTO': 'O', 'FOLIO': 'O0000096', 'FECHA': '2026-08-20', 'PROVEEDOR_ID': 16, 'ESTATUS': 'P', 'USUARIO_CANCELACION': 'SYSDBA', 'IMPORTE_NETO': 2000}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5096-0', {q(json.dumps({'DOCTO_CM_ID': 5096, 'ARTICULO_ID': 21, 'UNIDADES': 200, 'PRECIO_UNITARIO': 10}))});")
+
 subprocess.run(PSQL, input='\n'.join(sql), text=True, check=True)
 print('ok', len(sql), 'sentencias')

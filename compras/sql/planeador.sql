@@ -93,7 +93,7 @@ f AS (
          coalesce(ov.empaque, mm.empaque) AS empaque, coalesce(exi.e, 0) AS existencia, coalesce(pend.u, 0) AS pendiente, pend.folios,
          uc.fecha AS ult_fecha, uc.u AS ult_unidades, ur.fecha AS rec_fecha, ur.u AS rec_unidades, ur.prov AS rec_prov,
          greatest(vm.fecha, mm.ultima_venta) AS ult_venta,
-         exi.por_almacen, coalesce(exi.algun_negativo, false) AS algun_negativo, pend.atr_u, pend.atr_folios,
+         exi.por_almacen, coalesce(exi.algun_negativo, false) AS algun_negativo, pend.atr_u, pend.atr_folios, coalesce(pend.atr_cuenta, false) AS atr_cuenta,
          ltp.dias AS lt_conocido, coalesce(ltp.dias, cfg.ent_def) AS lt, ltp.medido AS lt_medido, ltp.n AS lt_n,
          coalesce(mm.dias_revision, CASE WHEN mm.clase = 'A' THEN cfg.rev_a ELSE cfg.frec_b END) AS rev,
          polv.politica, polv.minimo AS pol_min, mm.presentaciones,
@@ -130,7 +130,10 @@ g AS (
            g0.unidad_aviso,
            CASE WHEN g0.proveedor_id IS NULL THEN 'Sin proveedor: asígnalo para poder pedirlo.'
                 WHEN g0.lt_conocido IS NULL THEN 'Días de entrega desconocidos: se usaron ' || g0.lt || '. Escríbelos o espera a que se midan con las recepciones.' END,
-           CASE WHEN coalesce(g0.atr_u, 0) > 0 THEN 'OC atrasada sin recibir: ' || g0.atr_folios || ' (' || trim(to_char(g0.atr_u, 'FM999999990.##')) || ') no se cuenta como por recibir; confírmala en Seguimiento.' END,
+           CASE WHEN coalesce(g0.atr_u, 0) > 0 AND g0.atr_cuenta
+                  THEN 'OC atrasada: ' || g0.atr_folios || ' (' || trim(to_char(g0.atr_u, 'FM999999990.##')) || ') ya pasó su fecha de entrega. Se cuenta como por recibir, igual que Microsip. Si ya no va a llegar, cancélala en Microsip o márcala «No va a llegar» en Seguimiento.'
+                WHEN coalesce(g0.atr_u, 0) > 0
+                  THEN 'OC atrasada sin recibir: ' || g0.atr_folios || ' (' || trim(to_char(g0.atr_u, 'FM999999990.##')) || ') no se cuenta como por recibir; confírmala en Seguimiento.' END,
            CASE WHEN coalesce(g0.plan_sin_oc, 0) > 0 THEN 'Ya hay ' || trim(to_char(g0.plan_sin_oc, 'FM999999990.##')) || ' en un plan guardado el ' || g0.plan_sin_oc_fechas || ' que todavía no es OC en Microsip.' END,
            CASE WHEN g0.politica IS NULL AND g0.lento IS DISTINCT FROM 'queda' AND (g0.rotacion = 'baja' OR (g0.clase = 'C' AND g0.rotacion IS DISTINCT FROM 'alta'))
                 THEN 'Vende poco: elige si se mantiene un mínimo, solo bajo pedido o se pausa.' END
@@ -139,7 +142,7 @@ g AS (
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveedor_id', cfg.p->>'proveedor_id', 'regla', cfg.regla,
   'plan', (SELECT json_build_object('id', id, 'folio', folio, 'folio_oc', folio_oc, 'clase', clase, 'creado', creado, 'modificado', modificado)
            FROM pl WHERE cfg.p->>'todos' IS DISTINCT FROM 'si' LIMIT 1),
-  'filas', (SELECT coalesce(json_agg(json_build_object(
+  'filas', (SELECT coalesce(json_agg(jsonb_build_object(
       'articulo_id', g.articulo_id, 'clave', g.clave, 'articulo', g.articulo, 'unidad', g.unidad, 'clase', g.clase,
       'vd', round(g.venta_diaria, 2), 'minimo', g.minimo, 'maximo', g.maximo, 'punto_reorden', g.punto_reorden, 'rotacion', g.rotacion,
       'tickets', g.tickets, 'proveedor_id', g.proveedor_id, 'proveedor', g.proveedor, 'ultima_venta', g.ultima_venta,
@@ -147,11 +150,11 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveed
       'existencia', g.existencia, 'pendiente', g.pendiente, 'folios', g.folios, 'sugerido', g.sugerido,
       'ult_fecha', g.ult_fecha, 'ult_unidades', g.ult_unidades, 'rec_fecha', g.rec_fecha, 'rec_unidades', g.rec_unidades, 'rec_prov', g.rec_prov,
       'rec_proveedor', (SELECT p.datos->>'NOMBRE' FROM ms_raw p WHERE p.base = cfg.base AND p.tabla = 'PROVEEDORES' AND p.pk = g.rec_prov),
-      'ult_venta', g.ult_venta,
+      'ult_venta', g.ult_venta)::jsonb || jsonb_build_object(
       'comprado', dec.comprado, 'razon', dec.razon, 'nota', dec.nota,
       'estado', g.estado, 'revisar', g.revisar, 'costo', g.costo, 'costo_fuente', g.costo_fuente, 'lt', g.lt, 'lt_medido', g.lt_medido,
       'lt_n', g.lt_n, 'rev', g.rev, 'politica', g.politica, 'pol_min', g.pol_min, 'presentaciones', g.presentaciones, 'por_almacen', g.por_almacen,
-      'atr_u', g.atr_u, 'atr_folios', g.atr_folios, 'plan_sin_oc', g.plan_sin_oc)
+      'atr_u', g.atr_u, 'atr_folios', g.atr_folios, 'atr_cuenta', g.atr_cuenta, 'plan_sin_oc', g.plan_sin_oc)
       ORDER BY g.proveedor, g.clase, (g.sugerido > 0) DESC, (greatest(g.existencia, 0) + g.pendiente) / nullif(g.punto_reorden, 0), g.articulo), '[]'::json)
     FROM g LEFT JOIN dec ON dec.articulo_id = g.articulo_id AND coalesce(dec.dprov, '') = coalesce(g.proveedor_id, '')
     WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id)   -- lo que se marcó para ya no comprar sale de inmediato

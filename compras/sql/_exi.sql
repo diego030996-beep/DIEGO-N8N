@@ -17,7 +17,7 @@ ocl0 AS (  -- lo recibido de cada renglón: lo que dice Microsip en la OC, o las
   SELECT o.id, o.folio, o.fecha, o.prov, d.articulo_id, d.u AS pedido,
          greatest(coalesce(r.u, 0), coalesce(d.rec_ms, 0)) AS rec_lig, d.rec_ms, coalesce(r.u, 0) AS rec_ligado,
          EXISTS (SELECT 1 FROM lig WHERE lig.fte = o.id) AS ligada,
-         coalesce(ltp.dias, cfg.ent_def) AS lt, seg.estado AS seg, o.estatus
+         coalesce(ltp.dias, cfg.ent_def) AS lt, seg.estado AS seg, o.estatus, o.copiado
   FROM oc o JOIN ocd d ON d.id = o.id CROSS JOIN cfg
   LEFT JOIN recd r ON r.oc_id = o.id AND r.articulo_id = d.articulo_id
   LEFT JOIN ltp ON ltp.prov = o.prov
@@ -46,7 +46,7 @@ ocl1 AS (  -- lo suelto se reparte a las OCs pendientes más viejas primero (sol
   SELECT x.*, 0 FROM ocl0 x WHERE NOT (x.pedido > x.rec_lig AND x.rec_ms IS NULL AND NOT x.ligada)),
 ocl AS (  -- renglones de OC con lo pedido, lo recibido y lo que falta, y el estado de la orden
   SELECT x.id, x.folio, x.fecha, x.prov, x.articulo_id, x.pedido, x.rec_lig + x.rec_suelto AS recibido, x.rec_suelto,
-         x.estatus, x.rec_ms, x.rec_ligado, x.ligada,
+         x.estatus, x.copiado, x.rec_ms, x.rec_ligado, x.ligada,
          greatest(x.pedido - x.rec_lig - x.rec_suelto, 0) AS falta, x.lt,
          CASE WHEN x.estatus IN ('S', 'R') OR x.seg IN ('cancelada', 'recibida') THEN 'cerrada'
               WHEN x.pedido - x.rec_lig - x.rec_suelto <= 0 THEN 'completa'
@@ -57,10 +57,12 @@ ocl AS (  -- renglones de OC con lo pedido, lo recibido y lo que falta, y el est
   FROM ocl1 x CROSS JOIN cfg),
 pend AS (  -- por recibir: abiertas, parciales (lo que falta) y atrasadas que confirmaste; las atrasadas sin confirmar van aparte
   SELECT coalesce(q.base_id, l.articulo_id) AS articulo_id,
-         sum(l.falta * coalesce(q.factor, 1)) FILTER (WHERE l.estado IN ('abierta', 'parcial', 'atrasada_confirmada')) AS u,
-         string_agg(DISTINCT l.folio || CASE WHEN l.estado = 'parcial' THEN ' (parcial)' WHEN l.estado = 'atrasada_confirmada' THEN ' (atrasada)' ELSE '' END, ', ')
-           FILTER (WHERE l.estado IN ('abierta', 'parcial', 'atrasada_confirmada')) AS folios,
+         sum(l.falta * coalesce(q.factor, 1)) FILTER (WHERE l.estado IN ('abierta', 'parcial', 'atrasada_confirmada')
+                                                      OR (l.estado = 'atrasada' AND cfg.atrasadas = 'cuentan')) AS u,
+         string_agg(DISTINCT l.folio || CASE WHEN l.estado = 'parcial' THEN ' (parcial)' WHEN l.estado LIKE 'atrasada%' THEN ' (atrasada)' ELSE '' END, ', ')
+           FILTER (WHERE l.estado IN ('abierta', 'parcial', 'atrasada_confirmada') OR (l.estado = 'atrasada' AND cfg.atrasadas = 'cuentan')) AS folios,
+         bool_or(cfg.atrasadas = 'cuentan') AS atr_cuenta,
          sum(l.falta * coalesce(q.factor, 1)) FILTER (WHERE l.estado = 'atrasada') AS atr_u,
          string_agg(DISTINCT l.folio || ' del ' || to_char(l.fecha, 'DD/MM'), ', ') FILTER (WHERE l.estado = 'atrasada') AS atr_folios
-  FROM ocl l LEFT JOIN eqv q ON q.articulo_id = l.articulo_id
+  FROM ocl l CROSS JOIN cfg LEFT JOIN eqv q ON q.articulo_id = l.articulo_id
   WHERE l.estado NOT IN ('cerrada', 'completa') GROUP BY 1)

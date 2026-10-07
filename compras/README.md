@@ -127,6 +127,10 @@ Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/plan
 - **Por recibir**: otras OCs del mismo artículo hechas en los días de entrega anteriores.
 - **Máximos/mínimos**: los del mes de la OC, calculados con los 6 meses anteriores a ese mes.
 
+**OC atrasadas**: por omisión **cuentan como por recibir, igual que Microsip**, y se avisan en rojo («incluye N atrasado») y en Seguimiento.
+En Configuración se puede cambiar a «no cuentan hasta confirmarlas». Una OC cancelada en Microsip se reconoce por `ESTATUS = C`, `CANCELADO`
+o usuario/fecha de cancelación; si se canceló después de copiarse a Postgres y la copia no se actualizó, márcala «No va a llegar» en Seguimiento.
+
 **Por recibir hoy** = lo que falta de cada OC (pedido − recibido por `DOCTOS_CM_LIGAS`) mientras no pase de (días de entrega + 5) días,
 o si confirmaste que sigue en camino. Se revisan las OCs del último año (Microsip cuenta todas las pendientes). Si la copia de Microsip trae
 `UNIDADES_REC_DEV` en el renglón de la OC, manda lo que dice Microsip. Solo para OCs que **nunca** se ligaron (y sin ese dato), una recepción

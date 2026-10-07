@@ -356,7 +356,7 @@ button.cn{border:2px solid transparent;cursor:pointer;font:inherit} button.cn:ho
     <div class="kpis" id="kpisSeg"></div>
     <div class="card">
       <h2>Órdenes abiertas</h2>
-      <p class="sub">Se cuenta lo que falta de cada renglón, aunque la orden ya tenga una recepción parcial. Una orden <b>atrasada</b> no se cuenta como "por recibir" hasta que confirmes que sigue en camino: así no se compra dos veces ni se olvida.</p>
+      <p class="sub">Se cuenta lo que falta de cada renglón, aunque la orden ya tenga una recepción parcial. Una orden <b>atrasada</b> (ya pasó su fecha de entrega) se queda aquí hasta que llegue, confirmes que sigue en camino o la marques como que no va a llegar. Si en Microsip la cancelaste pero aquí sigue, márcala «No va a llegar».</p>
       <div id="ocsSeg"></div>
     </div>
     <div class="card">
@@ -666,7 +666,7 @@ function renglon(f){
       <div class="meta">Última venta: ${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " d)" : "—"} · Última recepción: ${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) : "—"}</div>
       ${f.presentaciones ? `<div class="meta">Incluye: ${esc(f.presentaciones)}</div>` : ""}</td>
     <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
-    <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="meta">${esc(f.folios)}</div>` : ""}${f.atr_u ? `<div class="meta neg">+${n0(f.atr_u)} atrasado</div>` : ""}</td>
+    <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="meta">${esc(f.folios)}</div>` : ""}${f.atr_u ? `<div class="meta neg">${f.atr_cuenta ? "incluye " + n0(f.atr_u) + " atrasado" : "+" + n0(f.atr_u) + " atrasado (no cuenta)"}</div>` : ""}</td>
     <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span>${rv ? `<div class="tag prov">provisional</div>` : ""}</td>
     <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar">
       ${dist && !sinProv && !soloLectura() ? `<div>${selRazon(f._r, 'class="r" style="margin-top:4px;max-width:150px"')}</div>` : ""}${avisoMas(m, f.unidad)}</td>
@@ -719,7 +719,7 @@ function ocArt(f){
   if(!r) return `<button class="btn btn-ghost btn-sm" data-ocart="1">Ver las órdenes de este producto</button><p class="muted" style="margin:6px 0 0">Para comparar con «Por recibir» de Microsip.</p>`;
   if(!r.ocs.length) return `<p class="muted">No hay órdenes de compra de este producto en el último año.</p>`;
   return `<div class="scroll"><table class="ocs-art"><thead><tr><th>OC</th><th>Estatus MS</th><th class="n">Pedido</th><th class="n">Recibido</th><th class="n">Falta</th><th>Cuenta como</th></tr></thead><tbody>
-    ${r.ocs.map(o => `<tr><td><b>${esc(o.folio)}</b><div class="meta">${fecha(o.fecha)}${o.clave && o.clave !== f.clave ? " · " + esc(o.clave) : ""}</div></td><td>${esc(o.estatus || "—")}</td>
+    ${r.ocs.map(o => `<tr><td><b>${esc(o.folio)}</b><div class="meta">${fecha(o.fecha)}${o.clave && o.clave !== f.clave ? " · " + esc(o.clave) : ""}</div></td><td>${esc(o.estatus || "—")}${o.copiado ? `<div class="meta">copiada ${esc(o.copiado)}</div>` : ""}</td>
       <td class="n">${n0(o.pedido)}</td><td class="n">${n0(o.recibido)}<div class="meta">${[o.ligado ? "ligado " + n0(o.ligado) : "", o.microsip !== null && o.microsip !== undefined ? "Microsip " + n0(o.microsip) : "", o.sin_ligar ? "sin ligar " + n0(o.sin_ligar) : ""].filter(Boolean).join(" · ")}</div></td>
       <td class="n"><b>${n0(o.falta)}</b></td><td>${esc(OCEST2[o.estado] || o.estado)}</td></tr>`).join("")}</tbody></table></div>
     <p class="muted" style="margin:6px 0 0">Si no cuadra con Microsip, mándame esta tabla. Campos que trae la copia: ${esc(r.campos || "—")}</p>`;
@@ -841,7 +841,7 @@ function pintarSeg(){
       <div class="scroll" style="margin-top:6px"><table class="tbl"><thead><tr><th>Artículo</th><th class="n">Pedido</th><th class="n">Recibido</th><th class="n">Falta</th></tr></thead><tbody>
         ${o.lineas.map(l => `<tr><td>${esc(l.articulo || "")}<div class="meta">${esc(l.clave || "")}</div></td><td class="n">${n0(l.pedido)}</td><td class="n">${n0(l.recibido)}${l.sin_ligar > 0 ? `<div class="meta" title="Recepción capturada en Microsip sin ligarla a la OC">${n0(l.sin_ligar)} sin ligar</div>` : ""}</td><td class="n"><b>${n0(l.falta)}</b></td></tr>`).join("")}</tbody></table></div>
       ${soloLectura() || !["atrasada", "en_camino"].includes(o.estado) ? "" : `<div class="row" style="margin-top:8px">
-        ${o.estado === "atrasada" ? `<button class="btn btn-main btn-sm" data-oc="${o.id}" data-e="en_camino">Sigue en camino (contar como por recibir)</button>` : ""}
+        ${o.estado === "atrasada" ? `<button class="btn btn-main btn-sm" data-oc="${o.id}" data-e="en_camino">Sigue en camino</button>` : ""}
         <button class="btn btn-ghost btn-sm" data-oc="${o.id}" data-e="recibida">Ya llegó (falta ligarla en Microsip)</button>
         <button class="btn btn-ghost btn-sm" data-oc="${o.id}" data-e="cancelada">No va a llegar (cancelada)</button>
         ${o.seguimiento ? `<button class="btn btn-ghost btn-sm" data-oc="${o.id}" data-e="">Deshacer</button>` : ""}</div>`}
@@ -1203,7 +1203,8 @@ const GEN = [
   ["dia_a", "Día para revisar productos A", "dia", "Cada proveedor puede tener el suyo"],
   ["frec_b", "Productos B cada (días)", "number", ""],
   ["regla", "Cuándo sugerir compra", "regla", ""],
-  ["gracia_oc", "Días extra para dar una OC por pendiente", "number", "OC sin recepción, dentro de días de entrega + estos días"],
+  ["gracia_oc", "Días extra antes de marcar una OC como atrasada", "number", "Pasados los días de entrega + estos días, la OC sale como atrasada"],
+  ["atrasadas", "Las OC atrasadas", "atrasadas", ""],
   ["dias_ligar", "Días para reconocer la OC después del plan", "number", ""],
   ["almacenes", "Almacenes que cuentan (vacío = todos)", "text", "Ej.: GENERAL|BODEGA"],
   ["excluir", "Excluir artículos cuyo nombre diga", "text", "Además de servicios y VARIOS. Ej.: muestra|regalo"],
@@ -1225,6 +1226,7 @@ function pintarCfg(){
     let inp;
     if(tipo === "dia") inp = `<select data-k="${k}" ${ro}>${[1,2,3,4,5,6].map(d => `<option value="${d}" ${String(v) === String(d) ? "selected" : ""}>${DIAS[d]}</option>`).join("")}</select>`;
     else if(tipo === "metodo") inp = `<select data-k="${k}" ${ro}><option value="retail" ${v !== "simple" ? "selected" : ""}>Recomendado: con variación de la venta y rotación</option><option value="simple" ${v === "simple" ? "selected" : ""}>Simple: días de seguridad fijos</option></select>`;
+    else if(tipo === "atrasadas") inp = `<select data-k="${k}" ${ro}><option value="cuentan" ${v !== "confirmar" ? "selected" : ""}>Cuentan como por recibir, igual que Microsip (y se avisan en rojo)</option><option value="confirmar" ${v === "confirmar" ? "selected" : ""}>No cuentan hasta que confirmes que siguen en camino</option></select>`;
     else if(tipo === "area") inp = `<textarea data-k="${k}" style="min-height:90px" ${ro}>${esc(v)}</textarea>`;
     else if(tipo === "regla") inp = `<select data-k="${k}" ${ro}><option value="bajo_minimo" ${v === "bajo_minimo" ? "selected" : ""}>Cuando existencia + por recibir llega al punto de reorden (pedir hasta el máximo)</option><option value="hasta_maximo" ${v === "hasta_maximo" ? "selected" : ""}>Siempre completar hasta el máximo</option></select>`;
     else inp = `<input type="${tipo === "number" ? "number" : "text"}" step="any" data-k="${k}" value="${esc(v)}" ${ro}>`;

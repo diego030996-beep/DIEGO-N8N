@@ -11,7 +11,7 @@ ids AS (SELECT DISTINCT d.datos->>'DOCTO_CM_ID' AS id FROM ms_raw d, cfg
 campos AS (SELECT string_agg(DISTINCT k, ', ') AS k FROM ms_raw d CROSS JOIN cfg, jsonb_object_keys(d.datos) AS k
            WHERE d.base = cfg.base AND d.tabla = 'DOCTOS_CM_DET' AND d.datos->>'DOCTO_CM_ID' IN (SELECT id FROM ids))
 SELECT json_build_object('ok', true, 'articulo_id', (cfg.p->>'articulo_id')::bigint, 'campos', (SELECT k FROM campos),
-  'ocs', (SELECT coalesce(json_agg(json_build_object('folio', l.folio, 'fecha', l.fecha, 'proveedor', prv.nombre, 'estatus', l.estatus,
+  'ocs', (SELECT coalesce(json_agg(json_build_object('folio', l.folio, 'fecha', l.fecha, 'proveedor', prv.nombre, 'estatus', l.estatus, 'copiado', to_char(l.copiado, 'YYYY-MM-DD'),
             'clave', a.clave, 'pedido', l.pedido, 'ligado', l.rec_ligado, 'microsip', l.rec_ms, 'sin_ligar', l.rec_suelto, 'recibido', l.recibido,
             'falta', l.falta, 'estado', l.estado, 'lt', l.lt) ORDER BY l.fecha DESC), '[]'::json)
           FROM ocl l LEFT JOIN prv ON prv.proveedor_id = l.prov LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = l.articulo_id

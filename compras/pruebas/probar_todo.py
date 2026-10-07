@@ -46,7 +46,7 @@ ok(cem['CEM25']['pendiente'] == 100 and 'O0000077' in cem['CEM25']['folios'], 'p
 s = cem['CEM50']
 ok(s['sugerido'] == (s['maximo'] - max(s['existencia'], 0) - s['pendiente'] if max(s['existencia'], 0) + s['pendiente'] <= s['punto_reorden'] else 0), 'sugerido = máx − existencia − por recibir al llegar al punto de reorden')
 t = correr('planeador', {'todos': 'si'})['filas']
-ok(len({x['proveedor_id'] for x in t}) > 2 and all(x['sugerido'] > 0 or max(x['existencia'], 0) + x['pendiente'] <= x['punto_reorden'] for x in t), 'vista de todos los productos: solo lo que hay que pedir, de todos los proveedores')
+ok(len({x['proveedor_id'] for x in t}) > 2 and all(x['sugerido'] > 0 or (x['atr_u'] or 0) > 0 or x['existencia'] < 0 or max(x['existencia'], 0) + x['pendiente'] <= x['punto_reorden'] for x in t), 'vista de todos los productos: solo lo que hay que pedir, de todos los proveedores')
 g = correr('guardar', {'proveedor_id': '14', 'proveedor': 'CEMEX', 'clase': 'A', 'folio': '', 'lineas': [
     {**{k: s[k] for k in ('articulo_id', 'clave', 'articulo', 'unidad', 'clase', 'existencia', 'pendiente', 'minimo', 'punto_reorden', 'maximo', 'sugerido')}, 'comprado': s['sugerido'] + 20, 'razon': 'promocion', 'nota': ''}]})
 ok(g['lineas'] == 1, 'guardar plan')
@@ -111,7 +111,11 @@ ok('CLAVO25' in P('13') and 'CLAVO25' not in P('15'), 'cambiar de proveedor desd
 correr('proveedor_art', {'articulo_id': 11, 'proveedor_id': ''})
 ok('CLAVO25' in P('15'), 'regresar al proveedor del cálculo')
 l16 = P('16')['LLAVE38']
-ok(l16['atr_u'] == 5 and l16['pendiente'] == 0 and any('atrasada' in r for r in l16['revisar']), 'OC atrasada: no cuenta como por recibir y pide revisarla')
+ok(l16['atr_u'] == 5 and l16['pendiente'] == 5 and l16['atr_cuenta'] and any('atrasada' in r for r in l16['revisar']), 'OC atrasada: cuenta como por recibir (como Microsip) y avisa')
+ok('O0000096' not in {o['folio'] for o in correr('seguimiento', {}, hoy=H)['ocs']}, 'OC cancelada en Microsip (usuario de cancelación): no cuenta')
+correr('config', {'general': {'atrasadas': 'confirmar'}, 'proveedores': []})
+l16 = P('16')['LLAVE38']
+ok(l16['atr_u'] == 5 and l16['pendiente'] == 0 and not l16['atr_cuenta'], 'opción: la atrasada no cuenta hasta confirmarla')
 sg = correr('seguimiento', {}, hoy=H)
 E = {o['folio']: o for o in sg['ocs']}
 ok(E['O0000091']['estado'] == 'atrasada' and E['O0000090']['estado'] == 'parcial' and E['O0000090']['falta'] == 30, 'seguimiento: atrasada y parcial')
@@ -121,6 +125,7 @@ ok(correr('oc_estado', {'docto_cm_id': '5091', 'estado': 'en_camino', 'nota': 'l
 ok(P('16')['LLAVE38']['pendiente'] == 5, 'confirmada en camino: ya cuenta como por recibir')
 correr('oc_estado', {'docto_cm_id': '5091', 'estado': 'cancelada', 'nota': ''})
 ok('O0000091' not in {o['folio'] for o in correr('seguimiento', {}, hoy=H)['ocs']} and P('16')['LLAVE38']['atr_u'] in (None, 0), 'OC cancelada: sale del seguimiento')
+correcto = correr('config', {'general': {'atrasadas': 'cuentan'}, 'proveedores': []})
 t = P('12')['TPLUS25']
 ok(t['existencia'] == 2 and any('negativa' in r and 'BODEGA' in r for r in t['revisar']), 'existencia negativa: avisa en qué almacén')
 ok(t['estado'] in ('critico', 'pedir') and t['costo'] == 122.5 and t['costo_fuente'] == 'último costo', 'estado y costo por renglón')
