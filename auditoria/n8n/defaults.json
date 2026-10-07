@@ -5,6 +5,6 @@
   "margen_compra": "10",
   "tipos_compra": "compra",
   "retiros_excluir": "",
-  "compras_sin_comprobante": "contado",
+  "compras_sin_comprobante": "no",
   "proveedores_mostrador": ""
 }

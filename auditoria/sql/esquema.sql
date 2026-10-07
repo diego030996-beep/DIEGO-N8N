@@ -18,14 +18,6 @@ CREATE TABLE IF NOT EXISTS mov_ignorado (base TEXT NOT NULL DEFAULT '', tipo TEX
 CREATE TABLE IF NOT EXISTS mov_bitacora (id BIGSERIAL PRIMARY KEY, registro_id BIGINT, ref TEXT, accion TEXT NOT NULL, detalle TEXT, por TEXT,
   creado TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS mov_bitacora_reg ON mov_bitacora (registro_id);
--- quién mandó el movimiento por Telegram (para etiquetarlo en los avisos)
-DO 'BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = ''mov_registro'' AND column_name = ''tg_user'') THEN
-    ALTER TABLE mov_registro ADD COLUMN tg_user TEXT;
-  END IF;
-END';
--- mismos nombres que usa el bot de choferes (chat_id = id de usuario de Telegram)
-CREATE TABLE IF NOT EXISTS choferes_tg (chat_id TEXT PRIMARY KEY, nombre TEXT, quien TEXT, usuario TEXT, actualizado TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS mov_aviso (clave TEXT PRIMARY KEY, enviado TIMESTAMPTZ NOT NULL DEFAULT now());
 -- la auditoría empieza el día que se instala (no revisa todo el pasado de Microsip)
 INSERT INTO mov_config (clave, valor, por) SELECT 'desde', to_char((now() AT TIME ZONE 'America/Mexico_City')::date, 'YYYY-MM-DD'), 'instalación'

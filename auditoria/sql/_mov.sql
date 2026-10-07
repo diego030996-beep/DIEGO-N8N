@@ -105,15 +105,15 @@ csr AS (   -- compras de contado / de mostrador en Microsip sin comprobante (cua
 mov AS (   -- todo junto, con el mismo formato
   SELECT 'registro' AS clase, e.id::text AS ref, e.fecha, coalesce(left(e.hora, 5), to_char(e.creado AT TIME ZONE 'America/Mexico_City', 'HH24:MI')) AS hora,
          coalesce(nullif(e.retiro_folio, ''), 'M-' || e.id) AS folio, e.empleado, e.concepto, e.tipo, e.metodo, e.importe, e.comprobado, e.falta,
-         e.estado, e.motivo, e.vence, e.fotos, e.pedido, e.cm_folio, e.cm_total, e.cm_proveedor, e.cm_auto, e.revision, e.id AS registro_id, e.tg_user
+         e.estado, e.motivo, e.vence, e.fotos, e.pedido, e.cm_folio, e.cm_total, e.cm_proveedor, e.cm_auto, e.revision, e.id AS registro_id
   FROM est e
   UNION ALL
   SELECT 'retiro', r.id, r.fecha, r.hora, r.folio, r.usuario, coalesce(nullif(r.descripcion, ''), 'Retiro de caja'), 'retiro', 'efectivo', r.importe, 0, r.importe,
          CASE WHEN cfg.ahora > r.vence THEN 'rojo' ELSE 'pendiente' END,
-         CASE WHEN cfg.ahora > r.vence THEN 'RETIRO SIN COMPROBAR' ELSE 'Retiro sin reportar' END, r.vence, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+         CASE WHEN cfg.ahora > r.vence THEN 'RETIRO SIN COMPROBAR' ELSE 'Retiro sin reportar' END, r.vence, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL
   FROM rsr r, cfg
   UNION ALL
   SELECT 'compra', c.id, c.fecha, NULL, c.folio, c.proveedor, 'Compra en Microsip ' || c.folio || coalesce(' · ' || nullif(c.proveedor, ''), ''), 'compra', coalesce(nullif(c.cond_nombre, ''), 'contado'),
          c.total, 0, c.total, CASE WHEN cfg.ahora > c.vence THEN 'rojo' ELSE 'pendiente' END,
-         CASE WHEN cfg.ahora > c.vence THEN 'FALTA COMPROBANTE de la compra' ELSE 'Compra sin comprobante' END, c.vence, 0, NULL, c.folio, c.total, c.proveedor, NULL, NULL, NULL, NULL
+         CASE WHEN cfg.ahora > c.vence THEN 'FALTA COMPROBANTE de la compra' ELSE 'Compra sin comprobante' END, c.vence, 0, NULL, c.folio, c.total, c.proveedor, NULL, NULL, NULL
   FROM csr c, cfg)

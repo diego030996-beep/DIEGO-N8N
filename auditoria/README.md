@@ -18,7 +18,7 @@ Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
 - **Compras**: `DOCTOS_CM` tipo `C` (compra) y `R` (recepción). Una recepción que ya pasó a compra cuenta una sola vez.
   El total es importe neto más impuestos.
 - **Pedido**: Ventas `P`, `R` o `F`. Se compara solo el número (`P4509` = `P0004509`). Avisa si no existe o si está cancelado.
-- **Retiros sin reportar** y **compras de contado sin comprobante** salen solos, aunque nadie los capture.
+- **Retiros sin reportar** salen solos, aunque nadie los capture. Las **compras de contado sin comprobante** también, si se activa en Ajustes.
 
 ## Semáforo (la primera regla que aplica)
 | | Cuándo |
@@ -54,49 +54,39 @@ Cada movimiento guarda, para abrirlo meses después (Historial → `R-01842`):
 Las fotos se guardan en la base (`mov_comprobante.foto`, JPEG reducido a 1600 px).
 Solo las ven la auditora, el administrador y el empleado que las subió.
 
-## En el grupo de choferes (Telegram)
-Todo se puede manejar desde el **grupo de choferes**, con un **bot de auditoría** que se agrega al grupo. El encargado y el dueño, que también están en el grupo, ven todo.
+## Avisos por Telegram (solo avisos)
+Todo se captura y se revisa en la **web**, que también se abre desde el celular. Telegram **solo manda avisos**.
 
-**Reportar desde el grupo:**
-- Mandar la **foto del ticket** con el texto `R-01842 500 P4509 block ligero`. El folio del retiro, el importe, el pedido y el motivo pueden ir en cualquier orden.
-- Sin retiro de caja: `350 gasolina tarjeta`.
-- O **responder con la foto** a un aviso del bot. La foto queda ligada a ese retiro, movimiento o compra.
-- El bot contesta en el grupo con el semáforo: 🟢 cuadrado, 🟠 qué falta o ⏳ hasta qué hora tiene.
-- El chofer se identifica con el nombre que ya tiene en el bot de choferes (`choferes_tg`). Si no está ahí, se usa su nombre de Telegram.
-- Fotos sin folio, sin importe y sin palabras como "ticket" o "comprobante" se ignoran, para no mezclarse con las fotos de entregas.
-
-**Comandos:** `/pendientes` (resumen de hoy y problemas), `/folio R-01842` (cómo va), `/ayuda`.
-
-**Avisos (cada hora de 8:05 a 22:05):**
-- Un mensaje por cada movimiento que pasó la hora límite y sigue en 🔴 o 🟠.
-- Etiqueta al responsable si mandó por Telegram.
-- Trae "↩️ Responde a este mensaje con la foto".
-- Se avisa una vez por estado: si pasa de 🟠 a 🔴, se vuelve a avisar.
-- Lo que la auditora ya revisó no se repite.
-- Si hay más de 8 a la vez, el resto va en un solo mensaje.
-
-**Resumen del día (20:20):** 🟢/🟠/🔴, dinero sin comprobar, problemas de días anteriores y problemas por persona.
-Si cambias la hora de cierre, mueve también la hora de "Resumen del día".
-
-**Seguridad:**
-- El bot solo atiende al grupo configurado.
-- Telegram firma cada mensaje con la `secreto` (`X-Telegram-Bot-Api-Secret-Token`).
-- En los mensajes del grupo nunca se ponen ligas con llave.
-
-**Por qué un bot aparte:** Telegram solo deja un receptor de mensajes por bot. El bot de choferes ya lo usa el flujo "ML inventario + ventas (Telegram)". Con un bot propio no se toca ese flujo.
-**No pongas el token del bot de choferes aquí**: "Conectar bot" le quitaría sus mensajes a ese flujo.
+- Se usa el bot de **Monedero** únicamente para mandar mensajes. No se conecta, así que el flujo del monedero sigue igual.
+- **chat_ids** (en "Configuración del bot") dice a quién le llegan, separados por coma: el tuyo y el del encargado de caja.
+  Para agregar al encargado:
+  1. Que abra @Monedero_DISACAMBOT y le dé *Iniciar*.
+  2. Que vea su número de chat con @userinfobot.
+  3. Agrega ese número a la lista.
+- **Cada hora** (8:05 a 22:05) manda **un mensaje** con lo que pasó la hora límite y sigue en 🔴 o 🟠:
+  ```
+  ⚠️ Comprobación pendiente
+  🔴 R-01842 · $500 · JUAN
+  Pedido P4509
+  comprar 10 block ligero
+  Falta: ticket + registro de compra en Microsip · 8 h
+  ```
+  - Se avisa una vez por estado: si empeora de 🟠 a 🔴, se vuelve a avisar.
+  - Lo que la auditora ya revisó no se repite.
+- **Resumen del día** (20:20): 🟢/🟠/🔴, dinero sin comprobar y los problemas.
+  Si cambias la hora de cierre en Ajustes, cambia también la hora de este nodo.
 
 ## Instalar
 1. `python3 auditoria/armar_flujo.py` genera `n8n/Auditoría de movimientos (Microsip).json`. Ya viene generado.
 2. Importa el archivo en n8n y revisa la credencial de Postgres.
-   Crea el bot de auditoría (ver la nota dentro del flujo) y pon su token en **Configuración del bot**.
-   **Activa** el flujo y corre **Conectar bot** una vez.
+   En **Configuración del bot** pon el token del bot y los chats; la copia que te mandé ya los trae.
+   **Activa** el flujo.
 3. Corre **Ver ligas**: crea la llave de la auditora si no existe y te da las ligas.
 4. Con la liga de administrador entra a **Empleados** y da de alta a quien maneja dinero. Cada uno recibe su liga.
 5. En **Ajustes** revisa:
    - la hora límite y la tolerancia;
    - qué retiros no se auditan, por ejemplo `DEPOSITO|CORTE`;
-   - qué compras piden comprobante: de contado, de mostrador, todas o ninguna.
+   - qué compras de Microsip piden comprobante. Por omisión, ninguna: solo se auditan los retiros de caja.
 
 La auditoría empieza **el día que se instala**: no revisa todo el pasado de Microsip. Se cambia en Ajustes → "Auditar desde".
 
@@ -111,7 +101,7 @@ La auditoría empieza **el día que se instala**: no revisa todo el pasado de Mi
 
 ## Pruebas
 ```
-python3 auditoria/pruebas/probar_todo.py     # 84 casos del cruce, del semáforo y del registro por Telegram (base de prueba 'auditoria')
-node auditoria/pruebas/probar_nodos.js       # 49 casos: permisos, fotos, mensajes del grupo, avisos, resumen, ligas
+python3 auditoria/pruebas/probar_todo.py     # 73 casos del cruce y del semáforo (base de prueba 'auditoria')
+node auditoria/pruebas/probar_nodos.js       # 36 casos: permisos, fotos, avisos, resumen y ligas
 AHORA='2026-10-07 21:00' node auditoria/pruebas/servidor.js   # página en http://localhost:5683/webhook/auditoria-mov?k=...
 ```

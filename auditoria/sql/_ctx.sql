@@ -10,7 +10,7 @@ cfg AS (SELECT b.*, b.ahora::date AS hoy,
                coalesce(nullif(c->>'margen_compra', '')::numeric, 10) / 100 AS margen,
                string_to_array(coalesce(nullif(c->>'tipos_compra', ''), 'compra'), ',') AS tipos_compra,
                coalesce(c->>'retiros_excluir', '') AS excl,
-               coalesce(nullif(c->>'compras_sin_comprobante', ''), 'contado') AS csc,
+               coalesce(nullif(c->>'compras_sin_comprobante', ''), 'no') AS csc,
                coalesce(c->>'proveedores_mostrador', '') AS prov_most,
                coalesce(nullif(c->>'desde', '')::date, b.ahora::date) AS desde
         FROM b)

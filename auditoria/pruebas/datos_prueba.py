@@ -13,7 +13,7 @@ CREATE TABLE ms_ventas (base TEXT, origen TEXT, docto_id BIGINT, tipo TEXT, esta
 CREATE VIEW ms_ventas_v AS SELECT v.*, v.importe + v.impuestos AS total, (v.estatus = 'C') AS cancelado FROM ms_ventas v;
 CREATE TABLE ms_raw (base TEXT, tabla TEXT, pk TEXT, fecha DATE, datos JSONB, sync_id TEXT, actualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (base, tabla, pk));
 CREATE TABLE mov_config (clave TEXT PRIMARY KEY, valor TEXT, por TEXT, actualizado TIMESTAMPTZ NOT NULL DEFAULT now());
-INSERT INTO mov_config (clave, valor) VALUES ('desde', '2026-10-01'), ('retiros_excluir', 'DEPOSITO');
+INSERT INTO mov_config (clave, valor) VALUES ('desde', '2026-10-01'), ('retiros_excluir', 'DEPOSITO'), ('compras_sin_comprobante', 'contado');
 """]
 # retiros de caja (PV, tipo R). importe en ms_ventas = 0; lo real viene de DOCTOS_PV_COBROS
 ret = [  # id, folio, fecha, hora, descripcion, importe
