@@ -44,3 +44,7 @@ DO 'BEGIN
     ALTER TABLE prod_exporte ADD COLUMN folio_ms TEXT;
   END IF;
 END';
+-- cargas de gas (lo que se cargó o compró). Cada carga llena el tanque: lo cargado es lo que se gastó desde la carga anterior.
+CREATE TABLE IF NOT EXISTS prod_gas (id BIGSERIAL PRIMARY KEY, base TEXT NOT NULL, fecha DATE NOT NULL, litros NUMERIC, costo NUMERIC NOT NULL,
+  nota TEXT, por TEXT, creado TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS prod_gas_fecha ON prod_gas (base, fecha);

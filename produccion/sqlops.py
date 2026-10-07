@@ -3,7 +3,7 @@ import os
 import re
 
 DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sql')
-OPS = ['datos', 'buscar', 'receta', 'copiar', 'capturar', 'registros', 'borrar', 'exportar', 'importado', 'materia', 'resumen', 'precio', 'extras', 'config', 'contar', 'auditoria', 'merma', 'folio_ms']
+OPS = ['datos', 'buscar', 'receta', 'copiar', 'capturar', 'registros', 'borrar', 'exportar', 'importado', 'materia', 'resumen', 'precio', 'extras', 'config', 'contar', 'auditoria', 'merma', 'folio_ms', 'gas', 'tablero']
 
 
 def leer(nombre):

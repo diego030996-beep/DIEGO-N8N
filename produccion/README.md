@@ -6,6 +6,8 @@ y bajar cada semana los archivos para importarlos en Microsip. Lee las mismas ta
 
 | Pestaña | Qué hace |
 |---|---|
+| **Inicio** (pantalla principal) | Hoy / semana / mes: tinacos contra la meta, kg de polímero, costo de producción y por tinaco (materiales + gas), gas real por tinaco contra la simulación, desviación de polímero, materia prima con días que alcanza y alertas |
+| **Gas** | Registrar cada carga (litros y $). Cada carga llena el tanque: lo cargado es lo que se gastó desde la carga anterior y se reparte entre los tinacos hechos en ese lapso → **gas real por tinaco**, por día, semana o mes |
 | Capturar producción | "Hoy se hicieron 10 TINACO 1100 NEGRO": calcula el polímero, tapas y kits que salen, su costo y avisa si no alcanza |
 | Recetas | Qué sale del inventario por cada tinaco (polímero en kg, tapa, kit…), eligiendo artículos de Microsip. Se copia a otro color cambiando el polímero |
 | Simulación y utilidad | Precio **distribuidor, público y Mercado Libre** (comisión, cargo fijo, envío y retenciones de ISR e IVA) − (materiales + mano de obra, gas, luz, etiquetas) = utilidad y margen; los precios se guardan. "¿Qué pasa si sube el polímero?" y "si fabrico N, qué me falta comprar" |
@@ -22,6 +24,9 @@ Cómo cuenta:
 - **Disponible** = existencia de Microsip − lo capturado que todavía no se importa en Microsip. Al bajar los archivos se marcan como exportados
   (no vuelven a salir); cuando ya los importaste, pulsa «Ya lo importé en Microsip» y la página deja de descontarlos aparte.
 - Cada color es un artículo distinto en Microsip: cada uno lleva su receta (se copia de otro y se cambia el polímero).
+
+El menú tiene dos niveles: **Inicio, Capturar producción y Gas** arriba; recetas, simulación, archivos de Microsip, auditoría, materia prima,
+resumen y configuración en «Más».
 
 ## Auditoría de polímero
 
@@ -49,7 +54,7 @@ Cómo cuenta:
 4. Primer uso: **Recetas** → arma la de cada tinaco (o una y cópiala a los demás colores). Luego **Capturar producción** cada día y
    **Semana** para bajar los archivos.
 
-Tablas que crea: `prod_config`, `prod_receta`, `prod_extra`, `prod_precio`, `prod_registro`, `prod_registro_det`, `prod_exporte`, `prod_conteo` (pesajes), `prod_ajuste` (merma).
+Tablas que crea: `prod_gas` (cargas de gas), `prod_config`, `prod_receta`, `prod_extra`, `prod_precio`, `prod_registro`, `prod_registro_det`, `prod_exporte`, `prod_conteo` (pesajes), `prod_ajuste` (merma).
 
 ## Para cambiar algo
 
@@ -57,4 +62,5 @@ Tablas que crea: `prod_config`, `prod_receta`, `prod_extra`, `prod_precio`, `pro
 python3 produccion/armar_flujo.py          # vuelve a generar el JSON del flujo
 python3 produccion/pruebas/probar_todo.py       # pruebas contra el Postgres local (crea sus datos con pruebas/datos_prueba.py)
 python3 produccion/pruebas/probar_auditoria.py  # auditoría de polímero y merma
+python3 produccion/pruebas/probar_tablero.py    # pantalla principal y gas
 ```

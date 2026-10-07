@@ -9,7 +9,7 @@ if (!rol) return fail('Esta liga no tiene permiso. Pide la liga de producción a
 const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op]) return fail('Operación desconocida.');
-const ESCRIBE = ['receta', 'copiar', 'capturar', 'borrar', 'exportar', 'importado', 'precio', 'extras', 'config', 'contar', 'merma'];
+const ESCRIBE = ['receta', 'copiar', 'capturar', 'borrar', 'exportar', 'importado', 'precio', 'extras', 'config', 'contar', 'merma', 'gas'];
 if (rol === 'auditor' && ESCRIBE.includes(op) && !(['exportar', 'merma'].includes(op) && b.marcar !== 'si')) return fail('Esta liga es solo de consulta.');
 const quien = String(b.quien || '').replace(/[^\p{L}\p{N} .\-]/gu, '').trim().slice(0, 40);
 const por = quien ? quien + ' (' + rol + ')' : rol;
@@ -56,6 +56,17 @@ switch (op) {
     else { const r = rango(); if (!r) return fail('Fechas inválidas.'); p = { ...r, marcar: b.marcar === 'si' ? 'si' : '' }; }
     break;
   case 'importado': if (!idOk(b.exporte_id)) return fail('Exporte inválido.'); p = { exporte_id: Number(b.exporte_id), quitar: b.quitar === 'si' ? 'si' : '', folio: txt(b.folio, 40) }; break;
+  case 'gas':
+    if (b.borrar) { if (!idOk(b.borrar)) return fail('Carga inválida.'); p = { borrar: String(Number(b.borrar)) }; break; }
+    if (!fechaOk(b.fecha) || b.fecha > hoyMX) return fail('Fecha inválida (no puede ser de mañana).');
+    if (!cantOk(b.costo, 1e7)) return fail('Escribe cuánto costó la carga ($).');
+    if (b.litros !== '' && b.litros != null && !cantOk(b.litros, 1e6)) return fail('Litros inválidos.');
+    p = { fecha: b.fecha, costo: String(Number(b.costo)), litros: b.litros === '' || b.litros == null ? '' : String(Number(b.litros)), nota: txt(b.nota, 200), borrar: '' };
+    break;
+  case 'tablero':
+    if (b.fecha && !fechaOk(b.fecha)) return fail('Fecha inválida.');
+    p = { periodo: ['dia', 'semana', 'mes'].includes(b.periodo) ? b.periodo : 'dia', fecha: b.fecha || '' };
+    break;
   case 'folio_ms': if (!idOk(b.exporte_id)) return fail('Exporte inválido.'); p = { exporte_id: Number(b.exporte_id) }; break;
   case 'precio': {
     if (!idOk(b.articulo_id)) return fail('Tinaco inválido.');
@@ -84,10 +95,10 @@ switch (op) {
     break; }
   case 'config': {
     const g = b.general || {}, OK = { lineas: 200, almacenes: 200, iva: 5, empresa: 80, tienda: 80, auditar: 200, tolerancia_kg: 10, tolerancia_pct: 10, dias_conteo: 5,
-      ml_comision: 10, ml_fijo: 10, ml_envio: 10, ml_ret_isr: 10, ml_ret_iva: 10, precios_con_iva: 2 }, general = {};
+      ml_comision: 10, ml_fijo: 10, ml_envio: 10, ml_ret_isr: 10, ml_ret_iva: 10, precios_con_iva: 2, meta_diaria: 6 }, general = {};
     for (const [k, v] of Object.entries(g)) { if (!(k in OK)) return fail('Ajuste desconocido: ' + k); general[k] = txt(v, OK[k]); }
     for (const k of ['lineas', 'almacenes', 'auditar']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
-    for (const k of ['tolerancia_kg', 'tolerancia_pct', 'dias_conteo', 'ml_comision', 'ml_fijo', 'ml_envio', 'ml_ret_isr', 'ml_ret_iva'])
+    for (const k of ['meta_diaria', 'tolerancia_kg', 'tolerancia_pct', 'dias_conteo', 'ml_comision', 'ml_fijo', 'ml_envio', 'ml_ret_isr', 'ml_ret_iva'])
       if (general[k] && !(Number(general[k]) >= 0 && Number(general[k]) <= 100000)) return fail('Número inválido en ' + k + '.');
     if (general.precios_con_iva && !['si', 'no'].includes(general.precios_con_iva)) return fail('Precios con IVA: si o no.');
     if (general.iva && !(Number(general.iva) >= 0 && Number(general.iva) <= 30)) return fail('IVA inválido.');

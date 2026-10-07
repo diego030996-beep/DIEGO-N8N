@@ -43,6 +43,22 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tab{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:var(--sideink);padding:11px 20px;text-align:left;cursor:pointer;font-weight:600;font-size:.9rem;border-left:3px solid transparent}
 .tab svg{width:19px;height:19px;flex:none;opacity:.9}
 .tab:hover{background:var(--side2);color:#fff}
+body.en-inicio #aviso{display:none!important}
+.sep{padding:14px 20px 4px;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--sideink);opacity:.6}
+.nav .tab:nth-of-type(n+4){padding-top:8px;padding-bottom:8px;font-size:.84rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:8px 14px;font-weight:600;cursor:pointer;font-size:.86rem}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--panel)}
+.big5{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px}
+.big b{font-size:1.7rem}
+.big{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--sh)}
+.big .t{font-size:.8rem;color:var(--soft);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.big b{display:block;font-size:1.9rem;font-weight:800;letter-spacing:-.02em;margin:4px 0 2px}
+.big .s{font-size:.84rem;color:var(--soft)} .big .s b{display:inline;font-size:inherit;margin:0}
+.big.bad b.v{color:var(--c-red)} .big.good b.v{color:var(--c-gr)}
+.meter{height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:8px}.meter i{display:block;height:100%;background:var(--blue);border-radius:6px}
+.alerta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:12px;margin-top:8px;font-size:.9rem;border:1px solid var(--line);background:var(--panel)}
+.alerta.r{border-color:var(--c-red);background:var(--c-redbg)} .alerta.a{background:var(--warn);color:var(--warnink);border-color:transparent}
 .tab[aria-selected=true]{background:var(--side2);color:#fff;border-left-color:#60A5FA}
 .tab .n{margin-left:auto;min-width:20px;padding:0 6px;border-radius:10px;background:var(--red);color:#fff;font-size:.72rem;line-height:20px;text-align:center}
 .who{margin-top:auto;padding:14px 20px 0;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px;font-size:.78rem}
@@ -94,8 +110,11 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
 .bars{display:flex;gap:6px;align-items:flex-end;height:140px;padding-top:10px}
 .bars div{flex:1;background:var(--blue);border-radius:6px 6px 0 0;min-height:2px;position:relative}
 .bars div span{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:.72rem;color:var(--soft)}
-.blab{display:flex;gap:6px}.blab span{flex:1;text-align:center;font-size:.7rem;color:var(--soft)}
+.blab{display:flex;gap:6px}.blab span{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-align:center;font-size:.7rem;color:var(--soft)}
+.bars div{min-width:0}
+@media (max-width:860px){.blab span{font-size:.58rem}}
 @media (max-width:860px){
+  .sep{display:none}
   .app{grid-template-columns:minmax(0,1fr)}
   .side{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;padding:8px 10px;z-index:5;overflow-x:auto;gap:4px;min-width:0;max-width:100vw}
   .logo{padding:0 8px 0 4px}.logo small{display:none}
@@ -114,7 +133,10 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
 <aside class="side">
   <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.4"><path d="M5 7c0-2 3-3 7-3s7 1 7 3v11c0 2-3 3-7 3s-7-1-7-3z"/><path d="M5 7c0 2 3 3 7 3s7-1 7-3"/></svg><div><span id="tienda">Producción</span><small id="subt">de tinacos</small></div></div>
   <nav class="nav" role="tablist" aria-label="Secciones">
-    <button class="tab" role="tab" data-t="cap" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span class="l">Capturar producción</span></button>
+    <button class="tab" role="tab" data-t="ini" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="l">Inicio</span></button>
+    <button class="tab" role="tab" data-t="cap" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span class="l">Capturar producción</span></button>
+    <button class="tab" role="tab" data-t="gas" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-2 1-4 2-5 0 2 1 3 2 3 0-3 0-6 2-9z"/></svg><span class="l">Gas</span></button>
+    <div class="sep" aria-hidden="true">Más</div>
     <button class="tab" role="tab" data-t="rec" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="l">Recetas</span><span class="n" id="nrec" hidden></span></button>
     <button class="tab" role="tab" data-t="sim" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg><span class="l">Simulación y utilidad</span></button>
     <button class="tab" role="tab" data-t="exp" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 19h16"/></svg><span class="l">Semana: archivos Microsip</span><span class="n" id="nexp" hidden></span></button>
@@ -128,8 +150,45 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
 <main>
   <div class="warn" id="aviso" hidden></div>
 
+  <!-- ============ INICIO ============ -->
+  <section id="t-ini">
+    <div class="head"><div><h1>¿Cómo vamos?</h1><p>Cuánto se produjo, cuánto se gastó, cuánto costó cada tinaco y si hay desviación.</p></div>
+      <div class="row"><div class="seg" id="iniPer"><button data-p="dia" aria-pressed="true">Hoy</button><button data-p="semana" aria-pressed="false">Semana</button><button data-p="mes" aria-pressed="false">Mes</button></div>
+        <input type="date" id="iniFecha" aria-label="Fecha"><button class="btn btn-main" id="iniCapturar">+ Capturar producción</button></div></div>
+    <div id="iniAlertas"></div>
+    <div class="big5" id="iniKpis" style="margin-top:12px"></div>
+    <div class="grid2" style="margin-top:0">
+      <div class="card"><h2 id="iniSerieTit">Producción</h2><div class="bars" id="iniBars"></div><div class="blab" id="iniLab"></div>
+        <div class="scroll" style="margin-top:10px"><table class="tbl" id="tblIniSerie"><thead><tr><th>Periodo</th><th class="n">Tinacos</th><th class="n">Materiales</th><th class="n">Gas</th><th class="n">Costo por tinaco</th></tr></thead><tbody></tbody></table></div></div>
+      <div class="card"><h2>Materia prima</h2><p class="sub">Disponible y para cuántos días alcanza (con el consumo de los últimos 30 días).</p>
+        <div class="scroll"><table class="tbl" id="tblIniMat"><thead><tr><th>Artículo</th><th class="n">Disponible</th><th class="n">Alcanza</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+  </section>
+
+  <!-- ============ GAS ============ -->
+  <section id="t-gas" hidden>
+    <div class="head"><div><h1>Gas</h1><p>Cada carga llena el tanque: lo que cargas es lo que se gastó desde la carga anterior. Se reparte entre los tinacos hechos en ese lapso → <b>gas real por tinaco</b>.</p></div></div>
+    <div class="big5" id="gasKpis"></div>
+    <div class="card">
+      <h2>Registrar carga de gas</h2>
+      <div class="row"><label class="muted">Fecha <input type="date" id="gasFecha"></label><label class="muted">Litros <input type="number" min="0" step="any" id="gasLitros" style="width:110px"></label>
+        <label class="muted">Costo total $ <input type="number" min="0" step="any" id="gasCosto" style="width:130px"></label><input type="text" id="gasNota" maxlength="200" placeholder="nota (proveedor, factura…)" class="grow">
+        <button class="btn btn-main" id="gasGuardar">Guardar carga</button></div>
+      <p class="muted" style="margin:8px 0 0">La primera carga es el punto de partida (tanque lleno). Desde la segunda se calcula el costo real por tinaco.</p>
+    </div>
+    <div class="card">
+      <div class="row"><h2 class="grow">Gas por periodo</h2><div class="seg" id="gasPer"><button data-p="dia" aria-pressed="false">Diario</button><button data-p="semana" aria-pressed="true">Semanal</button><button data-p="mes" aria-pressed="false">Mensual</button></div></div>
+      <div class="scroll" style="margin-top:10px"><table class="tbl" id="tblGasSerie"><thead><tr><th>Periodo</th><th class="n">Tinacos</th><th class="n">Gas consumido</th><th class="n">Por tinaco</th><th class="n">Pagado (cargas)</th></tr></thead><tbody></tbody></table></div>
+      <p class="muted">Gas consumido = lo que le toca a cada tinaco según la carga que lo pagó. Lo hecho después de la última carga se estima con la última tasa (*). En vista diaria varía mucho: compara semanas o meses.</p>
+    </div>
+    <div class="card">
+      <h2>Cargas</h2>
+      <div class="scroll"><table class="tbl" id="tblGas"><thead><tr><th>Fecha</th><th class="n">Litros</th><th class="n">Costo</th><th class="n">Alcanzó para</th><th class="n">Por tinaco</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
   <!-- ============ CAPTURAR ============ -->
-  <section id="t-cap">
+  <section id="t-cap" hidden>
     <div class="head"><div><h1>Capturar producción</h1><p>Lo que se fabricó: se descuenta la materia prima de su receta al costo de Microsip.</p></div>
       <div class="row"><label class="muted">Fecha <input type="date" id="capFecha"></label></div></div>
     <div class="kpis" id="kpisCap"></div>
@@ -303,9 +362,12 @@ const comp = id => (D.componentes || []).find(c => c.articulo_id === id) || {};
 $$(".tab").forEach(b => b.addEventListener("click", () => abrir(b.dataset.t)));
 function abrir(t){
   $$(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
-  ["cap","rec","sim","exp","aud","mat","res","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
+  ["ini","cap","gas","rec","sim","exp","aud","mat","res","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
+  document.body.classList.toggle("en-inicio", t === "ini");   // en Inicio las alertas ya salen en su lista
   try { localStorage.setItem("prod_tab", t); } catch(e) {}
   if(t === "cap") cargarReg();
+  if(t === "ini") cargarIni();
+  if(t === "gas") cargarGas();
   if(t === "exp") verExport(false);
   if(t === "mat") cargarMat();
   if(t === "aud") cargarAud();
@@ -321,9 +383,89 @@ async function cargar(){
   const pend = (D.sin_exportar || {}).registros || 0; $("#nexp").hidden = !pend; $("#nexp").textContent = pend;
   const rv = (D.alertas || {}).revisar || 0; $("#naud").hidden = !rv; $("#naud").textContent = rv;
   if(rv) aviso(`⚖️ Vuelve a pesar: <b>${esc(D.alertas.polimeros || "")}</b>. El último pesaje no cuadra con lo que debía haber. <button class="btn btn-ghost btn-sm" onclick="abrir('aud')">Ir a la auditoría</button>`);
-  $$("#capGuardar,#expBajar,#extGuardar,#cfgGuardar").forEach(b => b.hidden = soloLectura());
+  $$("#capGuardar,#expBajar,#extGuardar,#cfgGuardar,#gasGuardar,#iniCapturar").forEach(b => b.hidden = soloLectura());
   pintarCap(); pintarRecLista(); pintarSim(); pintarCfg();
 }
+
+/* ================= inicio ================= */
+let INI = null, IPER = "dia", GPER = "semana";
+const PERTXT = {dia: "hoy", semana: "esta semana", mes: "este mes"};
+const etqPer = (x, per) => per === "mes" ? new Date(x.d + "T12:00:00").toLocaleDateString("es-MX", {month: "short", year: "2-digit"}) : per === "semana" ? "sem " + x.d.slice(8, 10) + "/" + x.d.slice(5, 7) : x.d.slice(8, 10) + "/" + x.d.slice(5, 7);
+async function cargarIni(){
+  if(!D) return;
+  try { INI = await api("tablero", {periodo: IPER, fecha: $("#iniFecha").value}); } catch(e) { toast(e.message); return; }
+  pintarIni();
+}
+function pintarIni(){
+  const T = INI, P = T.per, pz = P.piezas, gas = P.gas || 0, mat = P.materiales || 0, tot = mat + gas;
+  const esHoy = T.periodo === "dia" && T.desde === T.hoy, cuando = esHoy ? "hoy" : T.periodo === "dia" ? "el " + fecha(T.desde) : T.periodo === "semana" ? `semana del ${fecha(T.desde)}` : new Date(T.desde + "T12:00:00").toLocaleDateString("es-MX", {month: "long", year: "numeric"});
+  const meta = T.meta_diaria ? T.meta_diaria * (T.periodo === "dia" ? 1 : Math.max(1, T.dias_habiles)) : null, av = meta ? pz / meta : null;
+  const D2 = T.desviacion || {}, gt = T.gas_tasa, ref = num(T.gas_ref);
+  // alertas
+  const A = [];
+  if(D2.revisar) A.push(["r", `⚖️ Hay <b>${D2.revisar}</b> pesaje(s) de polímero que no cuadran: vuelve a pesar.`, "aud"]);
+  if(D2.ultimo_pesaje === null || D2.ultimo_pesaje === undefined) A.push(["a", "⚖️ El polímero nunca se ha pesado: sin pesajes no se ve la merma.", "aud"]);
+  else if(D2.dias_sin_pesar > D2.dias_conteo) A.push(["a", `⚖️ No se pesa el polímero desde hace <b>${D2.dias_sin_pesar} días</b>.`, "aud"]);
+  const poca = (T.materia || []).filter(m => (m.dias !== null && m.dias < 7) || m.disponible <= 0);
+  if(poca.length) A.push([poca.some(m => m.disponible <= 0 || m.dias <= 2) ? "r" : "a", `📦 Materia prima por acabarse: ${poca.map(m => `<b>${esc(m.nombre)}</b> (${m.disponible <= 0 ? "agotado" : "~" + m.dias + " días"})`).join(", ")}.`, "mat"]);
+  if(T.sin_exportar && T.sin_exportar.registros && T.sin_exportar.desde && T.sin_exportar.desde <= sumaDias(T.hoy, -7)) A.push(["a", `📤 Hay producción desde el ${fecha(T.sin_exportar.desde)} sin pasar a Microsip.`, "exp"]);
+  if(!(T.gas_cargas || []).length) A.push(["a", "🔥 Todavía no hay cargas de gas: registra la próxima para saber el gas real por tinaco.", "gas"]);
+  if(T.sin_receta) A.push(["a", `🧾 ${T.sin_receta} tinacos sin receta (no se pueden capturar).`, "rec"]);
+  $("#iniAlertas").innerHTML = A.map(([c, t, tab]) => `<div class="alerta ${c}"><span class="grow">${t}</span><button class="btn btn-ghost btn-sm" data-ir="${tab}">Ver</button></div>`).join("");
+  $$("#iniAlertas [data-ir]").forEach(b => b.addEventListener("click", () => abrir(b.dataset.ir)));
+  // tarjetas
+  const card = (t, v, s, c = "") => `<div class="big ${c}"><div class="t">${t}</div><b class="v">${v}</b><div class="s">${s}</div></div>`;
+  const pol = T.polimero || {};
+  $("#iniKpis").innerHTML = [
+    card("Tinacos " + (esHoy ? "hoy" : ""), n0(pz), meta ? `de ${n0(meta)} de meta (${Math.round(av * 100)}%)<div class="meter"><i style="width:${Math.min(100, av * 100)}%;${av >= 1 ? "background:var(--c-gr)" : ""}"></i></div>` : `<a href="#" data-ir="cfg">pon la meta diaria</a>`, meta && av >= 1 ? "good" : ""),
+    card("Polímero consumido", n0(pol.kg) + " kg", (pol.por_tipo || []).map(x => `${esc(x.nombre.replace(/POL[IÍ]MERO\s*/i, ""))} ${n0(x.kg)}`).join(" · ") || "según las recetas"),
+    card("Costo de producción", money0(tot), pz ? `<b>${money(tot / pz)}</b> por tinaco · materiales ${money0(mat)} + gas ${money0(gas)}` : "sin producción"),
+    card("Gas", money0(gas) + (P.gas_estimado ? "*" : ""), gt ? `real <b>${money(gt.por_tinaco)}</b> por tinaco${ref ? ` (simulación: ${money(ref)})` : ""}${P.gas_pagado ? ` · pagado ${money0(P.gas_pagado)}` : ""}` : "registra las cargas en Gas", gt && ref && gt.por_tinaco > ref * 1.1 ? "bad" : ""),
+    card("Desviación de polímero", D2.pesajes ? (D2.kg > 0 ? "−" : "+") + n0(Math.abs(D2.kg)) + " kg" : D2.revisar ? "por confirmar" : "—",
+      (D2.pesajes ? `${money(-D2.dinero)} (${n0(D2.pct)}%) desde el último ajuste` : D2.revisar ? "" : "pesa el polímero para verla") + (D2.revisar ? `<div><a href="#" data-ir="aud">${D2.revisar} pesaje(s) por volver a pesar</a></div>` : ""),
+      D2.kg > 0 || D2.revisar ? "bad" : D2.pesajes ? "good" : ""),
+  ].join("");
+  $$("#iniKpis [data-ir]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); abrir(a.dataset.ir); }));
+  // serie
+  const S = T.serie, mx = Math.max(1, ...S.map(x => x.piezas));
+  $("#iniSerieTit").textContent = "Producción " + {dia: "por día (14)", semana: "por semana (12)", mes: "por mes (12)"}[T.periodo];
+  $("#iniBars").innerHTML = S.map(x => `<div style="height:${x.piezas / mx * 100}%;${x.d === T.desde ? "background:var(--c-gr)" : ""}" title="${esc(etqPer(x, T.periodo))}: ${n0(x.piezas)} tinacos"><span>${x.piezas ? n0(x.piezas) : ""}</span></div>`).join("");
+  $("#iniLab").innerHTML = S.map(x => `<span>${esc(etqPer(x, T.periodo))}</span>`).join("");
+  $("#tblIniSerie tbody").innerHTML = S.slice().reverse().filter(x => x.piezas || x.pagado).slice(0, 8).map(x => `<tr><td>${esc(etqPer(x, T.periodo))}</td><td class="n">${n0(x.piezas)}</td><td class="n">${money0(x.materiales)}</td><td class="n">${money0(x.gas)}</td>
+    <td class="n"><b>${x.piezas ? money((x.materiales + x.gas) / x.piezas) : "–"}</b></td></tr>`).join("") || `<tr><td colspan="5" class="muted">Sin producción.</td></tr>`;
+  $("#tblIniMat tbody").innerHTML = (T.materia || []).map(m => `<tr><td>${esc(m.nombre)}</td><td class="n">${n0(m.disponible)} ${esc(uni(m.unidad))}</td>
+    <td class="n ${(m.dias !== null && m.dias < 7) || m.disponible <= 0 ? "neg" : ""}">${m.disponible <= 0 ? "agotado" : m.dias === null ? "—" : m.dias + " días"}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">Sin recetas.</td></tr>`;
+}
+$$("#iniPer button").forEach(b => b.addEventListener("click", () => { IPER = b.dataset.p; $$("#iniPer button").forEach(x => x.setAttribute("aria-pressed", x === b)); cargarIni(); }));
+$("#iniFecha").addEventListener("change", cargarIni);
+$("#iniCapturar").addEventListener("click", () => abrir("cap"));
+
+/* ================= gas ================= */
+async function cargarGas(){
+  if(!D) return;
+  let T; try { T = await api("tablero", {periodo: GPER}); } catch(e) { toast(e.message); return; }
+  const gt = T.gas_tasa, ref = num(T.gas_ref), C = T.gas_cargas || [];
+  const card = (t, v, s, c = "") => `<div class="big ${c}"><div class="t">${t}</div><b class="v">${v}</b><div class="s">${s}</div></div>`;
+  const dif = gt && ref ? gt.por_tinaco - ref : null;
+  $("#gasKpis").innerHTML = [
+    card("Gas real por tinaco", gt ? money(gt.por_tinaco) : "—", gt ? `${n0(gt.litros_tinaco)} L por tinaco (última carga)` : "se calcula desde la segunda carga", dif !== null ? (dif > ref * 0.1 ? "bad" : "good") : ""),
+    card("En la simulación", ref ? money(ref) : "—", ref ? (dif === null ? "" : dif > 0 ? `el real es <b>${money(dif)}</b> más caro por tinaco` : `el real es ${money(-dif)} más barato`) : "agrega «Gas» en Simulación → gastos"),
+    card("Pagado en gas " + PERTXT[T.periodo], money0(T.per.gas_pagado), `${n0(T.per.gas_litros)} L en cargas`),
+    card("Gas consumido " + PERTXT[T.periodo], money0(T.per.gas) + (T.per.gas_estimado ? "*" : ""), `${n0(T.per.piezas)} tinacos`),
+  ].join("");
+  $("#tblGasSerie tbody").innerHTML = T.serie.slice().reverse().filter(x => x.piezas || x.pagado).map(x => `<tr><td>${esc(etqPer(x, T.periodo))}</td><td class="n">${n0(x.piezas)}</td><td class="n">${money0(x.gas)}</td>
+    <td class="n"><b>${x.piezas ? money(x.gas / x.piezas) : "–"}</b></td><td class="n">${x.pagado ? money0(x.pagado) : "—"}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">Sin datos.</td></tr>`;
+  $("#tblGas tbody").innerHTML = C.map((g, i) => `<tr><td>${esc(fecha(g.fecha))}<div class="meta">${esc(g.nota || "")}${g.por ? " · " + esc(g.por) : ""}</div></td><td class="n">${n0(g.litros)}</td><td class="n">${money(g.costo)}</td>
+    <td class="n">${g.desde ? n0(g.piezas) + " tinacos" : `<span class="meta">punto de partida</span>`}${g.desde ? `<div class="meta">del ${esc(fecha(sumaDias(g.desde, 1)))} al ${esc(fecha(g.fecha))}${g.mismo_dia ? " · junto con las otras cargas del día" : ""}</div>` : ""}</td>
+    <td class="n"><b>${g.por_tinaco !== null ? money(g.por_tinaco) : "—"}</b></td>
+    <td>${soloLectura() ? "" : `<button class="btn btn-ghost btn-sm" data-gb="${g.id}">Borrar</button>`}</td></tr>`).join("") || `<tr><td colspan="6" class="muted">Sin cargas todavía.</td></tr>`;
+  $$("#tblGas [data-gb]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { if(!confirm("¿Borrar esta carga de gas?")) return; await api("gas", {borrar: Number(b.dataset.gb)}); toast("Borrada ✓"); cargarGas(); })));
+}
+$$("#gasPer button").forEach(b => b.addEventListener("click", () => { GPER = b.dataset.p; $$("#gasPer button").forEach(x => x.setAttribute("aria-pressed", x === b)); cargarGas(); }));
+$("#gasGuardar").addEventListener("click", () => ocupado($("#gasGuardar"), async () => {
+  await api("gas", {fecha: $("#gasFecha").value, litros: $("#gasLitros").value.trim(), costo: $("#gasCosto").value.trim(), nota: $("#gasNota").value});
+  toast("Carga guardada ✓"); $("#gasLitros").value = $("#gasCosto").value = $("#gasNota").value = ""; cargarGas();
+}));
 
 /* ================= capturar ================= */
 function pintarCap(){
@@ -368,7 +510,7 @@ $("#capGuardar").addEventListener("click", () => ocupado($("#capGuardar"), async
   const neg = consumoDe(CAP).filter(m => (comp(m.componente_id).disponible ?? 0) - m.usa < 0);
   if(neg.length && !confirm("⚠ No alcanza la materia prima según Microsip:\n" + neg.map(m => "• " + m.nombre).join("\n") + "\n\nPuede faltar capturar una compra en Microsip. ¿Guardar de todos modos?")) return;
   const r = await api("capturar", {fecha: $("#capFecha").value, nota: $("#capNota").value, lineas});
-  toast(`Guardado ✓ ${n0(r.tinacos)} tinacos`); CAP = {}; PESO = {}; $("#capNota").value = ""; await cargar(); cargarReg();
+  toast(`Guardado ✓ ${n0(r.tinacos)} tinacos`); CAP = {}; PESO = {}; $("#capNota").value = ""; await cargar(); cargarReg(); INI = null;
 }));
 async function cargarReg(){
   if(!D) return;
@@ -754,6 +896,7 @@ $("#resVer").addEventListener("click", () => ocupado($("#resVer"), cargarRes));
 const CFG = [["tienda", "Nombre en la página", "Ej. Producción Adhesipro"], ["empresa", "Empresa", ""],
   ["lineas", "Líneas o grupos de Microsip que son tinacos", "Ej. tinaco|cisterna. También salen los que ya tienen receta."],
   ["almacenes", "Almacenes de materia prima (vacío = todos)", "Ej. PLANTA|BODEGA"], ["iva", "IVA (%)", ""],
+  ["meta_diaria", "Meta de tinacos por día", "Para el avance en Inicio (la semana y el mes usan los días hábiles)"],
   ["auditar", "Qué materia prima se audita con pesajes", "Por nombre o clave. Ej. POLIMERO|POLÍMERO"],
   ["tolerancia_kg", "Tolerancia del pesaje (kg)", "Si la diferencia pasa de esto (o del % de abajo, lo que sea mayor) pide volver a pesar"],
   ["tolerancia_pct", "Tolerancia del pesaje (% de lo consumido)", "2 = 2% del polímero que se usó desde el pesaje anterior"],
@@ -769,9 +912,9 @@ $("#cfgGuardar").addEventListener("click", () => ocupado($("#cfgGuardar"), async
 /* ================= inicio ================= */
 (async () => {
   const hoy = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
-  $("#capFecha").value = hoy; $("#capFecha").max = hoy;
+  $("#capFecha").value = hoy; $("#capFecha").max = hoy; $("#iniFecha").value = hoy; $("#iniFecha").max = hoy; $("#gasFecha").value = hoy; $("#gasFecha").max = hoy;
   await cargar();
-  let t = "cap"; try { t = localStorage.getItem("prod_tab") || "cap"; } catch(e) {}
+  let t = "ini";   // siempre abre en Inicio (si todavía no hay recetas, en Recetas)
   if(D && !conReceta().length) t = "rec";
   abrir(t);
 })();
