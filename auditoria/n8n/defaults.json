@@ -4,10 +4,11 @@
   "dias_compra": "3",
   "margen_compra": "10",
   "tipos_compra": "compra",
-  "retiros_excluir": "PR[EÉ]STAMO|N[OÓ]MINA",
+  "retiros_excluir": "PR[EÉ]STAMO|N[OÓ]MINA|PROPINA",
   "compras_sin_comprobante": "no",
   "proveedores_mostrador": "",
   "formas_comprobante": "",
   "formas_sin_comprobante": "EFECTIVO|CAMBIO",
-  "retiros_gasto": "GASOLINA|DIESEL|COMIDA|FLETE|PROPINA|PAPELER|LUZ|AGUA|RENTA|TEL[EÉ]FONO|INTERNET|LIMPIEZA|CASETA|TALLER|REFACCI"
+  "retiros_gasto": "GASOLINA|DIESEL|COMIDA|FLETE|PROPINA|PAPELER|LUZ|AGUA|RENTA|TEL[EÉ]FONO|INTERNET|LIMPIEZA|CASETA|TALLER|REFACCI",
+  "foto_obligatoria": "GASOLINA|DIESEL|DI[EÉ]SEL|COMBUSTIBLE"
 }

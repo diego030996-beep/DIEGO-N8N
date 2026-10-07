@@ -188,6 +188,13 @@ ok(dc['ok'] and dc['cobro']['importe'] == 800, 'detalle de cobro sin comprobante
 ok(correr('ignorar', {'tipo': 'cobro', 'ref': cb['T-102 MERCADO PAGO']['id'], 'motivo': 'cliente frecuente, se revisa en Mercado Pago'})['ok'] and fila(tab(), 'T-102') is None, 'cobro: no requiere comprobante')
 ok(not correr('registrar', {'cobro_id': '1:1'}, por='JUAN', rol='empleado')['ok'], 'cobro inexistente')
 
+# ---------- foto obligatoria por concepto ----------
+psql("INSERT INTO ms_ventas (base, origen, docto_id, tipo, estatus, folio, fecha, hora, importe, impuestos, descripcion, usuario) VALUES ('B', 'PV', 1870, 'R', 'N', 'R-01870', '2026-10-07', '11:30:00', 500, 0, 'GASOLINA WALLAS', 'CAJERA1')")
+correr('config', {'general': {'foto_obligatoria': 'GASOLINA'}}, rol='admin')
+ok('obligatoria' in reg({'retiro_id': '1870', 'tipo': 'gasolina', 'concepto': 'gasolina wallas'})['msg'], 'gasolina sin foto no se guarda')
+ok(reg({'retiro_id': '1870', 'tipo': 'gasolina', 'concepto': 'gasolina wallas', 'comprobantes': comp(500)})['ok'], 'gasolina con foto sí')
+ok(reg({'metodo': 'tarjeta', 'tipo': 'gasto', 'concepto': 'papelería sin foto', 'importe': '30'})['ok'], 'otros conceptos sin foto se pueden guardar')
+
 # ---------- recepción contra el pedido (compras por partes) ----------
 rp = reg({'retiro_id': '1851', 'tipo': 'compra', 'concepto': 'varilla para la obra', 'pedido': 'P4509', 'comprobantes': comp(700)})
 f = fila(tab(), 'R-01851'); ok(f['estado'] == 'naranja' and 'VARILLA 3/8 y no está en el pedido P0004509' in f['motivo'], '🟠 la recepción trae algo que no está en el pedido', f)
@@ -250,7 +257,7 @@ ok(correr('corte', {'fecha': '2026-10-07'})['auditado'] is True, 'día auditado'
 rm = correr('retiros_mes', {'mes': '2026-10'})
 cat = {x['categoria']: x for x in rm['categorias']}
 ok(cat['sin comprobante']['n'] == 3 and cat['sin comprobante']['importe'] == 18000, 'retiros del mes: préstamo, nómina y depósito', rm['categorias'])
-ok('gasto' in cat and rm['n'] == 11, 'retiros del mes: todos (aunque estén excluidos)', (rm['n'], list(cat)))
+ok('gasto' in cat and rm['n'] == 12, 'retiros del mes: todos (aunque estén excluidos)', (rm['n'], list(cat)))
 ok(any(p['palabra'] == 'COMPRA' for p in rm['palabras']), 'palabras más usadas', rm['palabras'][:5])
 ok(correr('retiros_mes', {'mes': '2026-09'})['n'] == 1, 'mes anterior (antes de empezar la auditoría)')
 

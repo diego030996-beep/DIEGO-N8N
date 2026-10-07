@@ -95,7 +95,7 @@ switch (op) {
     else { p = { nombre: txt(b.nombre, 40).toUpperCase() }; if (p.nombre.length < 2) return fail('Escribe el nombre.'); }
     break;
   case 'config': {
-    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, retiros_gasto: 300, formas_comprobante: 200, formas_sin_comprobante: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10, auditora_firma: 2 }, general = {};
+    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, retiros_gasto: 300, foto_obligatoria: 300, formas_comprobante: 200, formas_sin_comprobante: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10, auditora_firma: 2 }, general = {};
     for (const [k, v] of Object.entries(g)) { if (!(k in OK)) return fail('Ajuste desconocido: ' + k); general[k] = txt(v, OK[k]); }
     if (general.hora_cierre && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(general.hora_cierre)) return fail('Hora de cierre inválida (ej. 20:00).');
     if (general.tolerancia && !(Number(general.tolerancia) >= 0 && Number(general.tolerancia) <= 1000)) return fail('Tolerancia inválida.');
@@ -105,7 +105,7 @@ switch (op) {
     if (general.auditora_firma && !['si', 'no'].includes(general.auditora_firma)) return fail('Opción inválida.');
     if (general.compras_sin_comprobante && !['contado', 'mostrador', 'todas', 'no'].includes(general.compras_sin_comprobante)) return fail('Opción inválida.');
     if (general.tipos_compra && !general.tipos_compra.split(',').every(t => TIPOS.includes(t))) return fail('Tipos inválidos.');
-    for (const k of ['retiros_excluir', 'retiros_gasto', 'proveedores_mostrador', 'formas_comprobante', 'formas_sin_comprobante']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
+    for (const k of ['retiros_excluir', 'retiros_gasto', 'foto_obligatoria', 'proveedores_mostrador', 'formas_comprobante', 'formas_sin_comprobante']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
     p = { general }; break; }
   case 'corte': if (b.fecha && !fechaOk(b.fecha)) return fail('Fecha inválida.'); p = { fecha: b.fecha || '' }; break;
   case 'firmar': {

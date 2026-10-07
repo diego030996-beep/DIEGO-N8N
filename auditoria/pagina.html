@@ -162,10 +162,10 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
       <div id="camposRet" hidden>
       <div class="g2" style="margin-top:12px">
         <div><label class="l" for="rTipo">¿Para qué fue?</label><select id="rTipo"><option value="compra">Compra de mercancía</option><option value="gasto">Gasto</option><option value="gasolina">Gasolina</option><option value="deposito">Depósito al banco</option><option value="otro">Otro</option></select></div>
-        <div><label class="l" for="rPedido">Pedido relacionado (opcional)</label><input id="rPedido" type="text" placeholder="P4509" maxlength="30"></div>
+        <div><label class="l" for="rPedido">Pedido relacionado (opcional)</label><input id="rPedido" type="text" placeholder="Solo si fue para un pedido" maxlength="30"></div>
       </div>
       <div class="g2" style="margin-top:12px">
-        <div><label class="l" for="rConcepto">Motivo</label><input id="rConcepto" type="text" placeholder="comprar 10 block ligero" maxlength="200"></div>
+        <div><label class="l" for="rConcepto">Motivo</label><input id="rConcepto" type="text" placeholder="Qué se compró o pagó" maxlength="200" oninput="delete this.dataset.auto"></div>
         <div><label class="l" for="rProv">Proveedor (opcional)</label><input id="rProv" type="text" maxlength="80"></div>
       </div>
       </div>
@@ -257,6 +257,7 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
         <div><label class="l" for="c_formas_sin_comprobante">Formas de cobro que NO piden comprobante</label><input id="c_formas_sin_comprobante" type="text" placeholder="EFECTIVO"></div>
         <div><label class="l" for="c_formas_comprobante">Solo estas formas piden comprobante (vacío = todas las demás)</label><input id="c_formas_comprobante" type="text" placeholder="(todas)"></div>
         <div><label class="l" for="c_auditora_firma">¿La auditora puede firmar el corte?</label><select id="c_auditora_firma"><option value="no">No, solo yo</option><option value="si">Sí, la autorizo</option></select></div>
+        <div><label class="l" for="c_foto_obligatoria">Foto obligatoria para (palabras en la descripción)</label><input id="c_foto_obligatoria" type="text" placeholder="GASOLINA|DIESEL"></div>
         <div><label class="l" for="c_retiros_gasto">Retiros que son gasto (no llevan recepción de compra)</label><input id="c_retiros_gasto" type="text" placeholder="GASOLINA|COMIDA|FLETE"></div>
       </div>
       <div id="msgCfg"></div>
@@ -497,7 +498,11 @@ function pintarRetiros() {
   $('retiros').onchange = () => {
     const k = kindSel();
     $('sinRetiro').hidden = k !== 'otro'; $('camposRet').hidden = k === 'cobro' || !k;
-    if (k === 'retiro' && D.gasto_re) { try { const ds = document.querySelector('input[name=ret]:checked').closest('.ret').textContent; $('rTipo').value = new RegExp(D.gasto_re, 'i').test(ds) ? 'gasto' : 'compra'; } catch (x) {} }
+    if (k === 'retiro') {   // se llena solo con lo que dice la caja; se puede cambiar
+      const x = (D.retiros || []).find(z => String(z.id) === retSel()) || {};
+      $('rTipo').value = tipoDe(x.descripcion);
+      if (!$('rConcepto').value || $('rConcepto').dataset.auto) { $('rConcepto').value = x.descripcion || ''; $('rConcepto').dataset.auto = '1'; }
+    }
     if (k === 'cobro') { const q = document.querySelector('input[name=ret]:checked').dataset.que; FOTOS.forEach(f => f.tipo = QUE[q] || 'voucher'); if (FOTOS.length === 1) FOTOS[0].importe = impSel(); pintarFotos('lFotos', FOTOS); }
     pintarTotal();
   };
@@ -511,8 +516,7 @@ $('retiros').addEventListener('change', async e => {
   fila.classList.add('cargando');
   let foto;
   try { foto = await comprimir(f.files[0]); } catch (er) { fila.classList.remove('cargando'); return toast('No pude leer la foto'); }
-  let tipo = 'compra';
-  try { if (D.gasto_re && new RegExp(D.gasto_re, 'i').test(x.descripcion || '')) tipo = 'gasto'; } catch (er) {}
+  const tipo = tipoDe(x.descripcion);
   const body = k === 'cobro'
     ? { op: 'registrar', cobro_id: id, comprobantes: [{ importe: x.importe, tipo: QUE[x.que] || (x.que === 'ticket firmado' ? 'ticket firmado' : 'otro'), foto: foto.b64 }] }
     : { op: 'registrar', retiro_id: id, tipo, concepto: (x.descripcion || '').length >= 3 ? x.descripcion : 'Retiro de caja', comprobantes: [{ importe: x.importe, tipo: 'ticket', foto: foto.b64 }] };
@@ -524,6 +528,9 @@ $('retiros').addEventListener('change', async e => {
   toast(x.folio + (m ? ' · ' + EMO[m.estado] + ' ' + (m.estado === 'verde' ? 'comprobado' : m.motivo) : ' · guardado'));
   const d = await api({ op: 'datos' }); if (d.ok) { D.retiros = d.retiros; D.cobros = d.cobros; pintarRetiros(); pintarTotal(); }
 });
+const prueba = (re, t) => { try { return !!re && new RegExp(re, 'i').test(t || ''); } catch (e) { return false; } };
+const tipoDe = d => /GASOLINA|DIESEL|DI[EÉ]SEL|COMBUSTIBLE|MAGNA|PREMIUM/i.test(d || '') ? 'gasolina' : prueba(D.gasto_re, d) ? 'gasto' : 'compra';
+const fotoObligatoria = t => prueba(D.foto_re, t);
 const retSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i ? i.value : null; };
 const kindSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i ? i.dataset.k : ''; };
 const impSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i && i.value ? Number(i.dataset.imp) : Number($('rImporte').value || 0); };
@@ -564,6 +571,10 @@ $('fRep').onsubmit = async e => {
   const k = kindSel();
   if (k !== 'cobro' && $('rConcepto').value.trim().length < 3) return aviso('msgRep', 'Escribe el motivo (qué se compró o pagó).');
   if (FOTOS.some(f => !(Number(f.importe) > 0))) return aviso('msgRep', 'Pon el importe de cada comprobante.');
+  if (!FOTOS.length && k !== 'cobro') {
+    const x = k === 'retiro' ? (D.retiros || []).find(z => String(z.id) === ret) || {} : {};
+    if (fotoObligatoria((x.descripcion || '') + ' ' + $('rConcepto').value)) return aviso('msgRep', '📷 Para este concepto la foto del comprobante es obligatoria.');
+  }
   if (!FOTOS.length && !confirm('No subiste comprobante. ¿Guardar así? Tendrás hasta las ' + D.cierre + ' h para subirlo.')) return;
   const body = k === 'cobro' ? { op: 'registrar', cobro_id: ret, comprobantes: FOTOS.map(f => ({ importe: f.importe, tipo: f.tipo, foto: f.b64 })) } : { op: 'registrar', retiro_id: ret, tipo: $('rTipo').value, concepto: $('rConcepto').value, proveedor: $('rProv').value, pedido: $('rPedido').value,
     comprobantes: FOTOS.map(f => ({ importe: f.importe, tipo: f.tipo, foto: f.b64 })) };
@@ -572,7 +583,7 @@ $('fRep').onsubmit = async e => {
   const r = await api(body);
   $('bRep').disabled = false; $('bRep').textContent = 'Guardar';
   if (!r.ok) return aviso('msgRep', r.msg);
-  FOTOS = []; pintarFotos('lFotos', FOTOS); $('fRep').reset(); $('rFecha').value = hoyMX(); $('sinRetiro').hidden = true; $('camposRet').hidden = true; aviso('msgRep', '');
+  FOTOS = []; pintarFotos('lFotos', FOTOS); $('fRep').reset(); $('rFecha').value = hoyMX(); $('sinRetiro').hidden = true; $('camposRet').hidden = true; delete $('rConcepto').dataset.auto; aviso('msgRep', '');
   toast('Movimiento M-' + r.id + ' guardado');
   const d = await api({ op: 'datos' }); if (d.ok) { D.retiros = d.retiros; D.cobros = d.cobros; pintarRetiros(); pintarTotal(); }
   abrir('registro', String(r.id));
@@ -793,7 +804,7 @@ $('tEmpleados').onclick = async e => {
   if (b) { if (!b.dataset.act && !confirm('¿Desactivar? Su liga deja de funcionar.')) return; const r = await api({ op: 'empleado', token: b.dataset.emp, activo: !!b.dataset.act }); if (!r.ok) return toast(r.msg); recargarDatos(); }
 };
 async function recargarDatos() { const d = await api({ op: 'datos' }); if (d.ok) { D = Object.assign(D, d); pintarEmpleados(); pintarConfig(); pintarRetiros(); } }
-const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir', 'formas_comprobante', 'formas_sin_comprobante', 'retiros_gasto', 'auditora_firma'];
+const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir', 'formas_comprobante', 'formas_sin_comprobante', 'retiros_gasto', 'auditora_firma', 'foto_obligatoria'];
 function pintarConfig() { const c = D.config || {}; CFG.forEach(k => { if ($('c_' + k)) $('c_' + k).value = c[k] ?? ''; }); }
 $('fCfg').onsubmit = async e => {
   e.preventDefault();

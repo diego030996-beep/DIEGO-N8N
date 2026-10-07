@@ -29,6 +29,10 @@ Cada cobro o retiro pendiente tiene un botón 📷: se toma la foto y queda guar
 - En los retiros, el motivo es la descripción de caja y el tipo se adivina con "Retiros que son gasto".
 - Al momento dice el resultado (🟢 comprobado, o qué falta). La recepción de compra se busca sola.
 
+**Foto obligatoria por concepto** (Ajustes → "Foto obligatoria para", por omisión `GASOLINA|DIESEL|COMBUSTIBLE`): esos retiros no se pueden guardar sin foto.
+Los que no se pueden comprobar (propinas, préstamos, nómina) van en "Retiros que NO piden comprobante" (por omisión `PRÉSTAMO|NÓMINA|PROPINA`).
+Al escoger un retiro en el formulario, el motivo se llena con la descripción de caja y el tipo se adivina (gasolina, gasto o compra).
+
 Si hace falta algo más (pedido, varias fotos, otro importe), se escoge el pendiente y se usa el formulario, o se completa después en el movimiento.
 
 ## Corte de caja (pestaña "Corte de caja")

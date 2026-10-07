@@ -6,6 +6,10 @@ WITH /*CTX*/, /*MOV*/,
 r AS (SELECT ret.* FROM ret, cfg WHERE ret.id = nullif(cfg.p->>'retiro_id', '')),
 k AS (SELECT cob.* FROM cob, cfg WHERE cob.id = nullif(cfg.p->>'cobro_id', '')),
 chk AS (SELECT CASE WHEN coalesce(p->>'retiro_id', '') <> '' AND NOT EXISTS (SELECT 1 FROM r) THEN 'Ese retiro no está en Microsip o no aplica para auditoría.'
+                    -- conceptos con foto obligatoria (Ajustes): no se guardan sin comprobante
+                    WHEN jsonb_array_length(coalesce(p->'comprobantes', '[]')) = 0 AND coalesce(c->>'foto_obligatoria', '') <> ''
+                         AND (coalesce((SELECT descripcion FROM r), '') || ' ' || coalesce(p->>'concepto', '')) ~* (c->>'foto_obligatoria')
+                      THEN 'Para este concepto la foto del comprobante es obligatoria.'
                     WHEN coalesce(p->>'cobro_id', '') <> '' AND NOT EXISTS (SELECT 1 FROM k) THEN 'Ese cobro no está en Microsip o no pide comprobante.'
                     WHEN coalesce(p->>'cobro_id', '') <> '' AND EXISTS (SELECT 1 FROM mov_registro g WHERE g.base = cfg.base AND g.cobro_id = p->>'cobro_id' AND NOT g.borrado)
                       THEN 'Ese cobro ya tiene comprobante; agrega más fotos desde el movimiento.'
