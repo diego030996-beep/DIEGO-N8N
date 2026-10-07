@@ -6,7 +6,7 @@ SET LOCAL lock_timeout = '5s';
 WITH /*CTX*/, /*OC*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
 mm AS (SELECT x.* FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes),
-ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EXI*/, /*EXCL*/,
+ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EQV*/, /*LT*/, /*EXI*/, /*EXCLSOLO*/,
 solo_excl AS (  -- OCs cuyos renglones son todos de artículos excluidos (ej. tinacos): no cuentan
   SELECT ocd.id FROM ocd GROUP BY ocd.id
   HAVING bool_and(EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = ocd.articulo_id))),
@@ -30,13 +30,14 @@ pv AS (
          cp.dias_entrega, cp.dia_a, cp.frec_b, coalesce(cp.activo, true) AS activo, cp.nota,
          coalesce(est.n_a, 0) AS n_a, coalesce(est.n_b, 0) AS n_b, coalesce(est.n_c, 0) AS n_c,
          coalesce(est.bajo_a, 0) AS bajo_a, coalesce(est.bajo_b, 0) AS bajo_b, coalesce(est.bajo_c, 0) AS bajo_c,
-         ult.ult_a, ult.ult_b, ult.ult_c,
+         ult.ult_a, ult.ult_b, ult.ult_c, ltp.medido AS lt_medido, ltp.n AS lt_n, ltp.peor AS lt_peor,
          coalesce(cp.dia_a, cfg.dia_a) AS dia_rev_a, coalesce(cp.frec_b, cfg.frec_b) AS frec_rev_b
   FROM todos t CROSS JOIN cfg
   LEFT JOIN compras_proveedores cp ON cp.base = cfg.base AND cp.proveedor_id = t.proveedor_id
   LEFT JOIN prv ON prv.proveedor_id = t.proveedor_id
   LEFT JOIN est ON est.proveedor_id = t.proveedor_id
-  LEFT JOIN ult ON ult.proveedor_id = t.proveedor_id),
+  LEFT JOIN ult ON ult.proveedor_id = t.proveedor_id
+  LEFT JOIN ltp ON ltp.prov = t.proveedor_id),
 falta AS (  -- decisiones donde lo comprado es distinto a lo sugerido y no tienen razón
   SELECT count(*) AS n FROM compras_decisiones d JOIN compras_planes pl ON pl.id = d.plan_id, cfg
   WHERE pl.base = cfg.base AND coalesce(d.razon, '') = ''
@@ -57,10 +58,10 @@ SELECT json_build_object(
              FROM compras_maxmin WHERE base = cfg.base GROUP BY mes ORDER BY mes DESC LIMIT 24) x),
   'proveedores', (SELECT coalesce(json_agg(pv ORDER BY (pv.n_a + pv.n_b + pv.n_c) DESC, pv.nombre), '[]'::json) FROM pv),
   'excluidos', (SELECT coalesce(json_agg(x ORDER BY x.articulos DESC), '[]'::json) FROM (
-       SELECT coalesce(excl.linea_excl, 'Marcados a mano, dados de baja o por nombre') AS linea, count(DISTINCT excl.articulo_id) AS articulos,
+       SELECT excl.grupo AS linea, count(DISTINCT excl.articulo_id) AS articulos,
               count(DISTINCT excl.articulo_id) FILTER (WHERE exi.e > 0) AS con_existencia
        FROM excl LEFT JOIN exi ON exi.articulo_id = excl.articulo_id
-       GROUP BY 1 HAVING count(DISTINCT excl.articulo_id) FILTER (WHERE exi.e <> 0) > 0 OR max(excl.linea_excl) IS NOT NULL) x),
+       WHERE excl.grupo NOT IN ('Pausados') GROUP BY 1) x),
   'sin_proveedor', (SELECT count(*) FROM mm WHERE proveedor_id IS NULL),
   'falta_razon', (SELECT n FROM falta), 'planes_sin_oc', (SELECT n FROM sin_oc), 'oc_sin_plan', (SELECT n FROM oc_sin_plan),
   'oc_detalle', EXISTS (SELECT 1 FROM ms_raw WHERE base = cfg.base AND tabla = 'DOCTOS_CM_DET' LIMIT 1),

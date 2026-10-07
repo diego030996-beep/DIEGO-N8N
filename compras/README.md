@@ -6,7 +6,9 @@ páginas: un flujo de n8n que lee las tablas de Microsip que ya se copian a Post
 | Pestaña | Qué hace | Lineamiento |
 |---|---|---|
 | A/B/C y máximos-mínimos | Cada mes (día 1, 3:40 a.m.) calcula el 80/20 con la venta de los últimos 6 meses, los C y los máximos/mínimos | 1.2.1.1 · 1.2.2.2 |
-| Planeador | Según el calendario (A cada semana, B y C cada 15 días por proveedor) muestra existencia, por recibir, mínimo, máximo y sugerido. Capturas lo que compras y la razón si es distinto | 1.2.2.3 · 1.2.2.4 |
+| Planeador | Tarjetas por proveedor con orden estimada ($ e IVA), estados Crítico / Por pedir / Próximo / Bien, presupuesto y «Generar órdenes». Según el calendario (A cada semana, B y C cada 15 días por proveedor) muestra existencia, por recibir, mínimo, máximo y sugerido. Capturas lo que compras y la razón si es distinto | 1.2.2.3 · 1.2.2.4 |
+| Seguimiento de OC | Órdenes abiertas, parciales y atrasadas; planes guardados que aún no son OC; días de entrega reales por proveedor | 1.3.1.1 |
+| Presentaciones | Tonelada, millar, viaje… = N unidades del artículo base (solo cuentan cuando las confirmas) | — |
 | Registro de compras | Liga cada plan con su orden de compra de Microsip (sola o por folio), reconstruye meses pasados y exporta el registro mensual | 1.3.1.1 |
 | Configuración | Todas las reglas, los proveedores, los ajustes por artículo y la lista de razones. **Todo se guarda en la base de datos** | — |
 
@@ -57,6 +59,28 @@ planeador y del cálculo hasta que lo regreses en **Limpieza de catálogo → Pa
 **Limpieza de catálogo**: lista lo que se vendió una sola vez en 12 meses y los posibles duplicados donde solo cambia la marca
 (medidas, números, colores y materiales no cuentan como marca). "Ya no comprar" / "Se va" excluye el artículo; se puede deshacer.
 
+## Lo nuevo (octubre 2026)
+
+- **Presentaciones y conversiones**: si confirmas `TONELADA CEMENTO 50 KG = 20 × CEMENTO 50 KG`, sus ventas, existencias y OCs se suman al saco
+  y se calcula una sola compra. La página sugiere las parejas por el nombre (misma medida, a lo más una palabra distinta) pero **ninguna cuenta hasta
+  que la confirmas**; las equivalencias de Microsip (`COSTOS_ARTICULOS`) ya cuentan. Lo que no tiene base (varilla por tonelada, calidra, block por millar)
+  sale en una lista para que escribas el artículo y el factor.
+- **Servicios y VARIOS fuera**: flete, maniobra, mano de obra, renta… y los artículos genéricos «VARIOS» no entran al A/B/C ni al planeador
+  (las palabras se cambian en Configuración).
+- **Pedidos abiertos, parciales y atrasados**: se cuenta lo que falta de cada renglón de OC (pedido − recibido por las recepciones ligadas).
+  Una OC que pasó sus días de entrega + gracia queda **atrasada**: no cuenta como por recibir, sale en el planeador y en Seguimiento hasta que digas
+  «sigue en camino», «ya llegó» o «cancelada». Nunca desaparece sola.
+- **Revisar datos**: existencia negativa (con el almacén), unidad que no cuadra con el nombre, sin proveedor, días de entrega desconocidos,
+  OC atrasada, plan guardado sin OC. La cantidad sale como **provisional**. Nunca se ajusta el inventario.
+- **Política por producto** (en «Ver cálculo»): mantener un mínimo, solo bajo pedido o pausar resurtido. El mínimo respeta el empaque.
+- **Historial diario del inventario**: el nodo «Diario 23:50» guarda una foto de las existencias. Con 30 días o más, el cálculo descuenta los días
+  que el producto estuvo agotado (si no, la venta diaria sale baja).
+- **Prioridades, costos y presupuesto**: costo por renglón (último costo de Microsip o precio de la última compra), orden estimada por proveedor con IVA
+  y total. Si escribes un presupuesto, se marca qué cabe por prioridad (críticos y A primero) y qué queda pendiente; nada se oculta.
+- **Duplicados**: solo se proponen si lo único que cambia es una **marca** de la lista (Configuración → Marcas) y tienen la misma unidad.
+- **Días de entrega reales**: mediana de días de la OC a su primera recepción (último año). Si escribes los días del proveedor, mandan los tuyos;
+  si no, se usan los medidos con 2 o más entregas.
+
 ## Instalar
 
 Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/planeador-compras-api`
@@ -103,12 +127,14 @@ Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/plan
 - **Por recibir**: otras OCs del mismo artículo hechas en los días de entrega anteriores.
 - **Máximos/mínimos**: los del mes de la OC, calculados con los 6 meses anteriores a ese mes.
 
-**Por recibir hoy** = OCs sin recepción ligada (`DOCTOS_CM_LIGAS`) y con menos de (días de entrega + 5) días.
+**Por recibir hoy** = lo que falta de cada OC (pedido − recibido por `DOCTOS_CM_LIGAS`) mientras no pase de (días de entrega + 5) días,
+o si confirmaste que sigue en camino.
 
 ## Tablas que crea
 
 `compras_config`, `compras_proveedores`, `compras_articulos`, `compras_maxmin` (foto mensual A/B y máx/mín),
-`compras_planes` y `compras_decisiones` (registro de compras). No modifica ninguna tabla de Microsip.
+`compras_planes` y `compras_decisiones` (registro de compras), `compras_equivalencias`, `compras_politica`, `compras_oc_seguimiento`,
+`compras_revision` y `ms_existencias_hist` (foto diaria). No modifica ninguna tabla de Microsip.
 
 ## Para cambiar algo
 

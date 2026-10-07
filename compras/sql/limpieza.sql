@@ -1,5 +1,6 @@
 -- Limpieza del catálogo: artículos que se vendieron una sola vez y posibles duplicados (mismo producto, cambia solo la marca).
 -- p = {ver_revisados: 'si'|''}. Las medidas, números, colores y palabras de "palabras_distintas" nunca cuentan como marca.
+-- Si hay lista de marcas en la configuración, la palabra que cambia tiene que ser una de ellas. Solo se juntan con la misma unidad.
 SET LOCAL statement_timeout = '45s';
 WITH /*CTX*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
@@ -20,15 +21,18 @@ art AS (  -- candidatos a duplicado: con venta en los últimos meses o con exist
   SELECT a.articulo_id, a.clave, a.nombre, a.unidad, a.linea FROM ms_articulos a, cfg
   WHERE a.base = cfg.base AND NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = a.articulo_id)
     AND (EXISTS (SELECT 1 FROM mm WHERE mm.articulo_id = a.articulo_id) OR EXISTS (SELECT 1 FROM ex WHERE ex.articulo_id = a.articulo_id AND ex.e > 0))),
+mar AS (SELECT DISTINCT upper(trim(x)) AS w FROM cfg, regexp_split_to_table(translate(upper(cfg.marcas), 'ÁÉÍÓÚÜÑ', 'AEIOUUN'), '[,;|[:space:]]+') AS x WHERE trim(x) <> ''),
 prot AS (SELECT DISTINCT upper(trim(x)) AS w FROM cfg, regexp_split_to_table(cfg.palabras_distintas, '[,;|[:space:]]+') AS x WHERE trim(x) <> ''),
 tk AS (SELECT DISTINCT a.articulo_id, w FROM art a,
          regexp_split_to_table(translate(upper(coalesce(a.nombre, '')), 'ÁÉÍÓÚÜÑ', 'AEIOUUN'), '[^A-Z0-9/."-]+') AS w WHERE w <> ''),
 fa AS (SELECT articulo_id, array_agg(w ORDER BY w) AS arr FROM tk GROUP BY 1),
+un AS (SELECT articulo_id, upper(trim(coalesce(unidad, ''))) AS u FROM art),
 llaves AS (  -- el nombre completo y el nombre sin cada palabra que podría ser marca
-  SELECT fa.articulo_id, array_to_string(fa.arr, ' ') AS k, NULL::text AS quitada FROM fa WHERE array_length(fa.arr, 1) >= 2
+  SELECT fa.articulo_id, u.u || '|' || array_to_string(fa.arr, ' ') AS k, NULL::text AS quitada FROM fa JOIN un u USING (articulo_id) WHERE array_length(fa.arr, 1) >= 2
   UNION ALL
-  SELECT fa.articulo_id, array_to_string(array_remove(fa.arr, w), ' '), w FROM fa, unnest(fa.arr) AS w
-  WHERE array_length(fa.arr, 1) >= 3 AND w !~ '[0-9]' AND length(w) >= 3 AND w NOT IN (SELECT w FROM prot)),
+  SELECT fa.articulo_id, u.u || '|' || array_to_string(array_remove(fa.arr, w), ' '), w FROM fa JOIN un u USING (articulo_id), unnest(fa.arr) AS w
+  WHERE array_length(fa.arr, 1) >= 3 AND w !~ '[0-9]' AND length(w) >= 3 AND w NOT IN (SELECT w FROM prot)
+    AND (NOT EXISTS (SELECT 1 FROM mar) OR w IN (SELECT w FROM mar))),
 gr0 AS (SELECT k, array_agg(DISTINCT articulo_id ORDER BY articulo_id) AS ids, array_agg(DISTINCT quitada) FILTER (WHERE quitada IS NOT NULL) AS marcas
         FROM llaves GROUP BY k HAVING count(DISTINCT articulo_id) >= 2 AND count(DISTINCT articulo_id) <= 8),
 gr AS (SELECT DISTINCT ON (ids) * FROM gr0 ORDER BY ids, k),
@@ -54,11 +58,21 @@ pausados AS (
   FROM compras_articulos o CROSS JOIN cfg
   LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = o.articulo_id
   LEFT JOIN ex ON ex.articulo_id = o.articulo_id
-  WHERE o.base = cfg.base AND o.excluir)
+  WHERE o.base = cfg.base AND o.excluir
+  UNION ALL
+  SELECT x.articulo_id, a.clave, a.nombre, a.unidad, coalesce(ex.e, 0), coalesce(x.nota, 'Política: pausar resurtido'), x.por, x.actualizado,
+         'politica',
+         (SELECT m.ultima_venta FROM compras_maxmin m WHERE m.base = cfg.base AND m.articulo_id = x.articulo_id AND m.ultima_venta IS NOT NULL
+          ORDER BY m.mes DESC LIMIT 1)
+  FROM compras_politica x CROSS JOIN cfg
+  LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = x.articulo_id
+  LEFT JOIN ex ON ex.articulo_id = x.articulo_id
+  WHERE x.base = cfg.base AND x.politica = 'pausar'
+    AND NOT EXISTS (SELECT 1 FROM compras_articulos o WHERE o.base = cfg.base AND o.articulo_id = x.articulo_id AND o.excluir))
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'meses_c', cfg.meses_c,
   'pausados', (SELECT coalesce(json_agg(pausados ORDER BY pausados.fecha DESC), '[]'::json) FROM pausados),
   'una_venta', (SELECT coalesce(json_agg(una ORDER BY una.existencia DESC, una.venta DESC), '[]'::json) FROM una),
-  'duplicados', (SELECT coalesce(json_agg(json_build_object('llave', k, 'marcas', marcas, 'articulos', articulos) ORDER BY venta DESC), '[]'::json)
+  'duplicados', (SELECT coalesce(json_agg(json_build_object('llave', split_part(k, '|', 2), 'marcas', marcas, 'articulos', articulos) ORDER BY venta DESC), '[]'::json)
                  FROM (SELECT * FROM grupos WHERE pendiente OR (SELECT todos FROM ver) ORDER BY venta DESC LIMIT 150) g),
   'revisados', (SELECT json_object_agg(decision, n) FROM (SELECT decision, count(*) AS n FROM rev GROUP BY 1) z)) AS r
 FROM cfg;

@@ -59,6 +59,20 @@ def armar():
         "SELECT (SELECT token FROM tablero_acceso WHERE rol = 'compras' AND activo ORDER BY creado LIMIT 1) AS t_compras,\n"
         "       (SELECT token FROM tablero_acceso WHERE rol = 'auditor' AND activo ORDER BY creado LIMIT 1) AS t_auditor,\n"
         "       (SELECT token FROM tablero_acceso WHERE rol = 'admin' AND activo ORDER BY creado LIMIT 1) AS t_admin;")
+    # foto diaria del inventario: sirve para saber si un artículo vendió poco o si no había (misma tabla del flujo "Historial de inventario diario")
+    foto_sql = (
+        "SET LOCAL statement_timeout = '60s';\nSET LOCAL jit = off;\n"
+        "CREATE TABLE IF NOT EXISTS ms_existencias_hist (fecha DATE NOT NULL, base TEXT NOT NULL, almacen_id BIGINT NOT NULL, almacen TEXT,\n"
+        "  articulo_id BIGINT NOT NULL, clave TEXT, articulo TEXT, existencia NUMERIC, valor NUMERIC, guardado TIMESTAMPTZ DEFAULT now(),\n"
+        "  PRIMARY KEY (fecha, base, almacen_id, articulo_id));\n"
+        "INSERT INTO ms_existencias_hist (fecha, base, almacen_id, almacen, articulo_id, clave, articulo, existencia, valor)\n"
+        "SELECT DISTINCT ON (coalesce(e.base, ''), coalesce(e.almacen_id, 0), e.articulo_id)\n"
+        "       (now() AT TIME ZONE 'America/Mexico_City')::date, coalesce(e.base, ''), coalesce(e.almacen_id, 0), e.almacen,\n"
+        "       e.articulo_id, e.clave, e.articulo, e.existencia, e.valor\n"
+        "FROM ms_existencias e WHERE e.articulo_id IS NOT NULL\n"
+        "ORDER BY coalesce(e.base, ''), coalesce(e.almacen_id, 0), e.articulo_id, e.actualizado DESC\n"
+        "ON CONFLICT (fecha, base, almacen_id, articulo_id) DO UPDATE SET existencia = EXCLUDED.existencia, valor = EXCLUDED.valor,\n"
+        "  almacen = EXCLUDED.almacen, clave = EXCLUDED.clave, articulo = EXCLUDED.articulo, guardado = now();")
     ligas_js = (
         "// Ligas del planeador de compras. compras = captura; auditor = solo consulta (para el Sello); admin = la misma llave del tablero.\n"
         "const cfg = $('Configuración (ligas)').first().json, a = $('Ligas').first().json;\n"
@@ -88,6 +102,10 @@ def armar():
         si('¿Desde la página?', [1344, -240], "={{ $json.desde === 'pagina' }}"),
         nodo('Responder', 'n8n-nodes-base.respondToWebhook', 1.1, [1568, -160], {
             'respondWith': 'text', 'responseBody': '={{ JSON.stringify($json.respuesta) }}', 'options': {'responseHeaders': JSON_HDR}}),
+        nodo('Diario 23:50', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 560], {
+            'rule': {'interval': [{'field': 'cronExpression', 'expression': '50 23 * * *'}]}}),
+        nodo('Foto del inventario', 'n8n-nodes-base.postgres', 2.5, [224, 560], {
+            'operation': 'executeQuery', 'query': foto_sql, 'options': {}}, credentials=CRED),
         nodo('Ver ligas', 'n8n-nodes-base.manualTrigger', 1, [0, 320], {}),
         nodo('Configuración (ligas)', 'n8n-nodes-base.set', 3.4, [224, 320], {
             'assignments': {'assignments': [{'id': uid('url'), 'name': 'url_n8n', 'value': URL_N8N, 'type': 'string'}]}, 'options': {}}),
@@ -105,6 +123,7 @@ def armar():
         'Consultar': c(['Armar respuesta']),
         'Armar respuesta': c(['¿Desde la página?']),
         '¿Desde la página?': c(['Responder'], []),
+        'Diario 23:50': c(['Foto del inventario']),
         'Ver ligas': c(['Configuración (ligas)']),
         'Configuración (ligas)': c(['Ligas']),
         'Ligas': c(['Ligas para abrir']),

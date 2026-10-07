@@ -5,7 +5,7 @@ WITH /*CTX*/, /*OC*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
 mm0 AS (SELECT x.articulo_id, x.clave, x.articulo, x.unidad, x.clase, x.venta_diaria, x.minimo, x.maximo, x.alerta, x.empaque,
                coalesce(x.punto_reorden, x.minimo) AS punto_reorden, x.rotacion, x.tickets, x.proveedor_id, x.proveedor,
-               x.ultima_venta, x.semanas_venta, x.semanas, x.unidades, x.dias_periodo
+               x.ultima_venta, x.semanas_venta, x.semanas, x.unidades, x.dias_periodo, x.presentaciones, x.dias_revision
         FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes
          AND (cfg.p->>'todos' = 'si' OR coalesce(x.proveedor_id, '') = coalesce(cfg.p->>'proveedor_id', ''))),
 /*EXCL*/,
@@ -42,9 +42,9 @@ mm AS (SELECT * FROM mm0
        SELECT nv3.articulo_id, nv3.clave, nv3.articulo, nv3.unidad, 'C', round(nv3.vd, 4), nv3.mn,
               greatest(coalesce(nv3.max_f, nv3.mn + ceil(nv3.vd * cfg.inv_c)), nv3.mn + 1),
               'nuevo: se vendió este mes y aún no tiene clase (entra como C hasta el próximo cálculo)', nv3.empaque,
-              nv3.mn, 'nuevo', NULL::int, nv3.prov, nv3.prov_nom, NULL::date, NULL::int, NULL::int, NULL::numeric, NULL::int
+              nv3.mn, 'nuevo', NULL::int, nv3.prov, nv3.prov_nom, NULL::date, NULL::int, NULL::int, NULL::numeric, NULL::int, NULL::text, NULL::numeric
        FROM nv3, cfg),
-ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EXI*/,
+ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*LT*/, /*EXI*/,
 pl AS (SELECT pl.* FROM compras_planes pl, cfg WHERE pl.base = cfg.base AND pl.fecha = cfg.hoy AND pl.origen = 'planeador'
          AND (cfg.p->>'todos' = 'si' OR pl.proveedor_id = cfg.p->>'proveedor_id')),
 dec AS (SELECT d.*, pl.proveedor_id AS dprov FROM compras_decisiones d JOIN pl ON pl.id = d.plan_id),
@@ -67,26 +67,70 @@ rcd AS MATERIALIZED (  -- renglones de compras de los artículos del planeador (
   SELECT z.* FROM (
     SELECT d.datos->>'DOCTO_CM_ID' AS id,
            (CASE WHEN (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}\Z' THEN (d.datos->>'ARTICULO_ID')::bigint END) AS articulo_id,
-           CASE WHEN (d.datos->>'UNIDADES') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (d.datos->>'UNIDADES')::numeric END AS u
+           CASE WHEN (d.datos->>'UNIDADES') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (d.datos->>'UNIDADES')::numeric END AS u,
+           CASE WHEN (d.datos->>'PRECIO_UNITARIO') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (d.datos->>'PRECIO_UNITARIO')::numeric END AS precio
     FROM ms_raw d, cfg WHERE d.base = cfg.base AND d.tabla = 'DOCTOS_CM_DET') z
   WHERE z.articulo_id IN (SELECT articulo_id FROM mm)),
 ur AS (  -- última recepción de cada artículo del planeador
-  SELECT DISTINCT ON (rcd.articulo_id) rcd.articulo_id, rc.fecha, rcd.u, rc.prov
+  SELECT DISTINCT ON (rcd.articulo_id) rcd.articulo_id, rc.fecha, rcd.u, rc.prov, rcd.precio
   FROM rcd JOIN rc ON rc.id = rcd.id
   ORDER BY rcd.articulo_id, rc.fecha DESC),
+plsin AS (  -- planes guardados en días anteriores que todavía no son orden de compra en Microsip
+  SELECT d.articulo_id, sum(d.comprado) AS u, string_agg(DISTINCT to_char(pl.fecha, 'DD/MM'), ', ') AS fechas
+  FROM compras_planes pl JOIN compras_decisiones d ON d.plan_id = pl.id, cfg
+  WHERE pl.base = cfg.base AND pl.origen = 'planeador' AND pl.docto_cm_id IS NULL AND pl.fecha >= cfg.hoy - 14 AND pl.fecha < cfg.hoy
+    AND d.comprado > 0 GROUP BY 1),
+polv AS (SELECT p.articulo_id, p.politica, p.minimo FROM compras_politica p, cfg WHERE p.base = cfg.base),
 f AS (
   SELECT mm.articulo_id, mm.clave, mm.articulo, mm.unidad, mm.clase, mm.venta_diaria, mm.minimo, mm.maximo, mm.alerta,
          mm.punto_reorden, mm.rotacion, mm.tickets, mm.proveedor_id, mm.proveedor, mm.ultima_venta, mm.semanas_venta, mm.semanas, mm.unidades, mm.dias_periodo,
          (SELECT r.decision FROM compras_revision r WHERE r.base = cfg.base AND r.articulo_id = mm.articulo_id AND r.tipo = 'lento') AS lento,
          coalesce(ov.empaque, mm.empaque) AS empaque, coalesce(exi.e, 0) AS existencia, coalesce(pend.u, 0) AS pendiente, pend.folios,
          uc.fecha AS ult_fecha, uc.u AS ult_unidades, ur.fecha AS rec_fecha, ur.u AS rec_unidades, ur.prov AS rec_prov,
-         greatest(vm.fecha, mm.ultima_venta) AS ult_venta
+         greatest(vm.fecha, mm.ultima_venta) AS ult_venta,
+         exi.por_almacen, coalesce(exi.algun_negativo, false) AS algun_negativo, pend.atr_u, pend.atr_folios,
+         ltp.dias AS lt_conocido, coalesce(ltp.dias, cfg.ent_def) AS lt, ltp.medido AS lt_medido, ltp.n AS lt_n,
+         coalesce(mm.dias_revision, CASE WHEN mm.clase = 'A' THEN cfg.rev_a ELSE cfg.frec_b END) AS rev,
+         polv.politica, polv.minimo AS pol_min, mm.presentaciones,
+         coalesce(nullif(a.costo_ultimo, 0), ur.precio) AS costo,
+         CASE WHEN nullif(a.costo_ultimo, 0) IS NOT NULL THEN 'último costo' WHEN ur.precio IS NOT NULL THEN 'última compra' END AS costo_fuente,
+         plsin.u AS plan_sin_oc, plsin.fechas AS plan_sin_oc_fechas,
+         CASE WHEN (mm.articulo ~* 'TONELADA' AND coalesce(mm.unidad, '') !~* 'TON')
+                THEN 'El nombre dice TONELADA pero la unidad en Microsip es ' || coalesce(mm.unidad, '(vacía)')
+              WHEN (mm.articulo ~* 'MILLAR' AND coalesce(mm.unidad, '') !~* 'MILL')
+                THEN 'El nombre dice MILLAR pero la unidad en Microsip es ' || coalesce(mm.unidad, '(vacía)')
+              WHEN (mm.articulo ~* '(ARENA|GRAVA|TEZONTLE|TEPETATE|GRANZON)' AND mm.articulo !~* '(S/ *ARENA|SIN ARENA|COSTAL|BULTO)'
+                    AND coalesce(mm.unidad, '') ~* 'CUADRAD')
+                THEN 'Material a granel con unidad ' || mm.unidad || ' (¿debería ser metro cúbico?)' END AS unidad_aviso
   FROM mm CROSS JOIN cfg
+  LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = mm.articulo_id
+  LEFT JOIN ltp ON ltp.prov = mm.proveedor_id
+  LEFT JOIN plsin ON plsin.articulo_id = mm.articulo_id
+  LEFT JOIN polv ON polv.articulo_id = mm.articulo_id
   LEFT JOIN compras_articulos ov ON ov.base = cfg.base AND ov.articulo_id = mm.articulo_id
   LEFT JOIN exi ON exi.articulo_id = mm.articulo_id LEFT JOIN pend ON pend.articulo_id = mm.articulo_id
   LEFT JOIN uc ON uc.articulo_id = mm.articulo_id LEFT JOIN ur ON ur.articulo_id = mm.articulo_id
   LEFT JOIN vm ON vm.articulo_id = mm.articulo_id),
-g AS (SELECT f.*, /*SUG(f.existencia, f.pendiente, f.punto_reorden, f.maximo, f.empaque)*/ AS sugerido FROM f, cfg)
+g0 AS (SELECT f.*, CASE WHEN f.politica = 'bajo_pedido' THEN 0 ELSE /*SUG(f.existencia, f.pendiente, f.punto_reorden, f.maximo, f.empaque)*/ END AS sugerido,
+              greatest(f.existencia, 0) + f.pendiente AS pos FROM f, cfg),
+g AS (
+  SELECT g0.*,
+         CASE WHEN g0.politica = 'bajo_pedido' THEN 'bajo_pedido'
+              WHEN g0.venta_diaria > 0 AND g0.pos < g0.venta_diaria * g0.lt THEN 'critico'   -- se agota antes de que llegue un pedido
+              WHEN g0.pos <= g0.punto_reorden THEN 'pedir'
+              WHEN g0.pos <= g0.punto_reorden + g0.venta_diaria * g0.rev THEN 'proximo'       -- llega al punto de reorden antes de la siguiente revisión
+              ELSE 'bien' END AS estado,
+         array_remove(ARRAY[
+           CASE WHEN g0.existencia < 0 OR g0.algun_negativo THEN 'Existencia negativa (' || coalesce(g0.por_almacen, '') || '): el sugerido se calcula como si fuera 0. Corrige el inventario en Microsip.' END,
+           g0.unidad_aviso,
+           CASE WHEN g0.proveedor_id IS NULL THEN 'Sin proveedor: asígnalo para poder pedirlo.'
+                WHEN g0.lt_conocido IS NULL THEN 'Días de entrega desconocidos: se usaron ' || g0.lt || '. Escríbelos o espera a que se midan con las recepciones.' END,
+           CASE WHEN coalesce(g0.atr_u, 0) > 0 THEN 'OC atrasada sin recibir: ' || g0.atr_folios || ' (' || trim(to_char(g0.atr_u, 'FM999999990.##')) || ') no se cuenta como por recibir; confírmala en Seguimiento.' END,
+           CASE WHEN coalesce(g0.plan_sin_oc, 0) > 0 THEN 'Ya hay ' || trim(to_char(g0.plan_sin_oc, 'FM999999990.##')) || ' en un plan guardado el ' || g0.plan_sin_oc_fechas || ' que todavía no es OC en Microsip.' END,
+           CASE WHEN g0.politica IS NULL AND g0.lento IS DISTINCT FROM 'queda' AND (g0.rotacion = 'baja' OR (g0.clase = 'C' AND g0.rotacion IS DISTINCT FROM 'alta'))
+                THEN 'Vende poco: elige si se mantiene un mínimo, solo bajo pedido o se pausa.' END
+         ], NULL) AS revisar
+  FROM g0)
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveedor_id', cfg.p->>'proveedor_id', 'regla', cfg.regla,
   'plan', (SELECT json_build_object('id', id, 'folio', folio, 'folio_oc', folio_oc, 'clase', clase, 'creado', creado, 'modificado', modificado)
            FROM pl WHERE cfg.p->>'todos' IS DISTINCT FROM 'si' LIMIT 1),
@@ -99,10 +143,25 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveed
       'ult_fecha', g.ult_fecha, 'ult_unidades', g.ult_unidades, 'rec_fecha', g.rec_fecha, 'rec_unidades', g.rec_unidades, 'rec_prov', g.rec_prov,
       'rec_proveedor', (SELECT p.datos->>'NOMBRE' FROM ms_raw p WHERE p.base = cfg.base AND p.tabla = 'PROVEEDORES' AND p.pk = g.rec_prov),
       'ult_venta', g.ult_venta,
-      'comprado', dec.comprado, 'razon', dec.razon, 'nota', dec.nota)
+      'comprado', dec.comprado, 'razon', dec.razon, 'nota', dec.nota,
+      'estado', g.estado, 'revisar', g.revisar, 'costo', g.costo, 'costo_fuente', g.costo_fuente, 'lt', g.lt, 'lt_medido', g.lt_medido,
+      'lt_n', g.lt_n, 'rev', g.rev, 'politica', g.politica, 'pol_min', g.pol_min, 'presentaciones', g.presentaciones, 'por_almacen', g.por_almacen,
+      'atr_u', g.atr_u, 'atr_folios', g.atr_folios, 'plan_sin_oc', g.plan_sin_oc)
       ORDER BY g.proveedor, g.clase, (g.sugerido > 0) DESC, (greatest(g.existencia, 0) + g.pendiente) / nullif(g.punto_reorden, 0), g.articulo), '[]'::json)
     FROM g LEFT JOIN dec ON dec.articulo_id = g.articulo_id AND coalesce(dec.dprov, '') = coalesce(g.proveedor_id, '')
     WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id)   -- lo que se marcó para ya no comprar sale de inmediato
       AND (cfg.p->>'todos' IS DISTINCT FROM 'si' OR g.sugerido > 0 OR dec.articulo_id IS NOT NULL
-       OR greatest(g.existencia, 0) + g.pendiente <= g.punto_reorden))) AS r
+       OR g.estado IN ('critico', 'pedir') OR coalesce(g.atr_u, 0) > 0 OR g.existencia < 0)),
+  'resumen', (SELECT json_build_object(   -- conteos y costos de TODO (no solo de lo que se muestra)
+      'estados', (SELECT json_object_agg(estado, n) FROM (SELECT estado, count(*) AS n FROM g
+                    WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id) GROUP BY 1) z),
+      'revisar', (SELECT count(*) FROM g WHERE cardinality(revisar) > 0 AND NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id)),
+      'proveedores', (SELECT coalesce(json_agg(z ORDER BY z.costo DESC NULLS LAST), '[]'::json) FROM (
+          SELECT coalesce(g.proveedor_id, '') AS proveedor_id, max(g.proveedor) AS proveedor,
+                 count(*) FILTER (WHERE estado = 'critico') AS critico, count(*) FILTER (WHERE estado = 'pedir') AS pedir,
+                 count(*) FILTER (WHERE estado = 'proximo') AS proximo, count(*) FILTER (WHERE estado = 'bien') AS bien,
+                 count(*) FILTER (WHERE cardinality(revisar) > 0) AS revisar,
+                 round(sum(g.sugerido * coalesce(g.costo, 0)), 2) AS costo, count(*) FILTER (WHERE g.sugerido > 0 AND g.costo IS NULL) AS sin_costo
+          FROM g WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id) GROUP BY 1) z),
+      'iva', cfg.iva))) AS r
 FROM cfg;

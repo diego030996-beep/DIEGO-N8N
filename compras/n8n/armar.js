@@ -21,7 +21,8 @@ function textoError(j) {
 const QUE = { datos: 'leer los datos', planeador: 'leer el planeador', guardar: 'guardar', razon: 'guardar la razón', folio: 'ligar el folio',
   registro: 'leer el registro', reconstruir: 'reconstruir el mes', calcular: 'calcular', ocs: 'leer las OCs', reporte: 'leer el reporte',
   buscar: 'buscar', articulo: 'guardar el artículo', config: 'guardar la configuración', limpieza: 'revisar el catálogo',
-  revision: 'guardar la decisión', gerencia: 'poner la autorización de gerencia', reactivar: 'regresar el artículo' };
+  revision: 'guardar la decisión', gerencia: 'poner la autorización de gerencia', reactivar: 'regresar el artículo', seguimiento: 'leer el seguimiento de OC',
+  oc_estado: 'guardar el seguimiento', politica: 'guardar la política', equivalencias: 'leer las presentaciones', equivalencia: 'guardar la presentación' };
 let respuesta;
 if (!r) {
   const m = textoError(err);

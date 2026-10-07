@@ -33,3 +33,14 @@ CREATE TABLE IF NOT EXISTS ms_existencias_hist (fecha DATE NOT NULL, base TEXT N
   articulo_id BIGINT NOT NULL, clave TEXT, articulo TEXT, existencia NUMERIC, valor NUMERIC, guardado TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (fecha, base, almacen_id, articulo_id));
 ALTER TABLE compras_decisiones ADD COLUMN IF NOT EXISTS punto_reorden NUMERIC;
+-- presentaciones (tonelada, millar, viaje, bulto…) que son el mismo inventario que un artículo base: 1 presentación = factor × base
+CREATE TABLE IF NOT EXISTS compras_equivalencias (base TEXT NOT NULL, articulo_id BIGINT NOT NULL, articulo_base_id BIGINT NOT NULL, factor NUMERIC NOT NULL,
+  confirmado BOOLEAN NOT NULL DEFAULT true, origen TEXT, nota TEXT, por TEXT, actualizado TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (base, articulo_id));
+-- política de resurtido por producto: mantener un mínimo, solo bajo pedido o pausar
+CREATE TABLE IF NOT EXISTS compras_politica (base TEXT NOT NULL, articulo_id BIGINT NOT NULL, politica TEXT NOT NULL, minimo NUMERIC, nota TEXT, por TEXT,
+  actualizado TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (base, articulo_id));
+-- seguimiento de órdenes de compra atrasadas: sigue en camino, cancelada o ya llegó (sin ligar en Microsip)
+CREATE TABLE IF NOT EXISTS compras_oc_seguimiento (base TEXT NOT NULL, docto_cm_id TEXT NOT NULL, estado TEXT NOT NULL, nota TEXT, por TEXT,
+  actualizado TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (base, docto_cm_id));
+ALTER TABLE compras_maxmin ADD COLUMN IF NOT EXISTS presentaciones TEXT, ADD COLUMN IF NOT EXISTS dias_agotado INT, ADD COLUMN IF NOT EXISTS lt_medido NUMERIC,
+  ADD COLUMN IF NOT EXISTS venta_max_doc NUMERIC, ADD COLUMN IF NOT EXISTS politica TEXT;

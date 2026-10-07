@@ -23,6 +23,8 @@ cfg AS (SELECT b.*,
              coalesce(nullif(c->>'ns_c', '')::numeric, 85) AS ns_c,
              coalesce(nullif(c->>'rev_a', '')::numeric, 7) AS rev_a,
              coalesce(nullif(c->>'rot_alta', '')::numeric, 50) / 100 AS rot_alta, coalesce(nullif(c->>'rot_media', '')::numeric, 20) / 100 AS rot_media,
-             coalesce(c->>'palabras_distintas', '') AS palabras_distintas,
+             coalesce(c->>'palabras_distintas', '') AS palabras_distintas, coalesce(c->>'marcas', '') AS marcas,
+             replace(coalesce(c->>'servicios', ''), '\b', '\y') AS servicios, replace(coalesce(c->>'varios', ''), '\b', '\y') AS varios,
+             coalesce(nullif(c->>'iva', '')::numeric, 16) AS iva,
              coalesce(nullif(c->>'monto_maximo', '')::numeric, 500000) AS maxm
         FROM b)

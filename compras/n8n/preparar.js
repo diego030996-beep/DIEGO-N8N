@@ -17,7 +17,8 @@ if (!rol) return fail('Esta liga no tiene permiso. Pide la liga del planeador al
 const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op]) return fail('Operación desconocida.');
-const ESCRIBE = ['guardar', 'razon', 'folio', 'reconstruir', 'calcular', 'articulo', 'config', 'revision', 'gerencia', 'reactivar'];
+const ESCRIBE = ['guardar', 'razon', 'folio', 'reconstruir', 'calcular', 'articulo', 'config', 'revision', 'gerencia', 'reactivar',
+  'oc_estado', 'politica', 'equivalencia'];
 if (rol === 'auditor' && ESCRIBE.includes(op)) return fail('Esta liga es solo de consulta.');
 const quien = String(b.quien || '').replace(/[^\p{L}\p{N} .\-]/gu, '').trim().slice(0, 40);
 const por = quien ? quien + ' (' + rol + ')' : rol;
@@ -83,6 +84,25 @@ switch (op) {
     if (!idOk(b.plan_id)) return fail('Plan inválido.');
     p = { plan_id: Number(b.plan_id), folio: txt(b.folio, 30) };
     break;
+  case 'seguimiento': case 'equivalencias': break;
+  case 'oc_estado':
+    if (!/^[0-9]{1,18}$/.test(String(b.docto_cm_id || ''))) return fail('Orden inválida.');
+    if (!['', 'en_camino', 'cancelada', 'recibida'].includes(String(b.estado || ''))) return fail('Estado inválido.');
+    p = { docto_cm_id: String(b.docto_cm_id), estado: String(b.estado || ''), nota: txt(b.nota, 200) };
+    break;
+  case 'politica':
+    if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
+    if (!['', 'minimo', 'bajo_pedido', 'pausar'].includes(String(b.politica || ''))) return fail('Política inválida.');
+    if (b.politica === 'minimo' && !(Number(b.minimo) > 0 && Number(b.minimo) <= 1e6)) return fail('Escribe el mínimo a mantener (mayor que 0).');
+    p = { articulo_id: Number(b.articulo_id), politica: String(b.politica || ''), minimo: b.politica === 'minimo' ? String(Number(b.minimo)) : '', nota: txt(b.nota, 200) };
+    break;
+  case 'equivalencia':
+    if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
+    if (!['confirmar', 'rechazar', 'quitar'].includes(b.accion)) return fail('Acción inválida.');
+    if (b.accion === 'confirmar' && (!idOk(b.base_id) || !(Number(b.factor) > 0 && Number(b.factor) <= 1e6))) return fail('Elige el artículo base y escribe cuántas unidades base trae (mayor que 0).');
+    if (Number(b.base_id) === Number(b.articulo_id)) return fail('El artículo base debe ser otro.');
+    p = { articulo_id: Number(b.articulo_id), base_id: b.base_id ? String(Number(b.base_id)) : '', factor: b.factor ? String(Number(b.factor)) : '', accion: b.accion, nota: txt(b.nota, 200) };
+    break;
   case 'reactivar':
     if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
     p = { articulo_id: Number(b.articulo_id) };
@@ -120,7 +140,10 @@ switch (op) {
       min_c: v => numOk(v, 1, 1000),
       metodo: v => ['retail', 'simple'].includes(v), ns_a: v => numOk(v, 50, 99.9), ns_b: v => numOk(v, 50, 99.9), ns_c: v => numOk(v, 50, 99.9),
       rev_a: v => numOk(v, 1, 60), rot_alta: v => numOk(v, 1, 100), rot_media: v => numOk(v, 0, 100),
-      palabras_distintas: v => String(v).length <= 3000, dias_lento: v => numOk(v, 7, 1000), max_lento: v => numOk(v, 1, 100),
+      palabras_distintas: v => String(v).length <= 3000,
+      marcas: v => String(v).length <= 4000, iva: v => numOk(v, 0, 30),
+      servicios: v => { try { new RegExp(v, 'i'); return String(v).length <= 300; } catch (e) { return false; } },
+      varios: v => { try { new RegExp(v, 'i'); return String(v).length <= 300; } catch (e) { return false; } }, dias_lento: v => numOk(v, 7, 1000), max_lento: v => numOk(v, 1, 100),
       lineas_excluidas: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       entrega_def: v => numOk(v, 0, 120), dia_a: v => ['1', '2', '3', '4', '5', '6', '7'].includes(String(v)), frec_b: v => numOk(v, 1, 90),
       regla: v => ['bajo_minimo', 'hasta_maximo'].includes(v), gracia_oc: v => numOk(v, 0, 60), dias_ligar: v => numOk(v, 0, 30),
@@ -130,7 +153,7 @@ switch (op) {
       razones: v => String(v).length <= 3000 && /^no_documentado=/m.test(v) && /^otra=/m.test(v),
       base: v => String(v).length <= 80,
     };
-    const NUM = ['meses_abc', 'corte_a', 'corte_b', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'dias_lento', 'max_lento', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
+    const NUM = ['meses_abc', 'corte_a', 'corte_b', 'seg_a', 'inv_a', 'seg_b', 'inv_b', 'meses_c', 'seg_c', 'inv_c', 'min_c', 'ns_a', 'ns_b', 'ns_c', 'rev_a', 'rot_alta', 'rot_media', 'dias_lento', 'max_lento', 'iva', 'entrega_def', 'frec_b', 'gracia_oc', 'dias_ligar', 'monto_maximo'];
     const general = {};
     for (const [k, v0] of Object.entries(b.general || {})) {
       if (!REGLAS[k]) continue;

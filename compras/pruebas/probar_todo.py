@@ -14,8 +14,9 @@ def ok(c, msg):
         sys.exit(1)
 
 d = correr('datos')
-ok(d['ok'] and d['mes'] is None and d['oc_total'] == 12, 'datos sin cálculo previo')
-ok([x['linea'] for x in d['excluidos']] == ['TINACOS Y CISTERNAS'], 'avisa que la línea de tinacos no se toma en cuenta')
+ok(d['ok'] and d['mes'] is None and d['oc_total'] == 14, 'datos sin cálculo previo')
+ok(sorted(x['linea'] for x in d['excluidos']) == ['Servicios (no son mercancía)', 'TINACOS Y CISTERNAS', 'Varios (artículo genérico)'],
+   'avisa que tinacos, servicios y VARIOS no se toman en cuenta')
 c = correr('calcular', {'mes': '2026-10-01'})
 ok(c['productos'] == 21 and c['a'] + c['b'] + c['c'] == 21 and c['c'] >= 2, f"A/B/C: {c['a']} A, {c['b']} B, {c['c']} C (tinaco excluido)")
 mm = {f['clave']: f for f in correr('reporte', {})['filas']}
@@ -63,11 +64,11 @@ ok(L['CEM50']['costo'] == 168.0 and L['CEM50']['costo_fuente'] == 'último costo
 ok(d['falta_razon'] == 1, 'pide razón del renglón no planeado')
 for m in ('2026-08-01', '2026-09-01'):
     x = correr('reconstruir', {'mes': m, 'solo_si_falta': 'si'}, hoy='2026-10-07')
-    ok(x['ocs'] == 5, 'reconstruir ' + m + f" ({x['renglones']} renglones, sin la OC de tinacos)")
+    ok(x['ocs'] == (5 if m < '2026-09' else 6), 'reconstruir ' + m + f" ({x['renglones']} renglones, sin la OC de tinacos)")
 x = correr('reconstruir', {'mes': '2026-08-01', 'solo_si_falta': 'si'}, hoy='2026-10-07')
 ok(x['renglones'] == 13, 'reconstruir dos veces no duplica')
 o = correr('ocs', {'desde': '2026-08-01', 'hasta': '2026-09-30'})
-ok(len(o['ocs']) == 11 and all(bool(z['plan']) != z['excluida'] for z in o['ocs']), 'todas las OCs ligadas menos la de tinacos (marcada como excluida)')
+ok(len(o['ocs']) == 12 and all(bool(z['plan']) != z['excluida'] for z in o['ocs']), 'todas las OCs ligadas menos la de tinacos (marcada como excluida)')
 ok(correr('registro', {'mes': '2026-08-01'})['oc_sin_plan'] == [], 'la OC de tinacos no sale como OC sin plan')
 did = correr('registro', {'mes': '2026-08-01'})['planes'][0]['lineas'][0]['id']
 ok(correr('razon', {'id': did, 'razon': 'no_documentado', 'nota': ''})['razon'] == 'no_documentado', 'guardar razón')
@@ -95,6 +96,53 @@ ok(not any(f['clave'] == 'MOR25' for f in correr('planeador', {'proveedor_id': '
 ok([x['clave'] for x in correr('limpieza', {})['pausados']] == ['MOR25'], 'aparece en Pausados')
 correr('reactivar', {'articulo_id': 3})
 ok(any(f['clave'] == 'MOR25' for f in correr('planeador', {'proveedor_id': '14'})['filas']) and correr('limpieza', {})['pausados'] == [], 'Regresar lo trae de vuelta')
+# ---- Conversiones, pedidos abiertos/parciales/atrasados, revisar datos, política, costos, duplicados ----
+H = '2026-10-07'
+correr('calcular', {'mes': '2026-10-01'})
+P = lambda pid: {x['clave']: x for x in correr('planeador', {'proveedor_id': pid}, hoy=H)['filas']}
+ok(not any(x['clave'] in ('FLETE', 'VARIOS') for x in correr('planeador', {'todos': 'si'}, hoy=H)['filas']), 'servicios y VARIOS no salen en el planeador')
+c15 = P('15')['CLAVO25']
+ok(c15['pendiente'] == 30, 'OC parcial: se cuenta lo que falta (50 pedidas − 20 recibidas)')
+l16 = P('16')['LLAVE38']
+ok(l16['atr_u'] == 5 and l16['pendiente'] == 0 and any('atrasada' in r for r in l16['revisar']), 'OC atrasada: no cuenta como por recibir y pide revisarla')
+sg = correr('seguimiento', {}, hoy=H)
+E = {o['folio']: o for o in sg['ocs']}
+ok(E['O0000091']['estado'] == 'atrasada' and E['O0000090']['estado'] == 'parcial' and E['O0000090']['falta'] == 30, 'seguimiento: atrasada y parcial')
+ok(correr('oc_estado', {'docto_cm_id': '5091', 'estado': 'en_camino', 'nota': 'llega el lunes'})['ok'], 'confirmar que la OC atrasada sigue en camino')
+ok(P('16')['LLAVE38']['pendiente'] == 5, 'confirmada en camino: ya cuenta como por recibir')
+correr('oc_estado', {'docto_cm_id': '5091', 'estado': 'cancelada', 'nota': ''})
+ok('O0000091' not in {o['folio'] for o in correr('seguimiento', {}, hoy=H)['ocs']} and P('16')['LLAVE38']['atr_u'] in (None, 0), 'OC cancelada: sale del seguimiento')
+t = P('12')['TPLUS25']
+ok(t['existencia'] == 2 and any('negativa' in r and 'BODEGA' in r for r in t['revisar']), 'existencia negativa: avisa en qué almacén')
+ok(t['estado'] in ('critico', 'pedir') and t['costo'] == 122.5 and t['costo_fuente'] == 'último costo', 'estado y costo por renglón')
+rs = correr('planeador', {'todos': 'si'}, hoy=H)['resumen']
+ok(rs['iva'] == 16 and all('costo' in p and 'sin_costo' in p for p in rs['proveedores']) and any(p['costo'] > 0 for p in rs['proveedores']), 'resumen: costo estimado por proveedor e IVA')
+eq = correr('equivalencias', {})
+sug = {x['clave']: x for x in eq['sugeridas']}
+ok(sug.get('CEM50TON', {}).get('base_clave') == 'CEM50' and sug['CEM50TON']['factor'] == 20, 'sugiere TONELADA = 20 sacos de 50 kg')
+antes = P('14')['CEM50']['existencia']
+correr('equivalencia', {'articulo_id': 32, 'base_id': 2, 'factor': 20, 'accion': 'confirmar', 'nota': ''})
+ok(correr('equivalencias', {})['activas'][0]['clave'] == 'CEM50TON', 'confirmada: ya cuenta')
+correr('equivalencia', {'articulo_id': 32, 'accion': 'quitar'})
+ok(correr('equivalencias', {})['activas'] == [] and P('14')['CEM50']['existencia'] == antes, 'quitarla la regresa')
+ok(correr('politica', {'articulo_id': 21, 'politica': 'bajo_pedido', 'minimo': '', 'nota': ''})['ok'], 'política: solo bajo pedido')
+l = P('16')['LLAVE38']
+ok(l['estado'] == 'bajo_pedido' and l['sugerido'] == 0, 'bajo pedido: no se sugiere compra')
+correr('politica', {'articulo_id': 21, 'politica': 'pausar', 'minimo': '', 'nota': ''})
+ok('LLAVE38' not in P('16') and [x['clave'] for x in correr('limpieza', {})['pausados']] == ['LLAVE38'], 'pausar resurtido: sale del planeador y aparece en Pausados')
+correr('reactivar', {'articulo_id': 21})
+ok('LLAVE38' in P('16'), 'Regresar quita la pausa')
+correr('politica', {'articulo_id': 21, 'politica': 'minimo', 'minimo': '4', 'nota': ''})
+correr('calcular', {'mes': '2026-10-01'})
+ok(P('16')['LLAVE38']['minimo'] >= 4, 'mantener un mínimo de 4')
+correr('politica', {'articulo_id': 21, 'politica': '', 'minimo': '', 'nota': ''})
+correr('config', {'general': {'marcas': 'TRUPER PRETUL'}, 'proveedores': []})
+ok(not any('CINTAN' in [a['clave'] for a in g['articulos']] for g in correr('limpieza', {})['duplicados']), 'duplicados: solo si lo que cambia está en la lista de marcas')
+correr('config', {'general': {'marcas': 'TRUPER PRETUL NITTO'}, 'proveedores': []})
+ok(any(sorted(a['clave'] for a in g['articulos']) == ['CINTAN', 'CINTAP'] for g in correr('limpieza', {})['duplicados']), 'duplicados: Pretul / Nitto con las dos marcas en la lista')
+d = correr('datos', hoy=H)
+ok(any('lt_medido' in p for p in d['proveedores']), 'días de entrega medidos por proveedor')
+
 print('Todo bien.')
 
 # n8n (algunas versiones) mete la consulta con String.replace(): "$'", "$&", "$`" y "$$" cambian el texto. No debe haber ninguno.

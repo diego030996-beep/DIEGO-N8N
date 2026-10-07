@@ -6,169 +6,260 @@
 <title>Planeador de compras</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#D9DCDE; --panel:#F3F4F5; --ink:#1A222C; --soft:#5A6470; --line:#C3C8CD;
-  --blue:#0B4EA2; --yellow:#FFC20E; --red:#C7352A; --green:#1E8A4C; --grey:#9AA1A8; --empty:#C9CDD1;
-  --a:#0B4EA2; --b:#7A8591; --c:#A8A29A; --warn:#FFF3C4; --warnink:#6B4E00;
+  --bg:#F3F5F9; --panel:#FFFFFF; --panel2:#F8FAFC; --ink:#0F172A; --soft:#64748B; --line:#E5E9F0; --line2:#EEF1F6;
+  --side:#0E2A47; --side2:#16385C; --sideink:#C9D6E5;
+  --blue:#2563EB; --blue2:#DBEAFE; --yellow:#F59E0B; --red:#DC2626; --green:#16A34A; --grey:#94A3B8; --empty:#E2E8F0;
+  --c-red:#DC2626; --c-redbg:#FEE2E2; --c-or:#EA580C; --c-orbg:#FFEDD5; --c-ye:#B45309; --c-yebg:#FEF3C7; --c-gr:#15803D; --c-grbg:#DCFCE7;
+  --c-pu:#7C3AED; --c-pubg:#EDE9FE; --c-gy:#475569; --c-gybg:#F1F5F9;
+  --a:#2563EB; --b:#64748B; --c:#A8A29E; --warn:#FEF3C7; --warnink:#78350F;
+  --sh:0 1px 2px rgba(15,23,42,.05),0 4px 14px rgba(15,23,42,.05);
   box-sizing:border-box;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --bg:#1C2025; --panel:#262B31; --ink:#EEF0F2; --soft:#9AA3AD; --line:#3A4149;
-  --blue:#5B9BEA; --empty:#363C43; --red:#EF6A5E; --green:#3CC37A; --grey:#6B737C; --a:#5B9BEA; --b:#8A949E; --c:#6E6A64;
-  --warn:#3D3415; --warnink:#FFD86B;
+  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A; --line2:#1E2940;
+  --side:#08111F; --side2:#132339; --blue:#60A5FA; --blue2:#1E3A5F; --empty:#26324A;
+  --c-redbg:#3B1416; --c-red:#F87171; --c-orbg:#3A1E0E; --c-or:#FB923C; --c-yebg:#36290A; --c-ye:#FBBF24; --c-grbg:#0E2E1B; --c-gr:#4ADE80;
+  --c-pubg:#2A1B4A; --c-pu:#A78BFA; --c-gybg:#1E293B; --c-gy:#CBD5E1; --a:#60A5FA; --warn:#36290A; --warnink:#FDE68A;
 }}
 :root[data-theme="dark"]{
-  --bg:#1C2025; --panel:#262B31; --ink:#EEF0F2; --soft:#9AA3AD; --line:#3A4149;
-  --blue:#5B9BEA; --empty:#363C43; --red:#EF6A5E; --green:#3CC37A; --grey:#6B737C; --a:#5B9BEA; --b:#8A949E; --c:#6E6A64;
-  --warn:#3D3415; --warnink:#FFD86B;
+  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A; --line2:#1E2940;
+  --side:#08111F; --side2:#132339; --blue:#60A5FA; --blue2:#1E3A5F; --empty:#26324A;
+  --c-redbg:#3B1416; --c-red:#F87171; --c-orbg:#3A1E0E; --c-or:#FB923C; --c-yebg:#36290A; --c-ye:#FBBF24; --c-grbg:#0E2E1B; --c-gr:#4ADE80;
+  --c-pubg:#2A1B4A; --c-pu:#A78BFA; --c-gybg:#1E293B; --c-gy:#CBD5E1; --a:#60A5FA; --warn:#36290A; --warnink:#FDE68A;
 }
 *,*::before,*::after{box-sizing:inherit}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
-main{max-width:1180px;margin:0 auto;padding:16px 14px 64px}
-h2{font-size:1.4rem;font-weight:800;font-stretch:112%;margin:0 0 4px;letter-spacing:-.01em}
-h3{margin:0 0 6px;font-size:1.08rem;font-weight:800;font-stretch:108%}
-.sub{color:var(--soft);margin:0 0 12px;font-size:.92rem}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
-.card{background:var(--panel);border-radius:16px;padding:16px;margin-top:14px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.store{font-weight:800;font-stretch:90%;font-size:1rem}
-.store small{display:block;font-weight:400;color:var(--soft);font-size:.85rem;font-stretch:100%}
-.who{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--soft)}
-.who input{width:120px}
-input[type=text],input[type=number],input[type=month],input[type=date],select,textarea{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);min-width:0}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+[hidden]{display:none!important}
+/* ---------- estructura ---------- */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.side{background:var(--side);color:var(--sideink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.logo{display:flex;align-items:center;gap:10px;padding:0 20px 18px;color:#fff;font-weight:800;font-size:1.05rem;letter-spacing:.01em}
+.logo svg{width:26px;height:26px;flex:none}
+.logo small{display:block;font-weight:500;font-size:.72rem;color:var(--sideink);letter-spacing:0}
+.nav{display:flex;flex-direction:column;gap:2px}
+.tab{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:var(--sideink);padding:11px 20px;text-align:left;cursor:pointer;font-weight:600;font-size:.9rem;border-left:3px solid transparent}
+.tab svg{width:19px;height:19px;flex:none;opacity:.9}
+.tab:hover{background:var(--side2);color:#fff}
+.tab[aria-selected=true]{background:var(--side2);color:#fff;border-left-color:#60A5FA}
+.tab .n{margin-left:auto;min-width:20px;padding:0 6px;border-radius:10px;background:var(--red);color:#fff;font-size:.72rem;line-height:20px;text-align:center}
+.who{margin-top:auto;padding:14px 20px 0;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px;font-size:.78rem}
+.who input{background:var(--side2);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:7px 9px}
+main{padding:22px 28px 70px;max-width:1360px;width:100%}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.head h1{margin:0;font-size:1.65rem;font-weight:800;letter-spacing:-.02em}
+.head p{margin:2px 0 0;color:var(--soft)}
+.headr{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.datechip{display:flex;gap:9px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:.8rem;box-shadow:var(--sh)}
+.datechip b{display:block;font-size:.85rem}
+.datechip svg{width:20px;height:20px;color:var(--soft)}
+h2{font-size:1.2rem;font-weight:800;margin:0 0 4px;letter-spacing:-.01em}
+h3{margin:0 0 6px;font-size:1rem;font-weight:700}
+.sub{color:var(--soft);margin:0 0 12px;font-size:.9rem}
+.muted{color:var(--soft);font-size:.83rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:16px;box-shadow:var(--sh)}
+input[type=text],input[type=number],input[type=month],input[type=date],select,textarea{padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);min-width:0}
 textarea{width:100%;min-height:200px;resize:vertical}
-.tabs{display:flex;gap:6px;margin-top:14px;overflow-x:auto;padding-bottom:2px}
-.tab{border:0;background:transparent;padding:10px 14px;border-radius:12px;font-weight:700;color:var(--soft);cursor:pointer;white-space:nowrap}
-.tab[aria-selected=true]{background:var(--panel);color:var(--ink);box-shadow:inset 0 -3px 0 var(--yellow)}
-.tab .n{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--red);color:#fff;font-size:.75rem;line-height:20px;text-align:center}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border-radius:12px;border:0;font-weight:700;cursor:pointer;font-size:.95rem}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:10px;border:1px solid transparent;font-weight:600;cursor:pointer;font-size:.88rem;white-space:nowrap}
+.btn svg{width:17px;height:17px}
 .btn-main{background:var(--blue);color:#fff}
-.btn-y{background:var(--yellow);color:#1A222C}
-.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
-.btn-sm{padding:6px 10px;font-size:.85rem;border-radius:9px}
+.btn-main:hover{filter:brightness(1.07)}
+.btn-y{background:var(--blue2);color:var(--blue)}
+.btn-ghost{background:var(--panel);border-color:var(--line);color:var(--ink)}
+.btn-ghost:hover{background:var(--panel2)}
+.btn-sm{padding:6px 10px;font-size:.8rem;border-radius:8px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 12px;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left}
-.chip b{font-weight:800}
-.chip.a{border-color:var(--a)} .chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
-.chip small{color:inherit;opacity:.75;font-weight:500}
-.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
-.seg button{border:0;background:transparent;padding:8px 14px;font-weight:700;cursor:pointer;color:var(--soft)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:8px 13px;font-weight:600;cursor:pointer;color:var(--soft);font-size:.85rem}
 .seg button[aria-pressed=true]{background:var(--ink);color:var(--panel)}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
-.kpi{background:var(--bg);border-radius:12px;padding:10px 12px}
-.kpi b{display:block;font-size:1.5rem;font-weight:900;font-stretch:115%;font-variant-numeric:tabular-nums;line-height:1.1}
-.kpi span{font-size:.82rem;color:var(--soft)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:6px 12px;font-size:.84rem;font-weight:600;cursor:pointer}
+/* ---------- tarjetas de indicadores ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px}
+.kpi{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:11px 13px}
+.kpi b{display:block;font-size:1.35rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi span{font-size:.8rem;color:var(--soft)}
 .kpi.bad b{color:var(--red)}
-.warn{background:var(--warn);color:var(--warnink);border-radius:12px;padding:10px 12px;font-size:.9rem;margin-top:10px}
-.muted{color:var(--soft);font-size:.86rem}
-.pill{display:inline-block;font-size:.72rem;font-weight:800;padding:1px 7px;border-radius:6px;color:#fff;background:var(--b);vertical-align:1px}
-.pill.A{background:var(--a)} .pill.C{background:var(--c)}
-.tbl{width:100%;border-collapse:collapse;font-size:.9rem}
-.scroll.alto{max-height:75vh;overflow:auto}
-.tbl thead th{position:sticky;top:0;z-index:2;background:var(--panel)}
-.tbl th{text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--soft);font-weight:700;padding:6px 6px;border-bottom:1.5px solid var(--line);white-space:nowrap}
-.tbl td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.big5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.bk{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--sh);text-align:left;cursor:pointer;position:relative}
+.bk:hover{border-color:var(--blue)}
+.bk[aria-pressed=true]{outline:2px solid var(--blue)}
+.bk .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;margin-bottom:10px}
+.bk .ic svg{width:21px;height:21px}
+.bk .t{font-weight:700;font-size:.86rem}
+.bk .v{font-size:1.55rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
+.bk .v small{font-size:.95rem;font-weight:600;color:var(--soft)}
+.bk .s{font-size:.8rem;color:var(--soft)}
+.bk.r{background:linear-gradient(180deg,var(--c-redbg),var(--panel) 70%)} .bk.r .ic{background:var(--c-redbg);color:var(--c-red)} .bk.r .t{color:var(--c-red)}
+.bk.o{background:linear-gradient(180deg,var(--c-orbg),var(--panel) 70%)} .bk.o .ic{background:var(--c-orbg);color:var(--c-or)} .bk.o .t{color:var(--c-or)}
+.bk.b .ic{background:var(--blue2);color:var(--blue)}
+.bk.p{background:linear-gradient(180deg,var(--c-pubg),var(--panel) 70%)} .bk.p .ic{background:var(--c-pubg);color:var(--c-pu)} .bk.p .t{color:var(--c-pu)}
+.bk.g{background:linear-gradient(180deg,var(--c-grbg),var(--panel) 70%)} .bk.g .ic{background:var(--c-grbg);color:var(--c-gr)} .bk.g .t{color:var(--c-gr)}
+/* ---------- filtros y presupuesto ---------- */
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:16px;box-shadow:var(--sh)}
+.search{position:relative;flex:1;min-width:210px}
+.search input{width:100%;padding-right:34px}
+.search svg{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--soft)}
+.budget{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:12px;box-shadow:var(--sh)}
+.budget input{width:150px}
+.meter{flex:1;min-width:180px;height:10px;border-radius:6px;background:var(--empty);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--blue);border-radius:6px}
+/* ---------- proveedor ---------- */
+.prov{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-top:16px;box-shadow:var(--sh);overflow:hidden}
+.ph{display:flex;align-items:center;gap:14px;padding:14px 18px;flex-wrap:wrap}
+.av{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:1rem;flex:none}
+.pn{flex:1;min-width:180px}
+.pn b{display:block;font-size:1.05rem;font-weight:800;letter-spacing:-.01em}
+.pn span{color:var(--soft);font-size:.84rem}
+.oe{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:7px 13px;text-align:left}
+.oe span{display:block;font-size:.74rem;color:var(--soft)}
+.oe b{font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums}
+.oe small{display:block;font-size:.72rem;color:var(--soft)}
+.cnt{display:flex;gap:6px}
+.cn{min-width:56px;border-radius:10px;padding:5px 8px;text-align:center}
+.cn b{display:block;font-size:1.1rem;font-weight:800;line-height:1.1}
+.cn span{font-size:.68rem}
+.cn.r{background:var(--c-redbg);color:var(--c-red)} .cn.o{background:var(--c-orbg);color:var(--c-or)} .cn.y{background:var(--c-yebg);color:var(--c-ye)}
+.cn.g{background:var(--c-grbg);color:var(--c-gr)} .cn.p{background:var(--c-pubg);color:var(--c-pu)}
+.tog{border:0;background:transparent;cursor:pointer;padding:6px;border-radius:8px;color:var(--soft)}
+.tog svg{width:20px;height:20px;transition:transform .2s}
+.prov.cerrado .tog svg{transform:rotate(180deg)}
+.prov.cerrado .pb{display:none}
+.pf{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line2);background:var(--panel2)}
+.mas-link{border:0;background:transparent;color:var(--blue);font-weight:600;cursor:pointer;padding:4px 0;font-size:.84rem}
+/* ---------- tablas ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:.86rem}
+.tbl th{text-align:left;font-size:.74rem;color:var(--soft);font-weight:600;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel2)}
+.tbl td{padding:9px 8px;border-bottom:1px solid var(--line2);vertical-align:top}
 .tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.tbl tr.need td:first-child{box-shadow:inset 4px 0 0 var(--red)}
-.tbl tr.miss{background:var(--warn)}
-.tbl input[type=number]{width:86px;text-align:right}
-.tbl select{max-width:190px}
+.tbl tr:last-child td{border-bottom:0}
+.tbl input[type=number]{width:90px;text-align:right}
+.tbl select{max-width:200px}
 .tbl .nota{width:100%;min-width:120px;margin-top:4px}
+.tbl tr.miss{background:var(--warn)}
+.tbl tr.grp td{background:var(--panel2);padding:8px}
 .scroll{overflow-x:auto}
-.sug{font-weight:800;font-size:1.02rem}
+.scroll.alto{max-height:75vh;overflow:auto}
+.tbl thead th{position:sticky;top:0;z-index:2}
+.art b{font-weight:600}
+.meta{color:var(--soft);font-size:.78rem;margin-top:2px}
+.sug{font-weight:800;font-size:.98rem}
 .neg{color:var(--red);font-weight:700}
-.rot{display:inline-block;white-space:nowrap;font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:6px;border:1px solid var(--line);color:var(--soft);vertical-align:1px}
+.est{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:4px 9px;font-weight:700;font-size:.78rem;white-space:nowrap}
+.est::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.est.critico{background:var(--c-redbg);color:var(--c-red)} .est.pedir{background:var(--c-orbg);color:var(--c-or)}
+.est.proximo{background:var(--c-yebg);color:var(--c-ye)} .est.bien{background:var(--c-grbg);color:var(--c-gr)}
+.est.bajo_pedido{background:var(--c-gybg);color:var(--c-gy)} .est.revisar{background:var(--c-pubg);color:var(--c-pu)}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:.72rem;font-weight:600;margin-top:4px}
+.tag.fuera{background:var(--c-gybg);color:var(--c-gy)} .tag.prov{background:var(--c-pubg);color:var(--c-pu)}
+.tag.redo{background:var(--blue2);color:var(--blue)}
+.pill{display:inline-block;font-size:.68rem;font-weight:800;padding:1px 6px;border-radius:5px;color:#fff;background:var(--b);vertical-align:1px}
+.pill.A{background:var(--a)} .pill.C{background:var(--c)}
+.rot{display:inline-block;white-space:nowrap;font-size:.68rem;font-weight:600;padding:1px 6px;border-radius:5px;border:1px solid var(--line);color:var(--soft);vertical-align:1px}
 .rot.alta{color:var(--green);border-color:var(--green)} .rot.baja{color:var(--red);border-color:var(--red)}
-.tbl tr.grp td{background:var(--bg);padding:8px 6px}
-.mas{display:inline-block;margin:0 0 6px;color:#fff;background:var(--red);border-radius:6px;padding:2px 7px;font-size:.76rem;font-weight:700}
-.tbl tr.lentorow td{padding-top:0}
-.lento{background:var(--warn);color:var(--warnink);border-radius:10px;padding:8px 10px;font-size:.86rem;margin-top:6px}
-.lento .btn{margin:6px 6px 0 0}
-.alert{color:var(--warnink);background:var(--warn);border-radius:6px;padding:1px 6px;font-size:.76rem;display:inline-block;margin-top:2px}
-.plan{border-top:1.5px solid var(--line);padding-top:12px;margin-top:12px}
-.plan:first-child{border-top:0;margin-top:0;padding-top:0}
-.plan h4{margin:0;font-size:1rem}
+.alert{color:var(--warnink);background:var(--warn);border-radius:6px;padding:1px 6px;font-size:.74rem;display:inline-block;margin-top:2px}
+.mas{display:inline-block;margin:4px 0 0;color:#fff;background:var(--red);border-radius:6px;padding:2px 7px;font-size:.74rem;font-weight:700}
+.warn{background:var(--warn);color:var(--warnink);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-top:10px}
+.det td{background:var(--panel2)}
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:4px 2px}
+.calc .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:.84rem}
+.calc .box h4{margin:0 0 6px;font-size:.82rem;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
+.calc ul{margin:0;padding-left:18px}
+.calc li{margin:3px 0}
+.pol{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pol button[aria-pressed=true]{background:var(--ink);color:var(--panel)}
+.menu{position:relative}
+.dots{border:0;background:transparent;cursor:pointer;padding:4px 8px;border-radius:8px;color:var(--soft);font-size:1.2rem;line-height:1}
+.dots:hover{background:var(--panel2)}
 .form{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
-.form label{display:flex;flex-direction:column;gap:4px;font-size:.88rem;font-weight:600}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:600}
 .form label small{font-weight:400;color:var(--soft)}
 .form label:has(textarea){grid-column:1/-1}
-.foot{position:sticky;bottom:0;background:var(--panel);border-top:1.5px solid var(--line);margin:14px -16px -16px;padding:12px 16px;border-radius:0 0 16px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-#aviso{margin-top:14px}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);opacity:0;pointer-events:none;background:var(--ink);color:var(--panel);padding:12px 18px;border-radius:12px;font-weight:600;transition:transform .25s ease,opacity .25s ease;z-index:9;max-width:92vw}
+.plan{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.plan:first-child{border-top:0;margin-top:0;padding-top:0}
+.plan h4{margin:0;font-size:.95rem}
+.lento{background:var(--warn);color:var(--warnink);border-radius:10px;padding:8px 10px;font-size:.84rem;margin-top:6px}
+.foot{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);margin:14px -18px -18px;padding:12px 18px;border-radius:0 0 16px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#aviso{margin-top:0;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);opacity:0;pointer-events:none;background:var(--ink);color:var(--panel);padding:12px 18px;border-radius:12px;font-weight:600;transition:transform .25s ease,opacity .25s ease;z-index:9;max-width:92vw;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-[hidden]{display:none!important}
-@media (max-width:760px){
+.oc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px}
+.oc.atrasada{border-color:var(--c-red);background:linear-gradient(90deg,var(--c-redbg),var(--panel) 40%)}
+@media (max-width:1100px){ .big5{grid-template-columns:repeat(3,1fr)} }
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .side{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;padding:8px 10px;z-index:5;overflow-x:auto;gap:4px}
+  .logo{padding:0 8px 0 4px}.logo small{display:none}
+  .nav{flex-direction:row}
+  .tab{padding:9px 11px;border-left:0;border-bottom:3px solid transparent;white-space:nowrap}
+  .tab[aria-selected=true]{border-bottom-color:#60A5FA}
+  .tab span.l{display:none}
+  .who{display:none}
+  main{padding:16px 14px 60px}
+  .big5{grid-template-columns:repeat(2,1fr)}
   .foot{position:static}
-  #prov{width:100%}
   .tbl.cards thead{display:none}
-  .tbl.cards tr.grp{display:block}
-  .tbl.cards tr.lentorow{display:block}
-  .tbl.cards tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .tbl.cards tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;padding:10px 8px;border-bottom:1px solid var(--line2)}
+  .tbl.cards tr.grp,.tbl.cards tr.det,.tbl.cards tr.lentorow{display:block}
   .tbl.cards td{border:0;padding:0}
-  .tbl.cards td.art{grid-column:1/-1}
-  .tbl.cards td.wide{grid-column:1/-1}
-  .tbl.cards td[data-l]::before{content:attr(data-l);display:block;font-size:.7rem;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
+  .tbl.cards td.art,.tbl.cards td.wide{grid-column:1/-1}
+  .tbl.cards td[data-l]::before{content:attr(data-l);display:block;font-size:.68rem;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
   .tbl.cards td.n{text-align:left}
-  .tbl.cards tr.need{box-shadow:inset 4px 0 0 var(--red);padding-left:10px}
-  .tbl.cards tr.need td:first-child{box-shadow:none}
 }
 </style>
 </head>
 <body>
-<main>
-  <div class="top">
-    <div class="store"><span id="tienda">Planeador de compras</span><small id="subt">Máximos, mínimos y registro de compras · Microsip</small></div>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 2 21h20L12 2Z" fill="#F97316"/><path d="M12 9.5 8 17h8l-4-7.5Z" fill="#0E2A47"/></svg>
+      <div><span id="tienda">Planeador</span><small id="subt">Compras · Microsip</small></div></div>
+    <nav class="nav" role="tablist">
+      <button class="tab" role="tab" data-t="plan" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 13h4M7 17h7"/></svg><span class="l">Planeador</span></button>
+      <button class="tab" role="tab" data-t="seg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="l">Seguimiento de OC</span><span class="n" id="nseg" hidden></span></button>
+      <button class="tab" role="tab" data-t="reg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg><span class="l">Registro de compras</span><span class="n" id="nreg" hidden></span></button>
+      <button class="tab" role="tab" data-t="abc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="l">A/B/C y máximos-mínimos</span></button>
+      <button class="tab" role="tab" data-t="pres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></svg><span class="l">Presentaciones</span><span class="n" id="npres" hidden></span></button>
+      <button class="tab" role="tab" data-t="lim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg><span class="l">Limpieza de catálogo</span><span class="n" id="nlim" hidden></span></button>
+      <button class="tab" role="tab" data-t="cfg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span class="l">Configuración</span></button>
+    </nav>
     <label class="who">Quién captura <input id="quien" type="text" maxlength="40" placeholder="tu nombre"></label>
-  </div>
-
-  <nav class="tabs" role="tablist">
-    <button class="tab" role="tab" data-t="plan" aria-selected="true">Planeador</button>
-    <button class="tab" role="tab" data-t="reg">Registro de compras<span class="n" id="nreg" hidden></span></button>
-    <button class="tab" role="tab" data-t="abc">A/B/C y máximos-mínimos</button>
-    <button class="tab" role="tab" data-t="lim">Limpieza de catálogo<span class="n" id="nlim" hidden></span></button>
-    <button class="tab" role="tab" data-t="cfg">Configuración</button>
-  </nav>
+  </aside>
+<main>
   <div id="aviso" class="warn" hidden></div>
 
   <!-- ============ PLANEADOR ============ -->
   <section id="t-plan">
-    <div class="card">
-      <h2>¿Qué toca comprar hoy?</h2>
-      <p class="sub" id="hoyTxt">Productos A cada semana; productos B y C cada 15 días por proveedor.</p>
-      <div class="chips" id="toca"></div>
-      <div class="kpis" id="kpisPlan"></div>
-      <p class="muted excl" style="margin:12px 0 0"></p>
-    </div>
-    <div class="card">
-      <div class="row">
-        <div class="seg" id="segVista"><button data-v="prov" aria-pressed="true">Por proveedor</button><button data-v="todos" aria-pressed="false">Todos los productos</button></div>
-        <select id="prov" class="grow" aria-label="Proveedor"></select>
-        <input type="text" id="qPlan" class="grow" placeholder="Buscar artículo, clave o proveedor" hidden>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div class="seg" id="segClase"><button data-c="" aria-pressed="false">Todas</button><button data-c="A" aria-pressed="true">A</button><button data-c="B" aria-pressed="false">B</button><button data-c="C" aria-pressed="false">C</button></div>
-        <label class="muted"><input type="checkbox" id="soloSug" checked> Solo lo que hay que pedir</label>
-      </div>
-      <p class="muted" id="planInfo" style="margin:10px 0 0"></p>
-      <div class="scroll alto" style="margin-top:10px">
-        <table class="tbl cards" id="tblPlan">
-          <thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n" title="Stock de seguridad">Mín</th><th class="n" title="Cuando existencia + por recibir llega aquí, se pide">P. reorden</th><th class="n">Máx</th><th class="n">Sugerido</th><th class="n">Compro</th><th>Razón si es distinto</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="foot" id="footPlan">
-        <label class="muted" id="lblFolio">Folio de la OC <input type="text" id="folio" maxlength="30" placeholder="opcional, se liga solo" style="width:170px"></label>
-        <span class="grow muted" id="planEstado"></span>
-        <button class="btn btn-y" id="bajarHoy" hidden title="Archivo CLAVE,UNIDADES,PRECIO para importar la orden de compra en Microsip">Archivo para Microsip</button>
-        <button class="btn btn-main" id="guardar">Guardar decisión</button>
+    <div class="head">
+      <div><h1>Planeador de compras</h1><p>Qué comprar, cuánto y a qué proveedor.</p></div>
+      <div class="headr">
+        <div class="datechip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><div><b>Hoy</b><span id="hoyCorto"></span></div></div>
+        <button class="btn btn-main" id="generar" title="Guarda lo capturado de todos los proveedores y descarga un archivo por proveedor para importar la OC en Microsip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 14h6M12 11v6"/></svg>Generar órdenes</button>
       </div>
     </div>
+    <div class="big5" id="kp"></div>
+    <div class="budget">
+      <b>Presupuesto</b> <input type="number" id="presu" min="0" step="1000" placeholder="sin límite" aria-label="Presupuesto con IVA">
+      <div class="meter" title="Lo que cabe del presupuesto"><i id="presuBar" style="width:0"></i></div>
+      <span class="muted" id="presuTxt">Escribe cuánto puedes gastar (con IVA) y verás qué cabe por prioridad. Nada se oculta.</span>
+    </div>
+    <div class="bar">
+      <div class="search"><input type="text" id="qPlan" placeholder="Buscar producto o proveedor…" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <select id="fProv" aria-label="Proveedor"><option value="*">Todos los proveedores</option></select>
+      <select id="fEst" aria-label="Estado">
+        <option value="necesita">Lo que hay que comprar</option><option value="critico">Críticos</option><option value="pedir">Por pedir</option>
+        <option value="proximo">Próximos</option><option value="revisar">Revisar datos</option><option value="bajo_pedido">Solo bajo pedido</option>
+        <option value="bien">Bien</option><option value="todos">Todos los estados</option></select>
+      <div class="seg" id="segClase"><button data-c="" aria-pressed="true">A·B·C</button><button data-c="A" aria-pressed="false">A</button><button data-c="B" aria-pressed="false">B</button><button data-c="C" aria-pressed="false">C</button></div>
+      <button class="btn btn-ghost" id="limpiarF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg>Limpiar filtros</button>
+    </div>
+    <p class="muted excl" style="margin:10px 2px 0"></p>
+    <div id="provs"></div>
   </section>
 
   <!-- ============ REGISTRO ============ -->
@@ -255,6 +346,49 @@ textarea{width:100%;min-height:200px;resize:vertical}
     </div>
   </section>
 
+  <!-- ============ SEGUIMIENTO DE OC ============ -->
+  <section id="t-seg" hidden>
+    <div class="head"><div><h1>Seguimiento de órdenes de compra</h1><p>Lo que falta por recibir, las órdenes atrasadas y los planes que todavía no son OC.</p></div>
+      <div class="headr"><button class="btn btn-ghost" id="recargarSeg">Actualizar</button></div></div>
+    <div class="kpis" id="kpisSeg"></div>
+    <div class="card">
+      <h2>Órdenes abiertas</h2>
+      <p class="sub">Se cuenta lo que falta de cada renglón, aunque la orden ya tenga una recepción parcial. Una orden <b>atrasada</b> no se cuenta como "por recibir" hasta que confirmes que sigue en camino: así no se compra dos veces ni se olvida.</p>
+      <div id="ocsSeg"></div>
+    </div>
+    <div class="card">
+      <h2>Planes guardados que todavía no son OC</h2>
+      <p class="sub">Un plan guardado no es una orden emitida. Captúrala en Microsip (puedes bajar el archivo) y se liga sola.</p>
+      <div id="planesSeg"></div>
+    </div>
+    <div class="card">
+      <h2>Días de entrega reales</h2>
+      <p class="sub">Medidos de la orden de compra a su primera recepción en Microsip (último año). Si escribes los días en Configuración, mandan los tuyos; si no, se usan los medidos (con 2 o más entregas).</p>
+      <div class="scroll"><table class="tbl" id="tblLt"><thead><tr><th>Proveedor</th><th class="n">Medido (mediana)</th><th class="n">Peor entrega</th><th class="n">Entregas medidas</th><th class="n">Escrito por ti</th><th class="n">Se usa</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ PRESENTACIONES ============ -->
+  <section id="t-pres" hidden>
+    <div class="head"><div><h1>Presentaciones</h1><p>Tonelada, millar, viaje… cuando una clave es el mismo inventario que otra en otra unidad.</p></div></div>
+    <div class="warn">Si confirmas que <b>TONELADA CEMENTO 50 KG = 20 × CEMENTO 50 KG</b>, sus ventas y existencias se suman al saco y se calcula una sola compra, sin duplicar. Ninguna sugerencia cuenta hasta que la confirmes. Las del archivo de equivalencias de Microsip ya cuentan.</div>
+    <div class="card">
+      <h2>Sugeridas por revisar</h2>
+      <p class="sub">Encontradas por el nombre (misma medida, a lo más una palabra distinta). Revisa el artículo base y el factor antes de confirmar.</p>
+      <div class="scroll"><table class="tbl cards" id="tblSug"><thead><tr><th>Presentación</th><th>Es igual a</th><th class="n">Factor</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Presentaciones sin artículo base</h2>
+      <p class="sub">Parecen presentación pero no encontré su artículo base. Busca el artículo por clave o nombre y escribe cuántas unidades base trae (ej. varilla: piezas por tonelada).</p>
+      <div class="scroll"><table class="tbl cards" id="tblSinBase"><thead><tr><th>Presentación</th><th>Artículo base</th><th class="n">Factor</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Las que ya cuentan</h2>
+      <div class="scroll"><table class="tbl" id="tblEqv"><thead><tr><th>Presentación</th><th>Se suma a</th><th class="n">Factor</th><th>Origen</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="muted" id="eqvRech"></p>
+    </div>
+  </section>
+
   <!-- ============ CONFIGURACIÓN ============ -->
   <section id="t-cfg" hidden>
     <div class="card">
@@ -287,6 +421,7 @@ textarea{width:100%;min-height:200px;resize:vertical}
     </div>
   </section>
 </main>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -343,12 +478,16 @@ function selRazon(val, attrs = ""){
 $$(".tab").forEach(b => b.addEventListener("click", () => abrir(b.dataset.t)));
 function abrir(t){
   $$(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
-  ["plan","reg","abc","lim","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
+  ["plan","seg","reg","abc","pres","lim","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
   try { localStorage.setItem("compras_tab", t); } catch(e) {}
+  if(t === "plan" && !P) cargarPlan();
+  if(t === "seg") cargarSeg();
   if(t === "reg" && !REG) cargarReg();
   if(t === "abc" && !ABC) cargarAbc();
+  if(t === "pres") cargarPres();
   if(t === "cfg") pintarCfg();
   if(t === "lim") cargarLim();
+  window.scrollTo(0, 0);
 }
 
 /* ================= carga general ================= */
@@ -356,187 +495,371 @@ async function cargar(){
   if(!K){ aviso("Esta liga está incompleta. Pide la liga del planeador al administrador."); return; }
   try { D = await api("datos"); } catch(e) { aviso(esc(e.message) + "<br><small>Si el mensaje no es claro, mándale una captura a quien instaló el planeador.</small>"); return; }
   aviso("");
-  $("#tienda").textContent = (D.cfg.tienda || "Planeador de compras");
-  $("#subt").textContent = "Planeador de compras · " + (D.cfg.empresa || "") + (soloLectura() ? " · solo consulta" : "");
+  $("#tienda").textContent = (D.cfg.tienda || "Planeador");
+  $("#subt").textContent = (D.cfg.empresa || "Compras") + (soloLectura() ? " · solo consulta" : "");
+  $("#hoyCorto").textContent = fechaL(D.hoy);
   document.body.classList.toggle("ro", soloLectura());
-  $$("#guardar,#reconstruir,#recalcular,#guardarGen,#guardarProv,#guardarRaz").forEach(b => b.hidden = soloLectura());
+  $$("#generar,#reconstruir,#recalcular,#guardarGen,#guardarProv,#guardarRaz").forEach(b => b.hidden = soloLectura());
   const nr = (D.falta_razon || 0) + (D.planes_sin_oc || 0);
   $("#nreg").hidden = !nr; $("#nreg").textContent = nr;
   const avisos = [];
-  if(!D.mes) avisos.push("Todavía no hay máximos y mínimos calculados. Ve a <b>A/B y máximos-mínimos</b> y pulsa <b>Recalcular este mes</b>.");
+  if(!D.mes) avisos.push("Todavía no hay máximos y mínimos calculados. Ve a <b>A/B/C y máximos-mínimos</b> y pulsa <b>Recalcular este mes</b>.");
   if(!D.oc_detalle) avisos.push("No llegan renglones de órdenes de compra (DOCTOS_CM_DET) desde Microsip; sin eso no se puede ligar ni reconstruir.");
   if(avisos.length) aviso(avisos.join("<br>"));
-  pintarToca(); llenarProv();
+  pintarExcl();
   let t = "plan"; try { t = localStorage.getItem("compras_tab") || "plan"; } catch(e) {}
   abrir(t);
-  if(t === "plan") cargarPlan();
+  if(t !== "seg") api("seguimiento").then(r => { SEG = r; marcarSeg(); }).catch(() => {});
+  if(t !== "pres") api("equivalencias").then(r => { PRES = r; marcarPres(); }).catch(() => {});
 }
-
-function tocaA(p){ return p.activo && p.n_a > 0 && p.ult_a !== D.hoy && (D.dow === Number(p.dia_rev_a) || (p.ult_a && dias(p.ult_a, D.hoy) > 7)); }
-function tocaB(p){ return p.activo && p.n_b > 0 && p.ult_b !== D.hoy && (!p.ult_b || dias(p.ult_b, D.hoy) >= Number(p.frec_rev_b || 15)); }
-function tocaC(p){ return p.activo && p.n_c > 0 && p.ult_c !== D.hoy && (!p.ult_c || dias(p.ult_c, D.hoy) >= Number(p.frec_rev_b || 15)); }
 function pintarExcl(){
-  const L = D.excluidos || [], lin = (D.cfg.lineas_excluidas || "").trim();
-  const t = L.length || lin ? "<b>No se toman en cuenta</b> (no entran al A/B/C, a los máximos y mínimos ni al planeador): "
-    + (L.length ? L.map(x => `${esc(x.linea)} (${n0(x.articulos)} artículo${x.articulos == 1 ? "" : "s"})`).join(" · ") : "líneas que digan " + esc(lin.replace(/\|/g, ", ")))
-    + ". Los tinacos se fabrican aquí mismo y su resurtido no pasa por compras." : "";
+  const L = D.excluidos || [];
+  const t = L.length ? "<b>No se toman en cuenta</b> (no entran al A/B/C, a los máximos y mínimos ni al planeador): "
+    + L.map(x => `${esc(x.linea)} (${n0(x.articulos)} artículo${x.articulos == 1 ? "" : "s"})`).join(" · ")
+    + ". Los tinacos se fabrican aquí mismo, los servicios no son mercancía y las presentaciones se suman a su artículo base." : "";
   $$(".excl").forEach(e => e.innerHTML = t);
 }
-function pintarToca(){
-  $("#hoyTxt").textContent = "Hoy es " + DIAS[D.dow] + " " + fechaL(D.hoy) + ". Productos A cada semana; productos B y C cada " + (D.cfg.frec_b || 15) + " días por proveedor." + (D.mes ? " Máximos y mínimos de " + mesTxt(D.mes) + "." : "");
-  pintarExcl();
-  const L = [];
-  for(const p of D.proveedores){
-    if(tocaA(p)) L.push({p, c:"A", t:`<b>${esc(p.nombre)}</b> · A <small>${p.bajo_a} por pedir</small>`});
-    if(tocaB(p)) L.push({p, c:"B", t:`<b>${esc(p.nombre)}</b> · B <small>${p.bajo_b} por pedir${p.ult_b ? "" : " · nunca revisado"}</small>`});
-    if(tocaC(p)) L.push({p, c:"C", t:`<b>${esc(p.nombre)}</b> · C <small>${p.bajo_c} por pedir${p.ult_c ? "" : " · nunca revisado"}</small>`});
-  }
-  const bajo = x => x.p["bajo_" + x.c.toLowerCase()];
-  L.sort((x, y) => (x.c > y.c) - (x.c < y.c) || (bajo(y) - bajo(x)));
-  $("#toca").innerHTML = L.length ? L.map((x, i) => `<button class="chip ${x.c === "A" ? "a" : ""}" data-i="${i}">${x.t}</button>`).join("") : `<span class="muted">Hoy no toca revisar a ningún proveedor. Puedes abrir cualquiera abajo.</span>`;
-  $$("#toca .chip").forEach(b => b.addEventListener("click", () => { const x = L[b.dataset.i]; ponerVista("prov"); $("#prov").value = x.p.proveedor_id; ponerClase(x.c); cargarPlan(); $("#prov").scrollIntoView({behavior:"smooth", block:"center"}); }));
-  $("#kpisPlan").innerHTML = [
-    [D.falta_razon, "decisiones sin razón", D.falta_razon > 0],
-    [D.planes_sin_oc, "planes sin OC en Microsip", D.planes_sin_oc > 0],
-    [D.oc_sin_plan, "OCs (60 días) sin plan", D.oc_sin_plan > 0],
-    [D.sin_proveedor, "productos sin proveedor", D.sin_proveedor > 0],
-  ].map(([v, t, bad]) => `<div class="kpi ${bad ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
-}
-function llenarProv(){
-  const sel = $("#prov"), v = sel.value;
-  const con = D.proveedores.filter(p => p.n_a + p.n_b + p.n_c > 0);
-  sel.innerHTML = con.map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.nombre)} — ${p.n_a} A · ${p.n_b} B · ${p.n_c} C${p.bajo_a + p.bajo_b + p.bajo_c ? " · " + (p.bajo_a + p.bajo_b + p.bajo_c) + " por pedir" : ""}</option>`).join("")
-    + (D.sin_proveedor ? `<option value="">(Sin proveedor) — ${D.sin_proveedor} productos</option>` : "");
-  if(v !== "" && con.some(p => p.proveedor_id === v)) sel.value = v;
-}
-function ponerClase(c){ clase = c; $$("#segClase button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === c)); }
-$$("#segClase button").forEach(b => b.addEventListener("click", () => { ponerClase(b.dataset.c); pintarPlan(); }));
-$("#prov").addEventListener("change", cargarPlan);
-$("#soloSug").addEventListener("change", pintarPlan);
 
 /* ================= planeador ================= */
-let vista = "prov";
-function ponerVista(v){
-  vista = v; $$("#segVista button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === v));
-  $("#prov").hidden = v === "todos"; $("#qPlan").hidden = v !== "todos"; $("#lblFolio").hidden = v === "todos";
-  $("#guardar").textContent = v === "todos" ? "Guardar todo" : "Guardar decisión";
-}
-$$("#segVista button").forEach(b => b.addEventListener("click", () => { ponerVista(b.dataset.v); ponerClase(vista === "todos" ? "" : (clase || "A")); cargarPlan(); }));
-$("#qPlan").addEventListener("input", () => { clearTimeout(pintarPlan._t); pintarPlan._t = setTimeout(pintarPlan, 250); });
-function deMas(f, c){   // cuánto se compra arriba del sugerido y cuánto quedaría arriba del máximo
-  c = num(c); if(c === null || c <= 0) return null;
-  const sobre = num(f.sugerido) === null ? null : c - num(f.sugerido);
-  // solo cuenta lo que esta compra pone arriba del máximo (si ya estaba arriba antes, no es culpa de esta compra)
-  const arriba = Math.min(c, Math.max(f.existencia || 0, 0) + (f.pendiente || 0) + c - (f.maximo ?? Infinity));
-  return (sobre > 0 || arriba > 0) ? {sobre: Math.max(sobre || 0, 0), arriba: Math.max(arriba, 0)} : null;
-}
-function avisoMas(m, u){ return m ? `<span class="mas">⚠ Compras de más${m.sobre ? ": +" + n0(m.sobre) + " " + esc(u || "") + " sobre lo sugerido" : ""}${m.arriba ? " · quedarías " + n0(m.arriba) + " arriba del máximo" : ""}</span>` : ""; }
-function casiNoSeVende(f){
-  if(f.lento === "queda" || f.rotacion === "nuevo") return null;
-  const lim = Number(D.cfg.dias_lento || 90), dsv = f.ultima_venta ? dias(f.ultima_venta, D.hoy) : null;
-  const alcanza = f.vd > 0 ? Math.round(Math.max(f.existencia, 0) / f.vd) : null;
-  const motivos = [];
-  const meses = f.dias_periodo ? Math.round(f.dias_periodo / 30.4) : null;
-  const vendio = f.unidades !== null && f.unidades !== undefined && meses ? `vendió ${n0(f.unidades)} ${esc(f.unidad || "")} en ${meses} meses` : null;
-  if(f.rotacion === "baja") motivos.push((vendio ? vendio + ", " : "") + `en solo ${n0(f.semanas_venta)} de ${n0(f.semanas)} semanas`);
-  else if(f.vd > 0 && f.vd * 30 < 1) motivos.push(vendio || `vende menos de 1 al mes`);
-  if(f.tickets !== null && f.tickets <= 1) motivos.push("se vendió una sola vez");
-  if(dsv !== null && dsv > lim) motivos.push(`última venta hace ${dsv} días`);
-  if(alcanza !== null && alcanza > lim) motivos.push(`lo que tienes alcanza para ${n0(alcanza)} días`);
-  return motivos.length ? motivos : null;
-}
-const necesita = f => Math.max(f.existencia, 0) + f.pendiente <= (f.punto_reorden ?? f.minimo);
 const ROT = {alta: "rota mucho", media: "rota medio", baja: "rota poco", nuevo: "nuevo"};
+const EST = {critico: "Crítico", pedir: "Pedir", proximo: "Próximo", bien: "Bien", bajo_pedido: "Bajo pedido"};
+const EST_ORD = {critico: 0, pedir: 1, proximo: 2, bien: 3, bajo_pedido: 4};
+const POL = {minimo: "Mantener un mínimo", bajo_pedido: "Solo bajo pedido", pausar: "Pausar resurtido"};
+let PROVFULL = {}, fEst = "necesita", abiertos = new Set(), cerrados = new Set(), SEG = null, PRES = null;
+let presu = null; try { presu = num(localStorage.getItem("compras_presu")); } catch(e) {}
+if(presu) $("#presu").value = presu;
+const ivaF = () => 1 + (num(D && D.cfg.iva) ?? 16) / 100;
+const llave = f => f.articulo_id + "|" + (f.proveedor_id || "");
+const revisa = f => (f.revisar || []).length > 0;
+const pos = f => Math.max(f.existencia || 0, 0) + (f.pendiente || 0);
+
 async function cargarPlan(){
-  if(!D || !D.mes) { $("#tblPlan tbody").innerHTML = ""; return; }
-  $("#tblPlan tbody").innerHTML = `<tr><td colspan="9" class="muted">Cargando…</td></tr>`;
-  try { P = await api("planeador", vista === "todos" ? {todos: "si"} : {proveedor_id: $("#prov").value}); } catch(e) { toast(e.message); return; }
-  for(const f of P.filas){ f._c = f.comprado ?? f.sugerido; f._r = f.razon === "igual" ? "" : (f.razon || ""); f._n = f.nota || ""; }
-  if(vista === "prov" && clase && !P.filas.some(f => f.clase === clase) && P.filas.length) ponerClase(["A", "B", "C"].find(c => P.filas.some(f => f.clase === c)));
-  $("#folio").value = (P.plan && P.plan.folio) || "";
+  if(!D) return;
+  if(!D.mes){ $("#kp").innerHTML = ""; $("#provs").innerHTML = `<div class="card muted">Todavía no hay máximos y mínimos calculados. Ve a <b>A/B/C y máximos-mínimos</b> y pulsa <b>Recalcular este mes</b>.</div>`; return; }
+  $("#provs").innerHTML = `<div class="card muted">Cargando…</div>`;
+  try { P = await api("planeador", {todos: "si"}); } catch(e) { toast(e.message); $("#provs").innerHTML = ""; return; }
+  PROVFULL = {}; prep(P.filas);
+  const sel = $("#fProv"), v = sel.value;
+  sel.innerHTML = `<option value="*">Todos los proveedores</option>` + (P.resumen.proveedores || []).map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.proveedor || "Sin proveedor")}</option>`).join("");
+  if([...sel.options].some(o => o.value === v)) sel.value = v;
   pintarPlan();
 }
-function filasPlan(){
-  const q = vista === "todos" ? $("#qPlan").value.trim().toLowerCase() : "";
-  return P.filas.filter(f => (!clase || f.clase === clase) && (!$("#soloSug").checked || f.sugerido > 0 || (f.comprado ?? 0) > 0 || f._c > 0 || necesita(f))
-    && (!q || (f.articulo + " " + f.clave + " " + (f.proveedor || "")).toLowerCase().includes(q)));
+function prep(L){ for(const f of L) if(f._c === undefined){ f._c = f.comprado ?? f.sugerido; f._r = f.razon === "igual" ? "" : (f.razon || ""); f._n = f.nota || ""; } }
+function todas(){
+  const m = new Map(P.filas.map(f => [llave(f), f]));
+  for(const L of Object.values(PROVFULL)) for(const f of L) if(!m.has(llave(f))) m.set(llave(f), f);
+  return [...m.values()];
+}
+function pasa(f){
+  const q = $("#qPlan").value.trim().toLowerCase(), pv = $("#fProv").value;
+  if(q && !(f.articulo + " " + f.clave + " " + (f.proveedor || "")).toLowerCase().includes(q)) return false;
+  if(pv !== "*" && (f.proveedor_id || "") !== pv) return false;
+  if(clase && f.clase !== clase) return false;
+  if(fEst === "todos") return true;
+  if(fEst === "necesita") return ["critico", "pedir"].includes(f.estado) || (f._c || 0) > 0 || (f.comprado !== null && f.comprado !== undefined);
+  if(fEst === "revisar") return revisa(f);
+  return f.estado === fEst;
+}
+function cmpPrio(a, b){
+  const ca = {A: 0, B: 1, C: 2}, cob = f => f.vd > 0 ? pos(f) / f.vd : 9999;
+  return (EST_ORD[a.estado] ?? 5) - (EST_ORD[b.estado] ?? 5) || (ca[a.clase] ?? 3) - (ca[b.clase] ?? 3) || cob(a) - cob(b);
+}
+function presupuesto(L){   // marca lo que no cabe, por prioridad: críticos A primero; nada se oculta
+  let dentro = 0, fuera = 0, nF = 0;
+  for(const f of L) f._fuera = false;
+  for(const f of L.filter(f => (f._c || 0) > 0).sort(cmpPrio)){
+    const c = (f._c || 0) * (f.costo || 0) * ivaF();
+    if(presu && dentro + c > presu){ f._fuera = true; fuera += c; nF++; } else dentro += c;
+  }
+  return {dentro, fuera, nF};
+}
+function deMas(f, c){   // compra de más contra redondeo por empaque
+  c = num(c); if(c === null || c <= 0) return null;
+  const s = num(f.sugerido) ?? 0, sobre = c - s, emp = num(f.empaque) || 1;
+  const arriba = Math.min(c, pos(f) + c - (f.maximo ?? Infinity));
+  if(sobre > 0 && emp > 1 && c % emp === 0 && sobre < emp) return {redondeo: true, sobre};
+  return (sobre > 0 || arriba > 0) ? {sobre: Math.max(sobre, 0), arriba: Math.max(arriba, 0)} : null;
+}
+function avisoMas(m, u){
+  if(!m) return "";
+  if(m.redondeo) return `<span class="tag redo">Redondeo a empaque (+${n0(m.sobre)})</span>`;
+  return `<span class="mas">⚠ Compras de más${m.sobre ? ": +" + n0(m.sobre) + " " + esc(u || "") : ""}${m.arriba ? " · " + n0(m.arriba) + " arriba del máx." : ""}</span>`;
+}
+const iniciales = s => String(s || "?").replace(/S\.?A\.?B?.*|DE C\.?V\.?/gi, "").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+const colorDe = s => { let h = 0; for(const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) % 360; return `hsl(${h} 55% 42%)`; };
+
+function pintarKpis(L){
+  const conIva = ivaF(), comp = L.filter(f => (f._c || 0) > 0), sum = A => A.reduce((a, f) => a + (f._c || 0) * (f.costo || 0), 0);
+  const cr = L.filter(f => f.estado === "critico"), pe = L.filter(f => f.estado === "pedir"), rv = L.filter(f => revisa(f) && (["critico", "pedir"].includes(f.estado) || (f._c || 0) > 0));
+  const est = (P.resumen && P.resumen.estados) || {};
+  const sinCosto = comp.filter(f => !(f.costo > 0)).length;
+  const K5 = [
+    ["b", "necesita", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11.5l2-8H6"/></svg>`, "Compra sugerida hoy", money(sum(comp) * conIva), `${comp.length} productos · con IVA${sinCosto ? " · " + sinCosto + " sin costo" : ""}`],
+    ["r", "critico", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 10v4M12 17.5v.5"/></svg>`, "Urgentes", `${cr.length} <small>productos</small>`, money(sum(cr) * conIva) + " · se acaban antes de la entrega"],
+    ["o", "pedir", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`, "Por pedir", `${pe.length} <small>productos</small>`, money(sum(pe) * conIva)],
+    ["p", "revisar", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v3M11 14h.01"/></svg>`, "Revisar datos", `${rv.length} <small>productos</small>`, "cantidad provisional hasta corregir"],
+    ["g", "bien", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>`, "Sin necesidad de compra", `${n0(est.bien || 0)} <small>productos</small>`, `${n0(est.proximo || 0)} próximos a pedir`],
+  ];
+  $("#kp").innerHTML = K5.map(([c, f, ic, t, v, s]) => `<button class="bk ${c}" data-f="${f}" aria-pressed="${fEst === f}"><div class="ic">${ic}</div><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s}</div></button>`).join("");
+  $$("#kp .bk").forEach(b => b.addEventListener("click", () => { fEst = fEst === b.dataset.f && b.dataset.f !== "necesita" ? "necesita" : b.dataset.f; $("#fEst").value = fEst; pintarPlan(); }));
 }
 function pintarPlan(){
   if(!P) return;
-  const filas = filasPlan(), total = P.filas.filter(f => !clase || f.clase === clase).length, cl = clase ? "productos " + clase : "productos";
-  $("#planInfo").innerHTML = `${filas.length} de ${total} ${cl}${vista === "todos" ? " que hay que pedir o ya se capturaron hoy, de todos los proveedores" : ""} · regla: ${P.regla === "hasta_maximo" ? "completar hasta el máximo" : "pedir cuando existencia + por recibir llega al punto de reorden, hasta el máximo"}`
-    + (vista === "prov" && P.plan ? ` · <b>guardado hoy</b>${P.plan.folio_oc ? " · ligado a la OC " + esc(P.plan.folio_oc) : ""}` : "");
-  let prev = null;
-  $("#tblPlan tbody").innerHTML = filas.length ? filas.map(f => {
-    const i = P.filas.indexOf(f), dist = num(f._c) !== num(f.sugerido), sinProv = !f.proveedor_id;
-    let cab = "";
-    if(vista === "todos" && f.proveedor_id !== prev){
-      prev = f.proveedor_id;
-      const n = filas.filter(x => x.proveedor_id === f.proveedor_id && x.sugerido > 0).length;
-      cab = `<tr class="grp"><td colspan="9"><b>${esc(f.proveedor || "Sin proveedor")}</b> <span class="muted">· ${n} por pedir</span></td></tr>`;
-    }
-    return cab + `<tr class="${necesita(f) ? "need" : ""}" data-i="${i}">
-      <td class="art"><span class="pill ${f.clase}">${f.clase}</span> <b>${esc(f.articulo)}</b> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}<div class="muted">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque ? " · empaque " + n0(f.empaque) : ""}</div><div class="muted">Última venta: <b>${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " días)" : "—"}</b> · Última recepción: <b>${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) + " " + esc(f.unidad || "") + (f.rec_proveedor && String(f.rec_prov || "") !== String(f.proveedor_id || "") ? " de " + esc(f.rec_proveedor) : "") : "—"}</b>${f.ult_fecha && f.ult_fecha !== f.rec_fecha ? " · última OC " + fecha(f.ult_fecha) + " (" + n0(f.ult_unidades) + ")" : ""}</div>${f.alerta ? `<span class="alert">${esc(f.alerta)}</span>` : ""}</td>
-      <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
-      <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="muted">${esc(f.folios)}</div>` : ""}</td>
-      <td class="n" data-l="Mín">${n0(f.minimo)}</td>
-      <td class="n" data-l="P. reorden"><b>${n0(f.punto_reorden)}</b></td>
-      <td class="n" data-l="Máx">${n0(f.maximo)}</td>
-      <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span></td>
-      <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar"></td>
-      <td class="wide" data-l="Razón">${avisoMas(deMas(f, f._c), f.unidad)}${sinProv ? `<span class="muted">asigna proveedor en Configuración</span>` : dist ? selRazon(f._r, `class="r" ${soloLectura() ? "disabled" : ""}`) + `<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}" ${soloLectura() ? "disabled" : ""}>` : `<span class="muted">igual al sugerido</span>`}</td>
-    </tr>${(() => { const m = casiNoSeVende(f); return m ? `<tr class="lentorow" data-li="${i}"><td colspan="9"><div class="lento"><b>⚠ Este producto casi no se vende</b>: ${m.join(" · ")}. Valora si se queda o se va.${soloLectura() ? "" : ` <button class="btn btn-ghost btn-sm" data-lento="queda">Se queda</button><button class="btn btn-y btn-sm" data-lento="se_va">Se va (pausar)</button>`}</div></td></tr>` : ""; })()}`; }).join("") : `<tr><td colspan="9" class="muted">${total ? "Nada que pedir. Quita la palomita de arriba para ver todos." : vista === "todos" ? "No hay nada que pedir." : "Este proveedor no tiene " + cl + "."}</td></tr>`;
-  $$("#tblPlan tbody tr[data-i]").forEach(tr => {
-    const f = P.filas[tr.dataset.i];
-    tr.querySelector(".c").addEventListener("change", e => { f._c = num(e.target.value); pintarPlan(); });
-    const r = tr.querySelector(".r"); if(r) r.addEventListener("change", e => { f._r = e.target.value; });
-    const nt = tr.querySelector(".nota"); if(nt) nt.addEventListener("input", e => { f._n = e.target.value; });
-  });
-  $$("#tblPlan tbody tr[data-li]").forEach(tr => {
-    const f = P.filas[tr.dataset.li];
-    tr.querySelectorAll("button[data-lento]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
-      await api("revision", {articulo_id: f.articulo_id, tipo: "lento", decision: b.dataset.lento, grupo: "", nota: (casiNoSeVende(f) || []).join(" · ")});
-      if(b.dataset.lento === "se_va"){ P.filas.splice(P.filas.indexOf(f), 1); toast("Pausado: ya no se calcula ni sale aquí. Lo regresas en Limpieza de catálogo → Pausados."); }
-      else { f.lento = "queda"; toast("Se queda ✓"); }
-      pintarPlan();
-    })));
-  });
-  const sinProv = vista === "prov" && !$("#prov").value;
-  $("#guardar").disabled = sinProv;
-  $("#bajarHoy").hidden = soloLectura() || !(vista === "todos" ? P.filas.some(f => f.comprado > 0) : (P.plan && P.filas.some(f => f.comprado > 0)));
-  $("#bajarHoy").textContent = vista === "todos" ? "Archivos para Microsip (de hoy)" : "Archivo para Microsip";
-  $("#planEstado").textContent = sinProv ? "Asigna proveedor a estos productos en Configuración para poder planearlos." : "";
+  const L = todas(), pr = presupuesto(L);
+  pintarKpis(L);
+  // presupuesto
+  if(presu){
+    const tot = pr.dentro + pr.fuera;
+    $("#presuBar").style.width = Math.min(100, tot ? pr.dentro / presu * 100 : 0) + "%";
+    $("#presuTxt").innerHTML = `Caben <b>${money(pr.dentro)}</b> de ${money(presu)}` + (pr.nF ? ` · <b>${pr.nF}</b> productos (${money(pr.fuera)}) quedan pendientes, marcados abajo` : " · todo lo capturado cabe");
+  } else { $("#presuBar").style.width = "0"; $("#presuTxt").textContent = "Escribe cuánto puedes gastar (con IVA) y verás qué cabe por prioridad. Nada se oculta."; }
+  // agrupar por proveedor
+  const V = L.filter(pasa), g = new Map();
+  for(const f of V){ const k = f.proveedor_id || ""; if(!g.has(k)) g.set(k, []); g.get(k).push(f); }
+  const res = new Map((P.resumen.proveedores || []).map(p => [p.proveedor_id || "", p]));
+  if(["bien", "proximo", "todos"].includes(fEst)) for(const [k] of res) if(!g.has(k) && ($("#fProv").value === "*" || $("#fProv").value === k)) g.set(k, []);
+  const orden = [...g.entries()].sort((a, b) => (a[0] === "") - (b[0] === "") || ((res.get(b[0]) || {}).critico || 0) - ((res.get(a[0]) || {}).critico || 0)
+     || ((res.get(b[0]) || {}).pedir || 0) - ((res.get(a[0]) || {}).pedir || 0) || ((res.get(b[0]) || {}).costo || 0) - ((res.get(a[0]) || {}).costo || 0));
+  $("#provs").innerHTML = orden.length ? orden.map(([k, F]) => tarjeta(k, F.sort(cmpPrio), res.get(k) || {})).join("")
+    : `<div class="card muted">Nada con estos filtros. ${fEst === "necesita" ? "No hay nada urgente que comprar. " : ""}<button class="mas-link" id="verTodo">Ver todos los estados</button></div>`;
+  const vt = $("#verTodo"); if(vt) vt.addEventListener("click", () => { fEst = "todos"; $("#fEst").value = "todos"; pintarPlan(); });
+  conectar();
 }
-$("#bajarHoy").addEventListener("click", () => ocupado($("#bajarHoy"), () => bajarTxtHoy(vista === "prov" ? $("#prov").value : "")));
-$("#guardar").addEventListener("click", () => ocupado($("#guardar"), async () => {
-  const lineas = P.filas.filter(f => (!clase || f.clase === clase) && f.proveedor_id && ((f.sugerido || 0) > 0 || (f._c || 0) > 0 || f.comprado !== null));
-  if(!lineas.length) throw new Error("No hay renglones para guardar.");
-  for(const f of lineas){
-    if(f._c === null || f._c < 0) throw new Error("Falta la cantidad de " + f.articulo + " (pon 0 si no compras).");
+function tarjeta(k, F, r){
+  const nombre = (F[0] && F[0].proveedor) || r.proveedor || "Sin proveedor", total = F.reduce((a, f) => a + (f._c || 0) * (f.costo || 0), 0);
+  const porComprar = F.filter(f => (f._c || 0) > 0).length, abierto = !cerrados.has(k);
+  const nAll = (r.critico || 0) + (r.pedir || 0) + (r.proximo || 0) + (r.bien || 0);
+  const full = !!PROVFULL[k];
+  return `<div class="prov ${abierto ? "" : "cerrado"}" data-p="${esc(k)}">
+    <div class="ph">
+      <div class="av" style="background:${k ? colorDe(nombre) : "#94A3B8"}">${k ? esc(iniciales(nombre)) : "?"}</div>
+      <div class="pn"><b>${esc(nombre)}</b><span>${porComprar} producto${porComprar === 1 ? "" : "s"} por comprar${k ? "" : " · asigna proveedor en Configuración → Ajustes por artículo"}</span></div>
+      <div class="oe"><span>Orden estimada</span><b>${money(total)}</b><small>${money(total * ivaF())} con IVA</small></div>
+      <div class="cnt"><div class="cn r"><b>${r.critico || 0}</b><span>Críticos</span></div><div class="cn o"><b>${r.pedir || 0}</b><span>Por pedir</span></div>
+        <div class="cn y"><b>${r.proximo || 0}</b><span>Próximos</span></div><div class="cn g"><b>${r.bien || 0}</b><span>Bien</span></div>${r.revisar ? `<div class="cn p"><b>${r.revisar}</b><span>Revisar</span></div>` : ""}</div>
+      <button class="tog" aria-label="Abrir o cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 15 6-6 6 6"/></svg></button>
+    </div>
+    <div class="pb">
+      ${F.length ? `<div class="scroll"><table class="tbl cards"><thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Sugerido</th><th class="n">Compro</th><th class="n">Costo</th><th>Estado</th><th></th></tr></thead><tbody>
+        ${F.map(renglon).join("")}</tbody></table></div>` : `<p class="muted" style="padding:0 18px 12px">Nada con estos filtros en este proveedor.</p>`}
+      <div class="pf">
+        ${!full && nAll > F.length ? `<button class="mas-link" data-full="${esc(k)}">Ver los ${nAll} productos de este proveedor ⌄</button>` : ""}
+        <span class="grow"></span>
+        ${k && !soloLectura() ? `<label class="muted">Folio OC <input type="text" class="fol" maxlength="30" placeholder="opcional" style="width:110px"></label>
+          <button class="btn btn-ghost btn-sm" data-guardar="${esc(k)}">Guardar</button>
+          <button class="btn btn-main btn-sm" data-guardar="${esc(k)}" data-bajar="1">Guardar y archivo para Microsip</button>` : ""}
+      </div>
+    </div></div>`;
+}
+function renglon(f){
+  const k = llave(f), dist = num(f._c) !== num(f.sugerido), m = deMas(f, f._c), sinProv = !f.proveedor_id, rv = revisa(f);
+  const linea = (f._c || 0) * (f.costo || 0);
+  return `<tr data-k="${esc(k)}">
+    <td class="art"><b>${esc(f.articulo)}</b> <span class="pill ${f.clase}">${f.clase}</span> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}
+      <div class="meta">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque > 1 ? " · empaque " + n0(f.empaque) : ""}</div>
+      <div class="meta">Última venta: ${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " d)" : "—"} · Última recepción: ${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) : "—"}</div>
+      ${f.presentaciones ? `<div class="meta">Incluye: ${esc(f.presentaciones)}</div>` : ""}</td>
+    <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
+    <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="meta">${esc(f.folios)}</div>` : ""}${f.atr_u ? `<div class="meta neg">+${n0(f.atr_u)} atrasado</div>` : ""}</td>
+    <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span>${rv ? `<div class="tag prov">provisional</div>` : ""}</td>
+    <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar">
+      ${dist && !sinProv && !soloLectura() ? `<div>${selRazon(f._r, 'class="r" style="margin-top:4px;max-width:150px"')}</div>` : ""}${avisoMas(m, f.unidad)}</td>
+    <td class="n" data-l="Costo">${f.costo ? money(linea) + `<div class="meta">${money(f.costo)} c/u</div>` : `<span class="meta">sin costo</span>`}</td>
+    <td data-l="Estado"><span class="est ${f.estado}">${EST[f.estado] || f.estado}</span>${rv ? `<div><span class="est revisar" style="margin-top:4px">Revisar datos</span></div>` : ""}${f._fuera ? `<div><span class="tag fuera">Fuera de presupuesto</span></div>` : ""}</td>
+    <td><button class="btn btn-ghost btn-sm vc" aria-expanded="${abiertos.has(k)}">Ver cálculo</button></td>
+  </tr>${abiertos.has(k) ? detalle(f) : ""}`;
+}
+function ltTxt(f){
+  if(f.lt_medido !== null && f.lt_medido !== undefined && f.lt_n >= 2) return `${n0(f.lt)} días (medido: ${n0(f.lt_medido)} en ${f.lt_n} entregas)`;
+  return `${n0(f.lt)} días ${f.revisar && f.revisar.some(x => x.startsWith("Días de entrega")) ? "(de fábrica: no se conocen)" : "(escrito en Configuración)"}`;
+}
+function detalle(f){
+  const p = pos(f), u = esc(f.unidad || "");
+  const sugTxt = f.politica === "bajo_pedido" ? "0: es <b>solo bajo pedido</b>"
+    : p <= f.punto_reorden ? `${n0(f.maximo)} − ${n0(p)} = <b>${n0(f.sugerido)}</b>${f.empaque > 1 ? " (redondeado a empaque de " + n0(f.empaque) + ")" : ""}`
+    : `0: todavía no llega al punto de reorden (${n0(p)} &gt; ${n0(f.punto_reorden)})`;
+  const pol = f.politica || "";
+  return `<tr class="det" data-d="${esc(llave(f))}"><td colspan="8"><div class="calc">
+    <div class="box"><h4>Cómo se calculó</h4><ul>
+      <li>Venta: <b>${n0(f.vd)} ${u}/día</b>${f.unidades !== null && f.unidades !== undefined && f.dias_periodo ? ` (${n0(f.unidades)} en ${Math.round(f.dias_periodo / 30.4)} meses)` : ""}</li>
+      <li>Entrega: ${ltTxt(f)} · revisión cada ${n0(f.rev)} días</li>
+      <li>Mínimo (colchón) <b>${n0(f.minimo)}</b> · Punto de reorden <b>${n0(f.punto_reorden)}</b> · Máximo <b>${n0(f.maximo)}</b></li>
+      <li>Hoy: existencia ${n0(Math.max(f.existencia, 0))}${f.existencia < 0 ? " (es " + n0(f.existencia) + ", se usa 0)" : ""} + por recibir ${n0(f.pendiente)} = <b>${n0(p)}</b></li>
+      <li>Sugerido: ${sugTxt}</li>
+      <li>Costo: ${f.costo ? money(f.costo) + " c/u (" + esc(f.costo_fuente || "") + ")" : "sin costo en Microsip"}</li>
+      ${f.presentaciones ? `<li>Suma ventas y existencias de: ${esc(f.presentaciones)}</li>` : ""}
+    </ul></div>
+    ${revisa(f) ? `<div class="box"><h4>Revisar datos</h4><ul>${f.revisar.map(x => `<li>${esc(x)}</li>`).join("")}</ul><p class="muted" style="margin:6px 0 0">La cantidad sugerida es provisional hasta que se corrija. El inventario no se ajusta solo.</p></div>` : ""}
+    <div class="box"><h4>Política de resurtido</h4>
+      <div class="pol">${soloLectura() ? esc(POL[pol] || "Sin definir") : `
+        <button class="btn btn-ghost btn-sm" data-pol="minimo" aria-pressed="${pol === "minimo"}">Mantener mínimo</button>
+        <input type="number" class="pmin" min="0" step="any" style="width:80px" value="${f.pol_min ?? (f.empaque > 1 ? f.empaque : 1)}" aria-label="Mínimo a mantener"> <span class="muted">${u}${f.empaque > 1 ? ", múltiplos de " + n0(f.empaque) : ""}</span>
+        <button class="btn btn-ghost btn-sm" data-pol="bajo_pedido" aria-pressed="${pol === "bajo_pedido"}">Solo bajo pedido</button>
+        <button class="btn btn-ghost btn-sm" data-pol="pausar">Pausar resurtido</button>
+        ${pol ? `<button class="btn btn-ghost btn-sm" data-pol="">Quitar política</button>` : ""}`}</div>
+      <p class="muted" style="margin:6px 0 0">${pol ? "Política actual: <b>" + esc(POL[pol]) + "</b>" + (pol === "minimo" ? " de " + n0(f.pol_min) + " " + u : "") + ". Cuenta desde el siguiente cálculo del mes." : "Sin política: se calcula con la venta. Que venda poco no basta para pausarlo; decide tú."}</p></div>
+    ${num(f._c) !== num(f.sugerido) && !soloLectura() ? `<div class="box"><h4>Razón de comprar distinto</h4>${selRazon(f._r, 'class="r2"')}<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}"></div>` : ""}
+  </div></td></tr>`;
+}
+function filaDe(el){ const k = el.closest("[data-k],[data-d]"); const key = k.dataset.k || k.dataset.d; return todas().find(f => llave(f) === key); }
+function conectar(){
+  $$("#provs .tog").forEach(b => b.addEventListener("click", () => { const c = b.closest(".prov"), k = c.dataset.p; c.classList.toggle("cerrado"); c.classList.contains("cerrado") ? cerrados.add(k) : cerrados.delete(k); }));
+  $$("#provs input.c").forEach(i => i.addEventListener("change", e => { const f = filaDe(i); f._c = num(e.target.value); pintarPlan(); }));
+  $$("#provs select.r, #provs select.r2").forEach(s => s.addEventListener("change", e => { filaDe(s)._r = e.target.value; }));
+  $$("#provs input.nota").forEach(s => s.addEventListener("input", e => { filaDe(s)._n = e.target.value; }));
+  $$("#provs .vc").forEach(b => b.addEventListener("click", () => { const k = b.closest("tr").dataset.k; abiertos.has(k) ? abiertos.delete(k) : abiertos.add(k); pintarPlan(); }));
+  $$("#provs [data-full]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const k = b.dataset.full, r = await api("planeador", {proveedor_id: k}); prep(r.filas); PROVFULL[k] = r.filas;
+    if(fEst === "necesita"){ fEst = "todos"; $("#fEst").value = "todos"; }
+    pintarPlan();
+  })));
+  $$("#provs [data-pol]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const f = filaDe(b), pol = b.dataset.pol, mi = b.closest(".pol").querySelector(".pmin");
+    if(pol === "pausar" && !confirm("¿Pausar el resurtido de " + f.articulo + "? Ya no se calcula ni sale en el planeador hasta que lo regreses en Limpieza de catálogo → Pausados.")) return;
+    await api("politica", {articulo_id: f.articulo_id, politica: pol, minimo: pol === "minimo" ? mi.value : "", nota: ""});
+    f.politica = pol || null; f.pol_min = pol === "minimo" ? num(mi.value) : null;
+    if(pol === "pausar"){ P.filas = P.filas.filter(x => x !== f); for(const k in PROVFULL) PROVFULL[k] = PROVFULL[k].filter(x => x !== f); }
+    if(pol === "bajo_pedido"){ f.estado = "bajo_pedido"; f.sugerido = 0; f._c = 0; }
+    f.revisar = (f.revisar || []).filter(x => !x.startsWith("Vende poco"));
+    toast(pol ? POL[pol] + " ✓ Cuenta desde el siguiente cálculo del mes." : "Política quitada ✓"); pintarPlan();
+  })));
+  $$("#provs [data-guardar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const card = b.closest(".prov"); await guardarProv(b.dataset.guardar, (card.querySelector(".fol") || {}).value || "", !!b.dataset.bajar);
+  })));
+}
+function lineasProv(pid, todasLas){
+  return todas().filter(f => (f.proveedor_id || "") === pid && f.proveedor_id && ((f.sugerido || 0) > 0 || (f._c || 0) > 0 || (f.comprado !== null && f.comprado !== undefined)));
+}
+function validar(L){
+  for(const f of L){
+    if(f._c === null || f._c === undefined || f._c < 0) throw new Error("Falta la cantidad de " + f.articulo + " (pon 0 si no compras).");
     if(num(f._c) !== num(f.sugerido)){
       if(!f._r) throw new Error("Elige la razón de " + f.articulo + ": compras " + n0(f._c) + " y el sugerido es " + n0(f.sugerido) + ".");
-      if(f._r === "otra" && !f._n.trim()) throw new Error("Escribe la nota de " + f.articulo + " (elegiste Otra).");
+      if(f._r === "otra" && !String(f._n || "").trim()) throw new Error("Escribe la nota de " + f.articulo + " (elegiste Otra).");
     }
   }
-  const mas = lineas.filter(f => deMas(f, f._c));
-  if(mas.length && !confirm("⚠ Estás comprando de más en " + mas.length + " producto" + (mas.length > 1 ? "s" : "") + ":\n\n"
-      + mas.slice(0, 12).map(f => { const m = deMas(f, f._c); return "• " + f.articulo + (m.sobre ? ": +" + n0(m.sobre) + " sobre lo sugerido" : "") + (m.arriba ? " (quedarías " + n0(m.arriba) + " arriba del máximo)" : ""); }).join("\n")
-      + (mas.length > 12 ? "\n…" : "") + "\n\n¿Guardar de todos modos?")) return;
-  const grupos = {};   // un plan por proveedor y por clase revisada
-  for(const f of lineas) (grupos[f.proveedor_id + "|" + f.clase] ||= []).push(f);
-  let n = 0, ligadas = [];
-  for(const [k, L] of Object.entries(grupos)){
-    const [pid, cl] = k.split("|"), prov = D.proveedores.find(p => p.proveedor_id === pid) || {};
-    const r = await api("guardar", {proveedor_id: pid, proveedor: prov.nombre || L[0].proveedor || "", clase: cl, folio: vista === "prov" ? $("#folio").value.trim() : "",
-      lineas: L.map(f => ({articulo_id: f.articulo_id, clave: f.clave, articulo: f.articulo, unidad: f.unidad, clase: f.clase, existencia: f.existencia,
+}
+async function guardarLineas(pid, L, folio){
+  const grupos = {};
+  for(const f of L) (grupos[f.clase] ||= []).push(f);
+  const prov = (D.proveedores || []).find(p => p.proveedor_id === pid) || {};
+  for(const [cl, G] of Object.entries(grupos)){
+    await api("guardar", {proveedor_id: pid, proveedor: prov.nombre || G[0].proveedor || "", clase: cl, folio,
+      lineas: G.map(f => ({articulo_id: f.articulo_id, clave: f.clave, articulo: f.articulo, unidad: f.unidad, clase: f.clase, existencia: f.existencia,
         pendiente: f.pendiente, minimo: f.minimo, punto_reorden: f.punto_reorden, maximo: f.maximo, sugerido: f.sugerido, comprado: f._c,
         razon: num(f._c) === num(f.sugerido) ? "" : f._r, nota: f._n}))});
-    n += L.length; if(r.plan && r.plan.folio_oc) ligadas.push(r.plan.folio_oc);
-    const p = D.proveedores.find(x => x.proveedor_id === pid); if(p) p["ult_" + cl.toLowerCase()] = D.hoy;
   }
-  toast((mas.length ? "⚠ " + mas.length + " con compra de más · " : "") + "Guardado ✓ " + n + " renglones" + (Object.keys(grupos).length > 1 ? " en " + Object.keys(grupos).length + " planes" : "") + (ligadas.length ? " · ligado a " + ligadas.join(", ") : " · se ligará solo cuando captures la OC en Microsip"));
-  REG = null; pintarToca(); cargarPlan();
+}
+async function guardarProv(pid, folio, bajar){
+  const L = lineasProv(pid);
+  if(!L.some(f => (f._c || 0) > 0) && !confirm("No vas a comprar nada a este proveedor. ¿Guardar de todos modos (con la razón de no comprar)?")) return;
+  validar(L);
+  const mas = L.filter(f => { const m = deMas(f, f._c); return m && !m.redondeo; });
+  if(mas.length && !confirm("⚠ Compras de más en " + mas.length + " producto(s):\n" + mas.slice(0, 10).map(f => "• " + f.articulo).join("\n") + "\n\n¿Guardar de todos modos?")) return;
+  await guardarLineas(pid, L, folio);
+  toast("Guardado ✓ " + L.length + " renglones" + (bajar ? " · bajando el archivo…" : " · es un plan: captura la OC en Microsip y se liga sola"));
+  if(bajar) await bajarTxtHoy(pid);
+  REG = null; await cargarPlan();
+}
+$("#generar").addEventListener("click", () => ocupado($("#generar"), async () => {
+  const pids = [...new Set(todas().filter(f => (f._c || 0) > 0 && f.proveedor_id).map(f => f.proveedor_id))];
+  if(!pids.length) throw new Error("No hay nada capturado para comprar.");
+  const fuera = todas().filter(f => f._fuera).length;
+  if(!confirm("Se guardan los planes de " + pids.length + " proveedor(es) y se baja un archivo por proveedor para importar la OC en Microsip." + (fuera ? "\n\nOjo: " + fuera + " producto(s) quedan fuera del presupuesto y también se guardan; pon 0 si no los vas a comprar." : "") + "\n\n¿Continuar?")) return;
+  for(const pid of pids) validar(lineasProv(pid));
+  for(const pid of pids) await guardarLineas(pid, lineasProv(pid), "");
+  toast("Guardado ✓ " + pids.length + " proveedor(es) · bajando archivos…");
+  await bajarTxtHoy("");
+  REG = null; await cargarPlan();
 }));
+$("#qPlan").addEventListener("input", () => { clearTimeout(pintarPlan._t); pintarPlan._t = setTimeout(pintarPlan, 250); });
+$("#fProv").addEventListener("change", pintarPlan);
+$("#fEst").addEventListener("change", e => { fEst = e.target.value; pintarPlan(); });
+function ponerClase(c){ clase = c; $$("#segClase button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === c)); }
+$$("#segClase button").forEach(b => b.addEventListener("click", () => { ponerClase(b.dataset.c); pintarPlan(); }));
+ponerClase("");
+$("#limpiarF").addEventListener("click", () => { $("#qPlan").value = ""; $("#fProv").value = "*"; fEst = "necesita"; $("#fEst").value = "necesita"; ponerClase(""); pintarPlan(); });
+$("#presu").addEventListener("change", e => { presu = num(e.target.value) || null; try { localStorage.setItem("compras_presu", presu || ""); } catch(err) {} pintarPlan(); });
+
+/* ================= seguimiento de órdenes de compra ================= */
+const OCEST = {atrasada: ["Atrasada", "critico"], en_camino: ["Atrasada, sigue en camino", "pedir"], parcial: ["Recibida en parte", "proximo"], abierta: ["En tiempo", "bien"]};
+function marcarSeg(){ const n = SEG ? SEG.ocs.filter(o => o.estado === "atrasada").length : 0; $("#nseg").hidden = !n; $("#nseg").textContent = n; }
+async function cargarSeg(){
+  $("#ocsSeg").innerHTML = `<p class="muted">Cargando…</p>`;
+  try { SEG = await api("seguimiento"); } catch(e) { toast(e.message); return; }
+  marcarSeg(); pintarSeg();
+}
+$("#recargarSeg").addEventListener("click", cargarSeg);
+function pintarSeg(){
+  const O = SEG.ocs, c = e => O.filter(o => o.estado === e).length;
+  $("#kpisSeg").innerHTML = [[c("atrasada"), "atrasadas sin confirmar", true], [c("en_camino"), "atrasadas que siguen en camino"], [c("parcial"), "recibidas en parte"],
+    [c("abierta"), "en tiempo"], [SEG.planes.length, "planes guardados sin OC", true]]
+    .map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
+  $("#ocsSeg").innerHTML = O.length ? O.map(o => { const [et, ec] = OCEST[o.estado] || [o.estado, "bien"]; return `<div class="oc ${o.estado === "atrasada" ? "atrasada" : ""}">
+      <div class="row"><b class="grow">${esc(o.folio)} · ${esc(o.proveedor || "")}</b><span class="est ${ec}">${et}</span></div>
+      <div class="muted">Hecha el ${fecha(o.fecha)} (hace ${o.dias} días; se esperaba en ${n0(o.lt)}) · pedido ${n0(o.pedido)} · recibido ${n0(o.recibido)} · <b>falta ${n0(o.falta)}</b>${o.seguimiento ? " · marcada: " + esc({en_camino: "sigue en camino", cancelada: "cancelada", recibida: "ya llegó"}[o.seguimiento]) + (o.por ? " por " + esc(o.por) : "") : ""}</div>
+      <div class="scroll" style="margin-top:6px"><table class="tbl"><thead><tr><th>Artículo</th><th class="n">Pedido</th><th class="n">Recibido</th><th class="n">Falta</th></tr></thead><tbody>
+        ${o.lineas.map(l => `<tr><td>${esc(l.articulo || "")}<div class="meta">${esc(l.clave || "")}</div></td><td class="n">${n0(l.pedido)}</td><td class="n">${n0(l.recibido)}</td><td class="n"><b>${n0(l.falta)}</b></td></tr>`).join("")}</tbody></table></div>
+      ${soloLectura() || !["atrasada", "en_camino"].includes(o.estado) ? "" : `<div class="row" style="margin-top:8px">
+        ${o.estado === "atrasada" ? `<button class="btn btn-main btn-sm" data-oc="${o.id}" data-e="en_camino">Sigue en camino (contar como por recibir)</button>` : ""}
+        <button class="btn btn-ghost btn-sm" data-oc="${o.id}" data-e="recibida">Ya llegó (falta ligarla en Microsip)</button>
+        <button class="btn btn-ghost btn-sm" data-oc="${o.id}" data-e="cancelada">No va a llegar (cancelada)</button>
+        ${o.seguimiento ? `<button class="btn btn-ghost btn-sm" data-oc="${o.id}" data-e="">Deshacer</button>` : ""}</div>`}
+    </div>`; }).join("") : `<p class="muted">No hay órdenes abiertas.</p>`;
+  $$("#ocsSeg [data-oc]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    await api("oc_estado", {docto_cm_id: b.dataset.oc, estado: b.dataset.e, nota: ""});
+    toast("Guardado ✓"); P = null; await cargarSeg();
+  })));
+  $("#planesSeg").innerHTML = SEG.planes.length ? `<table class="tbl"><thead><tr><th>Guardado</th><th>Proveedor</th><th class="n">Renglones</th><th class="n">Unidades</th><th></th></tr></thead><tbody>
+    ${SEG.planes.map(p => `<tr><td>${fecha(p.fecha)}<div class="meta">${esc(p.por || "")}</div></td><td>${esc(p.proveedor || "")}</td><td class="n">${n0(p.renglones)}</td><td class="n">${n0(p.unidades)}</td>
+      <td>${soloLectura() ? "" : `<button class="btn btn-ghost btn-sm" data-plantxt="${p.id}" data-mes="${String(p.fecha).slice(0, 7)}">Archivo para Microsip</button>`}</td></tr>`).join("")}</tbody></table>`
+    : `<p class="muted">Todos los planes ya tienen su OC en Microsip.</p>`;
+  $$("#planesSeg [data-plantxt]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const r = await api("registro", {mes: b.dataset.mes + "-01"}), p = r.planes.find(x => String(x.id) === b.dataset.plantxt); if(p) bajarTxt(p);
+  })));
+  $("#tblLt tbody").innerHTML = SEG.proveedores_lt.length ? SEG.proveedores_lt.map(x => `<tr><td>${esc(x.proveedor || x.proveedor_id)}</td>
+    <td class="n">${x.medido !== null ? n0(x.medido) + " días" : "—"}</td><td class="n">${x.peor !== null ? n0(x.peor) + " días" : "—"}</td><td class="n">${n0(x.entregas || 0)}</td>
+    <td class="n">${x.manual !== null ? n0(x.manual) : "—"}</td><td class="n"><b>${n0(x.usa)}</b></td></tr>`).join("") : `<tr><td colspan="6" class="muted">Sin datos todavía.</td></tr>`;
+}
+
+/* ================= presentaciones (tonelada, millar, viaje…) ================= */
+function marcarPres(){ const n = PRES ? PRES.sugeridas.length + PRES.sin_base.length : 0; $("#npres").hidden = !n; $("#npres").textContent = n; }
+async function cargarPres(){
+  try { PRES = await api("equivalencias"); } catch(e) { toast(e.message); return; }
+  marcarPres(); pintarPres();
+}
+function pintarPres(){
+  const ro = soloLectura();
+  $("#tblSug tbody").innerHTML = PRES.sugeridas.length ? PRES.sugeridas.map(x => `<tr data-a="${x.articulo_id}" data-b="${x.base_id}">
+    <td class="art"><b>${esc(x.articulo)}</b><div class="meta">${esc(x.clave)} · ${esc(x.unidad || "")}</div></td>
+    <td data-l="Es igual a"><b>${esc(x.base_articulo)}</b><div class="meta">${esc(x.base_clave)} · ${esc(x.base_unidad || "")}</div></td>
+    <td class="n" data-l="Factor">1 = <input type="number" class="fac" min="0" step="any" value="${x.factor ?? ""}" ${ro ? "disabled" : ""} style="width:90px"> ${esc(x.base_unidad || "")}</td>
+    <td class="wide">${ro ? "" : `<button class="btn btn-main btn-sm" data-acc="confirmar">Confirmar</button> <button class="btn btn-ghost btn-sm" data-acc="rechazar">No es igual</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">No hay sugerencias por revisar.</td></tr>`;
+  $("#tblSinBase tbody").innerHTML = PRES.sin_base.length ? PRES.sin_base.map(x => `<tr data-a="${x.articulo_id}">
+    <td class="art"><b>${esc(x.articulo)}</b><div class="meta">${esc(x.clave)} · ${esc(x.unidad || "")}</div></td>
+    <td data-l="Artículo base"><input type="text" class="qb" placeholder="busca clave o nombre" ${ro ? "disabled" : ""} style="width:100%"><div class="res"></div></td>
+    <td class="n" data-l="Factor">1 = <input type="number" class="fac" min="0" step="any" ${ro ? "disabled" : ""} style="width:90px"></td>
+    <td class="wide">${ro ? "" : `<button class="btn btn-main btn-sm" data-acc="confirmar">Confirmar</button> <button class="btn btn-ghost btn-sm" data-acc="rechazar">No es presentación</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">Ninguna.</td></tr>`;
+  $("#tblEqv tbody").innerHTML = PRES.activas.length ? PRES.activas.map(x => `<tr data-a="${x.articulo_id}"><td><b>${esc(x.articulo)}</b><div class="meta">${esc(x.clave)} · ${esc(x.unidad || "")}</div></td>
+    <td>${esc(x.base_articulo)}<div class="meta">${esc(x.base_clave)}</div></td><td class="n">1 = ${n0(x.factor)} ${esc(x.base_unidad || "")}</td><td class="muted">${esc(x.origen)}${x.por ? " · " + esc(x.por) : ""}</td>
+    <td>${ro || !String(x.origen).includes("página") ? "" : `<button class="btn btn-ghost btn-sm" data-acc="quitar">Quitar</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">Todavía no hay presentaciones confirmadas.</td></tr>`;
+  $("#eqvRech").innerHTML = PRES.rechazadas.length ? "Marcadas como distintas: " + PRES.rechazadas.map(x => `${esc(x.articulo || x.articulo_id)} <button class="mas-link" data-a="${x.articulo_id}" data-acc="quitar">deshacer</button>`).join(" · ") : "";
+  $$("#t-pres .qb").forEach(i => i.addEventListener("input", () => { clearTimeout(i._t); i._t = setTimeout(async () => {
+    const q = i.value.trim(), res = i.parentElement.querySelector(".res"); if(q.length < 3){ res.innerHTML = ""; return; }
+    try { const r = await api("buscar", {q}); res.innerHTML = r.filas.slice(0, 8).map(a => `<button class="mas-link" style="display:block;text-align:left" data-id="${a.articulo_id}">${esc(a.clave)} · ${esc(a.articulo)} (${esc(a.unidad || "")})</button>`).join("");
+      res.querySelectorAll("[data-id]").forEach(b => b.addEventListener("click", () => { i.value = b.textContent; i.closest("tr").dataset.b = b.dataset.id; res.innerHTML = ""; }));
+    } catch(e) {}
+  }, 300); }));
+  $$("#t-pres [data-acc]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const tr = b.closest("[data-a]"), acc = b.dataset.acc, fac = tr.querySelector && tr.querySelector(".fac");
+    await api("equivalencia", {articulo_id: Number(tr.dataset.a), base_id: tr.dataset.b ? Number(tr.dataset.b) : "", factor: fac ? fac.value : "", accion: acc, nota: ""});
+    toast(acc === "confirmar" ? "Confirmada ✓ Cuenta desde el siguiente cálculo: recalcula el mes en A/B/C." : "Guardado ✓");
+    await cargarPres();
+  })));
+}
 
 /* ================= registro ================= */
 function mesActual(){ return D.hoy.slice(0, 7); }
@@ -843,11 +1166,15 @@ const GEN = [
   ["gracia_oc", "Días extra para dar una OC por pendiente", "number", "OC sin recepción, dentro de días de entrega + estos días"],
   ["dias_ligar", "Días para reconocer la OC después del plan", "number", ""],
   ["almacenes", "Almacenes que cuentan (vacío = todos)", "text", "Ej.: GENERAL|BODEGA"],
-  ["excluir", "Excluir artículos cuyo nombre diga", "text", "Ej.: servicio|flete"],
+  ["excluir", "Excluir artículos cuyo nombre diga", "text", "Además de servicios y VARIOS. Ej.: muestra|regalo"],
+  ["servicios", "Servicios (no son mercancía, no se compran)", "text", "Nombres que son servicio: flete, maniobra, mano de obra…"],
+  ["varios", "Artículos genéricos «VARIOS»", "text", "Se quitan del planeador y del A/B/C"],
+  ["iva", "IVA para el costo de las órdenes (%)", "number", "16"],
   ["monto_maximo", "Ignorar tickets mayores a ($)", "number", "Ventas anómalas"],
   ["max_lento", "Piezas a tener de los que casi no se venden", "number", "1 = tener uno y pedir solo cuando se venda"],
   ["dias_lento", "Avisar «casi no se vende» a partir de (días)", "number", "Sin venta en estos días o existencia que alcanza para más de estos días"],
   ["empresa", "Empresa (para los reportes)", "text", ""], ["tienda", "Tienda", "text", ""],
+  ["marcas", "Marcas (para buscar duplicados)", "area", "Dos artículos solo se proponen como duplicado si lo único que cambia es una de estas marcas."],
   ["palabras_distintas", "Palabras que NO son marca (para buscar duplicados)", "area", "Colores, tamaños, materiales, tipos… Si dos artículos difieren en una de estas, no se juntan."],
 ];
 function pintarCfg(){
@@ -864,9 +1191,9 @@ function pintarCfg(){
     return `<label>${t}${inp}${h ? `<small>${esc(h)}</small>` : ""}</label>`;
   }).join("");
   $("#tblProv tbody").innerHTML = D.proveedores.map(p => `<tr data-id="${esc(p.proveedor_id)}">
-    <td><b>${esc(p.nombre)}</b>${!p.dias_entrega && p.n_a + p.n_b + p.n_c ? `<div><span class="alert">sin días de entrega</span></div>` : ""}</td>
+    <td><b>${esc(p.nombre)}</b>${!p.dias_entrega && !(p.lt_n >= 2) && p.n_a + p.n_b + p.n_c ? `<div><span class="alert">sin días de entrega</span></div>` : (!p.dias_entrega && p.lt_n >= 2 ? `<div class="muted">se usan ${Math.ceil(p.lt_medido)} días medidos</div>` : "")}</td>
     <td class="n">${p.n_a} / ${p.n_b} / ${p.n_c}</td>
-    <td class="n"><input type="number" min="0" max="120" step="any" class="de" value="${p.dias_entrega ?? ""}" placeholder="${esc(D.cfg.entrega_def || 3)}" ${ro}></td>
+    <td class="n"><input type="number" min="0" max="120" step="any" class="de" value="${p.dias_entrega ?? ""}" placeholder="${esc(p.lt_medido != null && p.lt_n >= 2 ? Math.ceil(p.lt_medido) : (D.cfg.entrega_def || 3))}" title="${p.lt_medido != null ? `Medido en Microsip: ${p.lt_medido} días (${p.lt_n} entregas). Vacío = usar el medido.` : "Sin entregas medidas"}" ${ro}></td>
     <td><select class="da" ${ro}><option value="">igual que todos (${DIAS[D.cfg.dia_a || 1]})</option>${[1,2,3,4,5,6].map(d => `<option value="${d}" ${String(p.dia_a) === String(d) ? "selected" : ""}>${DIAS[d]}</option>`).join("")}</select></td>
     <td class="n"><input type="number" min="1" max="90" class="fb" value="${p.frec_b ?? ""}" placeholder="${esc(D.cfg.frec_b || 15)}" ${ro}></td>
     <td><input type="checkbox" class="ac" ${p.activo ? "checked" : ""} ${ro} aria-label="Activo"></td></tr>`).join("");

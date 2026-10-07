@@ -127,5 +127,32 @@ for folio, f, p, lineas in ocs:
         sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_LIGAS', '{did}-{rid}', "
                    f"{q(json.dumps({'DOCTO_CM_FTE_ID': did, 'DOCTO_CM_DEST_ID': rid}))});")
 
+# Casos nuevos: servicio y VARIOS (se vendieron pero no son mercancía), tonelada sin venta (presentación del saco),
+# existencia negativa en otro almacén, OC parcial (llegó una parte) y OC atrasada (sin recepción).
+extra = [(30, 'FLETE', 'SERVICIO DE FLETE A DOMICILIO', 'Servicio', 150), (31, 'VARIOS', 'VARIOS', 'Pieza', 10),
+         (32, 'CEM50TON', 'TONELADA CEMENTO GRIS TOLTECA 50KG', 'Tonelada', 4800)]
+for a in extra:
+    sql.append(f"INSERT INTO ms_articulos (base, articulo_id, clave, nombre, estatus, unidad, linea, grupo, precio_lista, costo_ultimo) VALUES "
+               f"({q(B)}, {a[0]}, {q(a[1])}, {q(a[2])}, 'A', {q(a[3])}, 'MATERIALES', '', {a[4]}, {a[4] * 0.7});")
+for i, (a, u) in enumerate([(30, 1), (31, 3)] * 40):
+    docto += 1
+    f = date(2026, 4, 1) + timedelta(days=i * 4)
+    sql.append(f"INSERT INTO ms_ventas VALUES ({q(B)}, 'PV', {docto}, 'V', 'N', 'T{docto}', '{f}', '10:00', 'PUBLICO', 'GENERAL', {u * 5000}, 0, NULL);")
+    sql.append(f"INSERT INTO ms_ventas_det VALUES ({q(B)}, 'PV', {det}, {docto}, 'X', {a}, 'X', {u}, 5000, {u * 5000});")
+    det += 1
+sql.append(f"INSERT INTO ms_existencias (base, articulo_id, almacen_id, almacen, clave, articulo, existencia, valor) VALUES ({q(B)}, 6, 2, 'BODEGA', 'TPLUS25', 'TUBO', -3, 0);")
+for folio, f, p, a, u, rec in [(90, '2026-10-02', '15', 11, 50, 20), (91, '2026-09-01', '16', 21, 5, 0)]:
+    did, rid = 5000 + folio, 7000 + folio
+    sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '{did}', '{f}', "
+               f"{q(json.dumps({'DOCTO_CM_ID': did, 'TIPO_DOCTO': 'O', 'FOLIO': 'O%07d' % folio, 'FECHA': f, 'PROVEEDOR_ID': int(p), 'ESTATUS': 'P', 'IMPORTE_NETO': u * 10}))});")
+    sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '{did}-0', "
+               f"{q(json.dumps({'DOCTO_CM_ID': did, 'ARTICULO_ID': a, 'UNIDADES': u, 'PRECIO_UNITARIO': 10, 'PRECIO_TOTAL_NETO': u * 10}))});")
+    if rec:
+        sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '{rid}', '{f}', "
+                   f"{q(json.dumps({'DOCTO_CM_ID': rid, 'TIPO_DOCTO': 'R', 'FOLIO': 'R%07d' % folio, 'FECHA': f, 'PROVEEDOR_ID': int(p), 'ESTATUS': 'N'}))});")
+        sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '{rid}-0', {q(json.dumps({'DOCTO_CM_ID': rid, 'ARTICULO_ID': a, 'UNIDADES': rec}))});")
+        sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_LIGAS', '{did}-{rid}', "
+                   f"{q(json.dumps({'DOCTO_CM_FTE_ID': did, 'DOCTO_CM_DEST_ID': rid}))});")
+
 subprocess.run(PSQL, input='\n'.join(sql), text=True, check=True)
 print('ok', len(sql), 'sentencias')

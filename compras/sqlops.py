@@ -4,7 +4,7 @@ import re
 
 DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sql')
 OPS = ['datos', 'planeador', 'guardar', 'razon', 'folio', 'registro', 'reconstruir', 'calcular', 'ocs', 'reporte', 'buscar',
-       'articulo', 'config', 'limpieza', 'revision', 'gerencia', 'reactivar']
+       'articulo', 'config', 'limpieza', 'revision', 'gerencia', 'reactivar', 'seguimiento', 'oc_estado', 'politica', 'equivalencias', 'equivalencia']
 
 
 def leer(nombre):
@@ -35,7 +35,10 @@ def expandir(s, nivel=0):
         '/*OC*/': lambda: leer('_oc'),
         '/*OCD*/': lambda: leer('_ocd'),
         '/*EXI*/': lambda: leer('_exi'),
-        '/*EXCL*/': lambda: leer('_excl'),
+        '/*EXCL*/': lambda: leer('_eqv') + ',\n' + leer('_excl'),
+        '/*EXCLSOLO*/': lambda: leer('_excl'),
+        '/*EQV*/': lambda: leer('_eqv'),
+        '/*LT*/': lambda: leer('_lt'),
         '/*LIGAR*/': lambda: leer('_ligar'),
         '/*CALCULAR_SOLO_SI_FALTA*/': calculo_solo_si_falta,
     }
