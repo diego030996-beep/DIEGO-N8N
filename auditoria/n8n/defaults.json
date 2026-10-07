@@ -1,0 +1,10 @@
+{
+  "hora_cierre": "20:00",
+  "tolerancia": "1",
+  "dias_compra": "3",
+  "margen_compra": "10",
+  "tipos_compra": "compra",
+  "retiros_excluir": "",
+  "compras_sin_comprobante": "contado",
+  "proveedores_mostrador": ""
+}

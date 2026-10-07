@@ -178,7 +178,7 @@ dialog h3{margin:0 0 6px}
 <dialog id="dTodas">
   <form id="fTodas" autocomplete="off">
     <h3>Regenerar todas las ligas</h3>
-    <p style="margin:0;font-size:.9rem">Para emergencias. Se cambian <b id="tCuantas">todas las llaves</b> de compras, producción, vendedor, rutas y choferes. <b>Todas las ligas anteriores dejan de funcionar de inmediato</b> y se cierran tus sesiones del panel en otros dispositivos.</p>
+    <p style="margin:0;font-size:.9rem">Para emergencias. Se cambian <b id="tCuantas">todas las llaves</b> de compras, producción, vendedor, auditoría, rutas y choferes. <b>Todas las ligas anteriores dejan de funcionar de inmediato</b> y se cierran tus sesiones del panel en otros dispositivos.</p>
     <p class="nota">No cambia direcciones de n8n ni credenciales (Microsip, Telegram, WhatsApp, OpenAI…). Después tendrás que mandar las ligas nuevas a cada persona.</p>
     <div class="campos"><label for="tPin">Escribe tu PIN para confirmar</label><input id="tPin" type="password" inputmode="numeric" maxlength="8" required></div>
     <div id="msgTodas"></div>
@@ -268,8 +268,8 @@ $('fCrear').onsubmit = async e => {
 };
 
 /* ---------------- panel ---------------- */
-const ICONO = { compras: ['🛒', '#DBEAFE'], produccion: ['🏭', '#FEF3C7'], vendedor: ['📊', '#DCFCE7'], rutas: ['🗺️', '#EDE9FE'], choferes: ['🚚', '#FFEDD5'], monedero: ['💳', '#FCE7F3'], extra: ['🔗', '#E2E8F0'] };
-const ROL = { admin: 'Administrador', compras: 'Compras', produccion: 'Producción (captura)', auditor: 'Auditor (solo consulta)', encargado: 'Encargado' };
+const ICONO = { compras: ['🛒', '#DBEAFE'], produccion: ['🏭', '#FEF3C7'], vendedor: ['📊', '#DCFCE7'], rutas: ['🗺️', '#EDE9FE'], auditoria: ['🧾', '#FEE2E2'], choferes: ['🚚', '#FFEDD5'], monedero: ['💳', '#FCE7F3'], extra: ['🔗', '#E2E8F0'] };
+const ROL = { admin: 'Administrador', compras: 'Compras', produccion: 'Producción (captura)', auditor: 'Auditor (solo consulta)', encargado: 'Encargado', auditora: 'Auditora' };
 const PAGINAS = [
   { id: 'compras', titulo: 'Planeador de compras', desc: 'Sugerido de compra, OCs y seguimiento', ruta: 'planeador-compras', roles: ['admin', 'compras', 'auditor'],
     falta: 'Corre "Ver ligas" en el flujo del planeador para crearla.' },
@@ -277,6 +277,8 @@ const PAGINAS = [
     falta: 'Corre "Ver ligas" en el flujo de producción para crearla.' },
   { id: 'vendedor', titulo: 'Tablero del vendedor', desc: 'Ventas, clientes y seguimiento', ruta: 'vendedor', roles: ['admin', 'encargado'],
     falta: 'Se crea desde el flujo "Tablero del vendedor".' },
+  { id: 'auditoria', titulo: 'Auditoría de movimientos', desc: 'Retiros, comprobantes y compras vs Microsip', ruta: 'auditoria-mov', roles: ['admin', 'auditora'], empleados: true,
+    falta: 'Corre "Ver ligas" en el flujo de auditoría para crearla.' },
   { id: 'rutas', titulo: 'Asistente de rutas', desc: 'Plan de la semana, buscar pedidos y simular', ruta: 'rutas', oficina: true },
   { id: 'choferes', titulo: 'Choferes – entregas', desc: 'Oficina y la liga de cada chofer', ruta: 'choferes', choferes: true },
   { id: 'monedero', titulo: 'Monedero', desc: 'App del monedero (pide su propio PIN)', ruta: 'monedero-app', libre: true },
@@ -310,6 +312,8 @@ function pintar() {
         if (!ks.length) { cuerpo += '<div class="liga falta"><div class="q"><b>' + esc(ROL[r] || r) + '</b><span>Sin liga. ' + esc(p.falta) + '</span></div></div>'; continue; }
         ks.forEach((k, i) => cuerpo += filaLiga((ROL[r] || r) + (ks.length > 1 ? ' #' + (i + 1) : ''), url(k.token), subLlave(k), '', { fuente: 'tablero', t: k.token }));
       }
+      if (p.empleados) cuerpo += (d.empleados || []).length ? d.empleados.map(e => filaLiga(e.nombre, url(e.token), subLlave(e), '', { fuente: 'empleados', t: e.token })).join('')
+        : '<div class="vacio">Sin empleados. Se agregan en la página de auditoría (Empleados).</div>';
     } else if (p.oficina) {
       cuerpo = oficina ? filaLiga('Oficina', url(oficina.token), subLlave(oficina), '', { fuente: 'choferes', t: oficina.token })
         : '<div class="liga falta"><div class="q"><b>Oficina</b><span>Sin liga. Se crea en el flujo de choferes.</span></div></div>';
@@ -330,7 +334,7 @@ function pintar() {
     '<form class="alta" id="fAlta"><input type="text" id="aTitulo" placeholder="Nombre" maxlength="80" required><input type="url" id="aUrl" placeholder="https://…" required><input type="text" id="aGrupo" placeholder="Grupo (opcional)" maxlength="40" list="grupos"><button class="btn pri" type="submit">Agregar</button><datalist id="grupos">' +
     Object.keys(grupos).map(g => '<option value="' + esc(g) + '">').join('') + '</datalist></form>');
   $('grid').innerHTML = html;
-  $('sub').textContent = (d.tablero || []).length + (d.choferes || []).length + (d.extra || []).length + ' ligas';
+  $('sub').textContent = (d.tablero || []).length + (d.choferes || []).length + (d.empleados || []).length + (d.extra || []).length + ' ligas';
   $('pie').textContent = 'Sesiones abiertas: ' + (d.sesiones || 1) + (d.pin_cambiado ? ' · PIN puesto el ' + new Date(d.pin_cambiado).toLocaleDateString('es-MX') : '') + (d.ultima_todas ? ' · Última regeneración de todas: ' + fecha(d.ultima_todas) : '') + ' · No compartas este panel: aquí están todas las llaves.';
   $('fAlta').onsubmit = agregar;
   filtrar();
@@ -388,6 +392,7 @@ $('bSalir').onclick = async () => {
 /* ---------------- regenerar llaves ---------------- */
 let REGEN = null;
 function abre(fuente, t) {   // qué páginas abre esta llave
+  if (fuente === 'empleados') { const e = (DATOS.empleados || []).find(x => x.token === t); return ['Auditoría de movimientos – liga de ' + (e ? e.nombre : 'este empleado')]; }
   if (fuente === 'choferes') {
     const c = (DATOS.choferes || []).find(x => x.token === t);
     return c && c.nombre === '*' ? ['Asistente de rutas (oficina)', 'Choferes – vista de oficina (todos los choferes)'] : ['Choferes – liga de ' + (c ? c.nombre : 'este chofer')];
@@ -417,7 +422,7 @@ $('rOk').onclick = async () => {
   toast('Liga nueva lista. La anterior ya no abre.');
 };
 $('bTodas').onclick = () => {
-  const n = (DATOS.tablero || []).length + (DATOS.choferes || []).length;
+  const n = (DATOS.tablero || []).length + (DATOS.choferes || []).length + (DATOS.empleados || []).length;
   $('tCuantas').textContent = 'las ' + n + ' llaves'; $('fTodas').reset(); aviso('msgTodas', ''); $('dTodas').showModal(); $('tPin').focus();
 };
 $('tCancel').onclick = () => $('dTodas').close();

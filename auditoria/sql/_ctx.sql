@@ -1,0 +1,16 @@
+b AS (SELECT coalesce(nullif($1, ''), (SELECT nullif(valor, '') FROM mov_config WHERE clave = 'base'),
+                (SELECT base FROM ms_ventas GROUP BY base ORDER BY count(*) DESC LIMIT 1), '') AS base,
+             coalesce(nullif($5, '')::timestamp, (now() AT TIME ZONE 'America/Mexico_City')) AS ahora,
+             $2::jsonb || coalesce((SELECT jsonb_object_agg(clave, valor) FROM mov_config WHERE coalesce(valor, '') <> ''), '{}'::jsonb) AS c,
+             $4::jsonb AS p, $3::text AS por),
+cfg AS (SELECT b.*, b.ahora::date AS hoy,
+               coalesce(nullif(c->>'hora_cierre', ''), '20:00')::time AS cierre,
+               coalesce(nullif(c->>'tolerancia', '')::numeric, 1) AS tol,
+               coalesce(nullif(c->>'dias_compra', '')::int, 3) AS dias_compra,
+               coalesce(nullif(c->>'margen_compra', '')::numeric, 10) / 100 AS margen,
+               string_to_array(coalesce(nullif(c->>'tipos_compra', ''), 'compra'), ',') AS tipos_compra,
+               coalesce(c->>'retiros_excluir', '') AS excl,
+               coalesce(nullif(c->>'compras_sin_comprobante', ''), 'contado') AS csc,
+               coalesce(c->>'proveedores_mostrador', '') AS prov_most,
+               coalesce(nullif(c->>'desde', '')::date, b.ahora::date) AS desde
+        FROM b)

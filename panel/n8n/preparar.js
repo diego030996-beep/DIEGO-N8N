@@ -31,6 +31,7 @@ SELECT CASE WHEN EXISTS (SELECT 1 FROM a) THEN json_build_object('ok', true, 'se
   ligas: `SELECT CASE WHEN ${SES} THEN json_build_object('ok', true,
   'tablero', COALESCE((SELECT json_agg(json_build_object('rol', a.rol, 'token', a.token, 'creado', a.creado, 'regenerada', ${REGEN('a.token')}) ORDER BY a.rol, a.creado) FROM tablero_acceso a WHERE a.activo), '[]'),
   'choferes', COALESCE((SELECT json_agg(json_build_object('nombre', c.nombre, 'token', c.token, 'creado', c.creado, 'regenerada', ${REGEN('c.token')}) ORDER BY c.nombre <> '*', c.nombre) FROM choferes_web c WHERE c.activo), '[]'),
+  'empleados', COALESCE((SELECT json_agg(json_build_object('nombre', e.nombre, 'token', e.token, 'creado', e.creado, 'regenerada', ${REGEN('e.token')}) ORDER BY e.nombre) FROM mov_empleado e WHERE e.activo), '[]'),
   'ultima_todas', (SELECT max(fecha) FROM panel_rotacion WHERE tipo = 'todas'),
   'extra', COALESCE((SELECT json_agg(json_build_object('id', id, 'titulo', titulo, 'url', url, 'grupo', grupo) ORDER BY grupo, titulo) FROM panel_liga), '[]'),
   'pin_cambiado', (SELECT cambiado FROM panel_pin WHERE id = 1),
@@ -46,11 +47,12 @@ d AS (DELETE FROM panel_sesion WHERE token <> $1 AND EXISTS (SELECT 1 FROM u) RE
 SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM v) THEN json_build_object('ok', false, 'salir', true, 'msg', 'Tu sesión terminó. Escribe tu PIN otra vez.')
   WHEN EXISTS (SELECT 1 FROM u) THEN json_build_object('ok', true, 'cerradas', (SELECT count(*) FROM d))
   ELSE json_build_object('ok', false, 'msg', 'El PIN actual no es correcto.') END AS r;`,
-  // $1 sesión, $2 'tablero' | 'choferes', $3 llave actual. La llave se reemplaza en el mismo renglón: la vieja deja de abrir al instante.
+  // $1 sesión, $2 'tablero' | 'choferes' | 'empleados', $3 llave actual. La llave se reemplaza en el mismo renglón: la vieja deja de abrir al instante.
   regenerar: `WITH ok AS (SELECT 1 WHERE ${SES}),
 ut AS (UPDATE tablero_acceso a SET token = ${NUEVA} FROM ok WHERE $2 = 'tablero' AND a.token = $3 AND a.activo RETURNING a.rol AS etiqueta, a.token),
 uc AS (UPDATE choferes_web c SET token = ${NUEVA} FROM ok WHERE $2 = 'choferes' AND c.token = $3 AND c.activo RETURNING c.nombre AS etiqueta, c.token),
-u AS (SELECT * FROM ut UNION ALL SELECT * FROM uc),
+ue AS (UPDATE mov_empleado e SET token = ${NUEVA} FROM ok WHERE $2 = 'empleados' AND e.token = $3 AND e.activo RETURNING e.nombre AS etiqueta, e.token),
+u AS (SELECT * FROM ut UNION ALL SELECT * FROM uc UNION ALL SELECT * FROM ue),
 l AS (INSERT INTO panel_rotacion (fuente, etiqueta, token_hash, tipo) SELECT $2, u.etiqueta, encode(sha256(convert_to(u.token, 'UTF8')), 'hex'), 'una' FROM u RETURNING 1)
 SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM ok) THEN ${SALIR}
   WHEN EXISTS (SELECT 1 FROM u) THEN json_build_object('ok', true, 'etiqueta', (SELECT etiqueta FROM u LIMIT 1), 'token', (SELECT token FROM u LIMIT 1))
@@ -67,12 +69,14 @@ f AS (UPDATE panel_pin t SET
 si AS (SELECT 1 FROM v WHERE v.bien AND NOT v.trabado),
 ut AS (UPDATE tablero_acceso a SET token = ${NUEVA} FROM si RETURNING a.rol AS etiqueta, a.token, a.activo),
 uc AS (UPDATE choferes_web c SET token = ${NUEVA} FROM si RETURNING c.nombre AS etiqueta, c.token, c.activo),
+ue AS (UPDATE mov_empleado e SET token = ${NUEVA} FROM si RETURNING e.nombre AS etiqueta, e.token, e.activo),
 l AS (INSERT INTO panel_rotacion (fuente, etiqueta, token_hash, tipo)
       SELECT 'tablero', etiqueta, encode(sha256(convert_to(token, 'UTF8')), 'hex'), 'todas' FROM ut WHERE activo
-      UNION ALL SELECT 'choferes', etiqueta, encode(sha256(convert_to(token, 'UTF8')), 'hex'), 'todas' FROM uc WHERE activo RETURNING 1),
+      UNION ALL SELECT 'choferes', etiqueta, encode(sha256(convert_to(token, 'UTF8')), 'hex'), 'todas' FROM uc WHERE activo
+      UNION ALL SELECT 'empleados', etiqueta, encode(sha256(convert_to(token, 'UTF8')), 'hex'), 'todas' FROM ue WHERE activo RETURNING 1),
 d AS (DELETE FROM panel_sesion WHERE token <> $1 AND EXISTS (SELECT 1 FROM si) RETURNING 1)
 SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM v) THEN ${SALIR}
-  WHEN EXISTS (SELECT 1 FROM si) THEN json_build_object('ok', true, 'llaves', (SELECT count(*) FROM ut WHERE activo) + (SELECT count(*) FROM uc WHERE activo), 'cerradas', (SELECT count(*) FROM d))
+  WHEN EXISTS (SELECT 1 FROM si) THEN json_build_object('ok', true, 'llaves', (SELECT count(*) FROM ut WHERE activo) + (SELECT count(*) FROM uc WHERE activo) + (SELECT count(*) FROM ue WHERE activo), 'cerradas', (SELECT count(*) FROM d))
   WHEN (SELECT bloqueado_hasta FROM f) > now() THEN json_build_object('ok', false, 'msg', 'Demasiados intentos. Espera ' || (SELECT ceil(extract(epoch FROM bloqueado_hasta - now()) / 60)::int FROM f) || ' min.')
   ELSE json_build_object('ok', false, 'msg', 'PIN incorrecto. Te quedan ' || (SELECT greatest(0, 5 - intentos) FROM f) || ' intentos.') END AS r;`,
   // $1 sesión, $2 título, $3 url, $4 grupo, $5 id (para editar)
@@ -115,7 +119,7 @@ switch (op) {
     params = [s, titulo, url, grupo, id]; break; }
   case 'regenerar': {
     const fuente = String(b.fuente || ''), t = String(b.t || '').trim().slice(0, 128);
-    if (!['tablero', 'choferes'].includes(fuente) || !t) return fail('Liga inválida.');
+    if (!['tablero', 'choferes', 'empleados'].includes(fuente) || !t) return fail('Liga inválida.');
     params = [s, fuente, t]; break; }
   case 'regenerar_todas': if (!pinOk(b.pin)) return fail('Escribe tu PIN para confirmar.'); params = [s, String(b.pin)]; break;
   case 'liga_borrar': if (!/^\d{1,9}$/.test(String(b.id || ''))) return fail('Liga inválida.'); params = [s, String(b.id)]; break;

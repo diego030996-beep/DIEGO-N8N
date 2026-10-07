@@ -5,6 +5,7 @@ Una sola página con **todas tus ligas**, protegida con PIN:
 - **Planeador de compras**, **Producción de tinacos** y **Tablero del vendedor**: una liga por cada llave activa de `tablero_acceso` (admin, compras, producción, auditor, encargado).
 - **Asistente de rutas**: la liga de oficina (`choferes_web`, nombre `*`).
 - **Choferes**: la de oficina y la de cada chofer.
+- **Auditoría de movimientos**: administrador, auditora y la liga de cada empleado (`mov_empleado`).
 - **Monedero**: la app (pide su propio PIN).
 - **Ligas propias**: Kommo, hojas de Google, etc. Las agregas, editas y quitas desde el panel, y puedes agruparlas.
 
@@ -18,7 +19,7 @@ Si a una página le falta la llave, el panel te dice en qué flujo se crea.
   la de oficina abre rutas y choferes). Antes de regenerar, el panel te dice qué páginas cambian.
 - **Regenerar todas** (emergencia) pide tu PIN otra vez. Cambia todas las llaves, incluso las desactivadas, y cierra tus sesiones del panel en otros dispositivos.
   Un PIN equivocado cuenta para el bloqueo de 5 intentos.
-- Solo cambian las llaves `k` de `tablero_acceso` y `choferes_web`, en el mismo renglón (mismo rol, mismo chofer).
+- Solo cambian las llaves `k` de `tablero_acceso`, `choferes_web` y `mov_empleado`, en el mismo renglón (mismo rol, mismo chofer).
   **No cambia** las direcciones de n8n, los flujos ni las credenciales de Microsip, Telegram, WhatsApp, OpenAI, etc.
 - Las llaves nuevas tienen 64 caracteres hexadecimales: dos `gen_random_uuid()` de Postgres, que usan el generador criptográfico del sistema (244 bits aleatorios).
 - Cada regeneración queda en `panel_rotacion` con la fecha. Ahí solo se guarda el hash de la llave, nunca la llave.
@@ -46,5 +47,5 @@ Si a una página le falta la llave, el panel te dice en qué flujo se crea.
 Las tablas de llaves (`tablero_acceso`, `choferes_web`) son las mismas que usan los demás flujos.
 
 ## Pruebas
-`node panel/pruebas/probar_todo.js` corre 69 casos contra el Postgres de prueba: PIN, bloqueo, sesiones, ligas, regeneración (incluye revisar que la llave vieja quede denegada) e inyección.
+`node panel/pruebas/probar_todo.js` corre 72 casos contra el Postgres de prueba: PIN, bloqueo, sesiones, ligas, regeneración (incluye revisar que la llave vieja quede denegada) e inyección.
 `node panel/pruebas/servidor.js` levanta la página en http://localhost:5682/webhook/mis-ligas.
