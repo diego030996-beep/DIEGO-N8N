@@ -90,6 +90,9 @@ switch (op) {
     if (!['', 'en_camino', 'cancelada', 'recibida'].includes(String(b.estado || ''))) return fail('Estado inválido.');
     p = { docto_cm_id: String(b.docto_cm_id), estado: String(b.estado || ''), nota: txt(b.nota, 200) };
     break;
+  case 'copia':
+    p = { folio: txt(b.folio, 30) };
+    break;
   case 'oc_articulo':
     if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
     p = { articulo_id: Number(b.articulo_id) };

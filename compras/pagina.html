@@ -377,6 +377,12 @@ input.sel{width:16px;height:16px;vertical-align:-3px;margin:0 4px 0 0}
     <div class="head"><div><h1>Seguimiento de órdenes de compra</h1><p>Lo que falta por recibir, las órdenes atrasadas y los planes que todavía no son OC.</p></div>
       <div class="headr"><button class="btn btn-ghost" id="recargarSeg">Actualizar</button></div></div>
     <div class="kpis" id="kpisSeg"></div>
+    <div class="card" id="copiaCard">
+      <h2>¿Está al día la copia de Microsip?</h2>
+      <div id="copiaTxt" class="sub">Cargando…</div>
+      <div class="row" style="margin-top:10px"><input type="text" id="copiaFolio" placeholder="Folio de una OC, ej. O51" style="max-width:220px"><button class="btn btn-ghost" id="copiaVer">Ver cómo quedó copiada</button></div>
+      <div id="copiaOc"></div>
+    </div>
     <div class="card">
       <h2>Órdenes abiertas</h2>
       <p class="sub">Se cuenta lo que falta de cada renglón, aunque la orden ya tenga una recepción parcial. Una orden <b>atrasada</b> (ya pasó su fecha de entrega) se queda aquí hasta que llegue, confirmes que sigue en camino o la marques como que no va a llegar. Si en Microsip la cancelaste pero aquí sigue, márcala «No va a llegar».</p>
@@ -912,8 +918,27 @@ $("#presu").addEventListener("change", e => { presu = num(e.target.value) || nul
 /* ================= seguimiento de órdenes de compra ================= */
 const OCEST = {atrasada: ["Atrasada", "critico"], en_camino: ["Atrasada, sigue en camino", "pedir"], parcial: ["Recibida en parte", "proximo"], abierta: ["En tiempo", "bien"]};
 function marcarSeg(){ const n = SEG ? SEG.ocs.filter(o => o.estado === "atrasada").length : 0; $("#nseg").hidden = !n; $("#nseg").textContent = n; }
+const fhora = t => t ? fecha(t.slice(0, 10)) + " " + t.slice(11, 16) : "—";
+async function cargarCopia(folio){
+  try {
+    const c = await api("copia", {folio: folio || ""});
+    const l = c.lote || {};
+    $("#copiaTxt").innerHTML = c.ultima ? `Última copia de documentos de compras: <b>${esc(fhora(c.ultima))}</b> (ahora son las ${esc(c.ahora.slice(11, 16))}).
+      Esa copia trajo <b>${n0(l.docs)}</b> documentos con fecha del <b>${esc(fecha(l.desde))}</b> al ${esc(fecha(l.hasta))}.
+      <br>Una OC con fecha <b>anterior al ${esc(fecha(l.desde))}</b> no se volvió a copiar: si la cancelaste o la recibiste en Microsip después, aquí todavía no se sabe.
+      Para traer todo de nuevo corre <code>python microsip_sync.py --dias 120</code>, o márcala en esta pantalla.` : "Todavía no hay órdenes de compra copiadas de Microsip.";
+    if(folio !== undefined) $("#copiaOc").innerHTML = !c.ocs.length ? `<p class="muted">No encontré la orden ${esc(folio)} en la copia.</p>` : c.ocs.map(o => {
+      const canc = String(o.estatus || "").toUpperCase() === "C" || ["S", "SI", "1", "TRUE"].includes(String((o.datos || {}).CANCELADO || "").toUpperCase());
+      return `<div class="oc" style="margin-top:10px"><b>${esc(o.folio)}</b> · ${esc(fecha(o.fecha))} · estatus en la copia: <b>${esc(o.estatus || "—")}</b>${canc ? " (cancelada)" : ""} · copiada el <b>${esc(fhora(o.copiada))}</b>
+        <div class="${canc ? "muted" : "neg"}" style="margin-top:4px">${canc ? "La copia ya sabe que está cancelada: no cuenta." : "Si en Microsip está cancelada o recibida, la copia es de antes de ese cambio: Microsip no la ha vuelto a mandar."}</div>
+        <details style="margin-top:6px"><summary class="muted">Todos los campos copiados</summary><table class="tbl" style="margin-top:6px">${Object.entries(o.datos || {}).map(([k, v]) => `<tr><td class="muted">${esc(k)}</td><td>${esc(typeof v === "object" ? JSON.stringify(v) : v)}</td></tr>`).join("")}</table>
+        <p class="muted">Campos de sus renglones: ${esc(o.campos_det || "—")}</p></details></div>`; }).join("");
+  } catch(e) { $("#copiaTxt").textContent = e.message; }
+}
+$("#copiaVer").addEventListener("click", () => ocupado($("#copiaVer"), () => cargarCopia($("#copiaFolio").value.trim())));
+$("#copiaFolio").addEventListener("keydown", e => { if(e.key === "Enter") $("#copiaVer").click(); });
 async function cargarSeg(){
-  $("#ocsSeg").innerHTML = `<p class="muted">Cargando…</p>`;
+  $("#ocsSeg").innerHTML = `<p class="muted">Cargando…</p>`; cargarCopia();
   try { SEG = await api("seguimiento"); } catch(e) { toast(e.message); return; }
   marcarSeg(); pintarSeg();
 }
