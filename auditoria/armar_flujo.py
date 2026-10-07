@@ -14,6 +14,11 @@ SALIDA = os.path.join(AQUI, 'n8n', 'Auditoría de movimientos (Microsip).json')
 CRED = {'postgres': {'id': 'nkJBZ7x5YYLa9MRx', 'name': 'Postgres account'}}
 URL_N8N = 'https://ai.adhesipro.com.mx'
 NO_CACHE = {'name': 'Cache-Control', 'value': 'no-store'}
+# En el repositorio van marcadores; la copia que se entrega puede llevar los datos reales con variables de entorno.
+BOT = {'token': os.environ.get('AUD_TG_TOKEN', 'PEGA_AQUI_EL_TOKEN_DEL_BOT_DE_AUDITORIA'),
+       'chat': os.environ.get('AUD_TG_CHAT', 'PEGA_AQUI_EL_CHAT_ID_DEL_GRUPO_DE_CHOFERES'),
+       'secreto': os.environ.get('AUD_TG_SECRETO', 'CAMBIA_ESTA_CLAVE_SECRETA')}
+SALIDA = os.environ.get('AUD_SALIDA', SALIDA)
 
 
 def leer(*ruta):
@@ -64,25 +69,18 @@ def armar():
                "if (!f) return [{ json: { falta: true } }];\n"
                "return [{ json: { falta: false }, binary: { data: { data: f, mimeType: 'image/jpeg', fileName: 'comprobante.jpg', fileExtension: 'jpg' } } }];\n")
     avisos_sql = esquema + "\n" + sql['avisos']
-    avisos_params = "={{ ['', " + json.dumps(json.dumps(defaults, ensure_ascii=False), ensure_ascii=False) + ", 'Telegram', '{\"_rol\":\"admin\"}', ''] }}"
-    avisos_js = (
-        "// Arma UN mensaje con lo que venció sin comprobar (máximo 15 renglones) y la lista de claves para marcarlas como avisadas.\n"
-        "const cfg = $('Configuración (avisos)').first().json;\n"
-        "let r = $input.first().json.r || {}; if (typeof r === 'string') r = JSON.parse(r);\n"
-        "const A = r.avisos || [];\n"
-        "if (!A.length) return [];\n"
-        "if (!/^\\d+:/.test(String(cfg.telegram_token || '')) || !String(cfg.chat_id || '').trim()) throw new Error('Pon el token del bot y el chat_id en el nodo \"Configuración (avisos)\".');\n"
-        "const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n"
-        "const $$ = n => '$' + Math.round(Math.abs(Number(n || 0))).toLocaleString('es-MX');\n"
-        "const falta = a => a.clase === 'retiro' ? 'reportarlo + ticket' : a.clase === 'compra' ? 'comprobante de la compra'\n"
-        "  : /COMPRA NO REGISTRADA/.test(a.motivo) ? 'registro de compra en Microsip' : /FALTA COMPROBANTE/.test(a.motivo) ? 'ticket / comprobante' : a.motivo;\n"
-        "const L = A.slice(0, 15).map(a => `🔴 <b>${esc(a.folio)}</b> · ${$$(a.importe)} · ${esc(a.empleado || '?')}` +\n"
-        "  (a.pedido ? `\\nPedido ${esc(a.pedido)}` : '') + `\\n${esc(a.concepto).slice(0, 80)}` + `\\nFalta: ${esc(falta(a))}${a.horas > 0 ? ' · ' + a.horas + ' h' : ''}`);\n"
-        "const url = String(cfg.url_n8n || '').replace(/\\/+$/, '') + '/webhook/auditoria-mov';\n"
-        "const text = `⚠️ <b>Comprobación pendiente</b> (${A.length})\\n\\n` + L.join('\\n\\n') + (A.length > 15 ? `\\n\\n…y ${A.length - 15} más.` : '') +\n"
-        "  `\\n\\nSe revisa en Auditoría de movimientos (Mis ligas).`;\n"
-        "return [{ json: { chat_id: String(cfg.chat_id).trim(), text, parse_mode: 'HTML', disable_web_page_preview: true, claves: A.map(a => a.clave) } }];\n")
+    tablero_sql = esquema + "\n" + sql['tablero']
+    def_txt = json.dumps(json.dumps(defaults, ensure_ascii=False), ensure_ascii=False)
+    avisos_params = "={{ ['', " + def_txt + ", 'Telegram', '{\"_rol\":\"admin\"}', ''] }}"
+    resumen_params = "={{ ['', " + def_txt + ", 'Telegram', '{\"_rol\":\"admin\",\"ver\":\"problemas\"}', ''] }}"
+    tg_sql = {k: (esquema + "\n" + sql[k]) for k in ('tablero', 'buscar', 'tg_registrar', 'detalle')}
+    tg_leer = leer('n8n', 'tg_leer.js').replace('__SQL__', json.dumps(tg_sql, ensure_ascii=False)).replace('__DEF__', json.dumps(defaults, ensure_ascii=False))
     marcar_sql = "INSERT INTO mov_aviso (clave) SELECT unnest($1::text[]) ON CONFLICT (clave) DO NOTHING;\nSELECT 1 AS ok;"
+    tg_send = lambda nombre, pos, **extra: nodo(nombre, 'n8n-nodes-base.httpRequest', 4.2, pos, {
+        'method': 'POST', 'url': "=https://api.telegram.org/bot{{ $('Configuración del bot').first().json.telegram_token }}/sendMessage",
+        'sendBody': True, 'specifyBody': 'json',
+        'jsonBody': '={{ JSON.stringify({ chat_id: $json.chat_id, text: $json.text, parse_mode: "HTML", disable_web_page_preview: true, reply_parameters: $json.reply_parameters }) }}',
+        'options': {}}, **extra)
     ligas_sql = (esquema + "\n"
         "INSERT INTO tablero_acceso (token, rol) SELECT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''), v.r FROM (VALUES ('auditora'), ('admin')) AS v(r)\n"
         "WHERE NOT EXISTS (SELECT 1 FROM tablero_acceso a WHERE a.rol = v.r AND a.activo);\n"
@@ -122,19 +120,61 @@ def armar():
             {'name': 'Content-Type', 'value': 'image/jpeg'}, {'name': 'Cache-Control', 'value': 'private, max-age=3600'}]}}}),
         nodo('Sin foto', 'n8n-nodes-base.respondToWebhook', 1.1, [896, 260], {'respondWith': 'text', 'responseBody': 'No encontré ese comprobante o tu liga no tiene permiso.',
             'options': {'responseCode': 404, 'responseHeaders': {'entries': [{'name': 'Content-Type', 'value': 'text/plain; charset=utf-8'}, NO_CACHE]}}}),
-        # avisos por Telegram
-        nodo('Cada hora', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 440], {'rule': {'interval': [{'field': 'cronExpression', 'expression': '5 8-22 * * *'}]}}),
-        nodo('Configuración (avisos)', 'n8n-nodes-base.set', 3.4, [224, 440], {'assignments': {'assignments': [
-            {'id': uid('tg'), 'name': 'telegram_token', 'value': 'PEGA_AQUI_EL_TOKEN_DEL_BOT', 'type': 'string'},
-            {'id': uid('chat'), 'name': 'chat_id', 'value': 'PEGA_AQUI_EL_CHAT_ID_DEL_GRUPO', 'type': 'string'},
+        # bot de auditoría en el grupo de choferes: mensajes, avisos de cada hora, resumen del día
+        nodo('Cómo conectar el bot', 'n8n-nodes-base.stickyNote', 1, [-420, 380], {'width': 380, 'height': 520, 'content':
+            '## Bot de auditoría en el grupo de choferes\n'
+            '1. En Telegram, con **@BotFather**: `/newbot` (ej. *Auditoría Construrama*). Copia el token.\n'
+            '2. Con @BotFather: `/setprivacy` → escoge el bot → **Disable** (para que vea las fotos del grupo).\n'
+            '3. Agrega el bot al **grupo de choferes**.\n'
+            '4. Pega el token en **Configuración del bot** (el chat del grupo ya viene puesto).\n'
+            '5. Guarda y **activa** el flujo; luego corre a mano **Conectar bot** (una sola vez).\n\n'
+            '⚠️ **NO uses el token del bot de choferes**: ese bot ya recibe sus mensajes en otro flujo y "Conectar bot" se los quitaría.\n\n'
+            'En el grupo: foto + `R-01842 500 P4509 block`, o responder con la foto a un aviso. `/pendientes`, `/folio R-01842`, `/ayuda`.'}),
+        nodo('Telegram', 'n8n-nodes-base.webhook', 2, [0, 440], {'httpMethod': 'POST', 'path': 'auditoria-mov-tg', 'options': {}}, webhookId=uid('webhook/auditoria-mov-tg')),
+        nodo('Cada hora', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 600], {'rule': {'interval': [{'field': 'cronExpression', 'expression': '5 8-22 * * *'}]}}),
+        nodo('Resumen del día', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 760], {'rule': {'interval': [{'field': 'cronExpression', 'expression': '20 20 * * *'}]}}),
+        nodo('Conectar bot', 'n8n-nodes-base.manualTrigger', 1, [0, 920], {}),
+        nodo('Configuración del bot', 'n8n-nodes-base.set', 3.4, [224, 680], {'assignments': {'assignments': [
+            {'id': uid('tg'), 'name': 'telegram_token', 'value': BOT['token'], 'type': 'string'},
+            {'id': uid('chat'), 'name': 'chat_id', 'value': BOT['chat'], 'type': 'string'},
+            {'id': uid('secreto'), 'name': 'secreto', 'value': BOT['secreto'], 'type': 'string'},
             {'id': uid('url2'), 'name': 'url_n8n', 'value': URL_N8N, 'type': 'string'}]}, 'options': {}}),
-        pg('Pendientes de avisar', [448, 440], avisos_sql, avisos_params),
-        nodo('Armar aviso', 'n8n-nodes-base.code', 2, [672, 440], {'jsCode': avisos_js}),
-        nodo('Enviar a Telegram', 'n8n-nodes-base.httpRequest', 4.2, [896, 440], {
-            'method': 'POST', 'url': "=https://api.telegram.org/bot{{ $('Configuración (avisos)').first().json.telegram_token }}/sendMessage",
-            'sendBody': True, 'specifyBody': 'json',
-            'jsonBody': '={{ JSON.stringify({ chat_id: $json.chat_id, text: $json.text, parse_mode: $json.parse_mode, disable_web_page_preview: true }) }}', 'options': {}}),
-        pg('Marcar avisados', [1120, 440], marcar_sql, "={{ [ '{' + $('Armar aviso').first().json.claves.map(c => '\"' + c + '\"').join(',') + '}' ] }}"),
+        nodo('Origen', 'n8n-nodes-base.code', 2, [448, 680], {'jsCode': leer('n8n', 'tg_origen.js')}),
+        si('¿Mensaje del grupo?', [672, 440], "={{ $json.origen === 'telegram' }}"),
+        si('¿Avisos?', [672, 600], "={{ $json.origen === 'avisos' }}"),
+        si('¿Resumen?', [672, 760], "={{ $json.origen === 'resumen' }}"),
+        # mensajes del grupo
+        nodo('Leer mensaje', 'n8n-nodes-base.code', 2, [896, 360], {'jsCode': tg_leer}),
+        si('¿Foto?', [1120, 360], "={{ $json.ruta === 'foto' }}"),
+        nodo('Pedir archivo', 'n8n-nodes-base.httpRequest', 4.2, [1344, 220], {
+            'url': "=https://api.telegram.org/bot{{ $('Configuración del bot').first().json.telegram_token }}/getFile?file_id={{ encodeURIComponent($json.file_id) }}", 'options': {}}),
+        nodo('Bajar foto', 'n8n-nodes-base.httpRequest', 4.2, [1568, 220], {
+            'url': "=https://api.telegram.org/file/bot{{ $('Configuración del bot').first().json.telegram_token }}/{{ $json.result.file_path }}",
+            'options': {'response': {'response': {'responseFormat': 'file', 'outputPropertyName': 'data'}}}}),
+        nodo('Foto a texto', 'n8n-nodes-base.code', 2, [1792, 220], {'jsCode': leer('n8n', 'tg_foto.js')}),
+        pg('Guardar desde Telegram', [2016, 220], '={{ $json.sql }}', '={{ $json.params }}', alwaysOutputData=True, onError='continueRegularOutput'),
+        nodo('Pedir estado', 'n8n-nodes-base.code', 2, [2240, 220], {'jsCode': leer('n8n', 'tg_estado.js')}),
+        pg('Estado', [2464, 220], '={{ $json.sql }}', '={{ $json.params }}', alwaysOutputData=True, onError='continueRegularOutput'),
+        nodo('Contestar foto', 'n8n-nodes-base.code', 2, [2688, 220], {'jsCode': leer('n8n', 'tg_responder.js')}),
+        si('¿Comando?', [1344, 440], "={{ $json.ruta === 'comando' }}"),
+        pg('Consultar comando', [1568, 380], '={{ $json.sql }}', '={{ $json.params }}', alwaysOutputData=True, onError='continueRegularOutput'),
+        nodo('Contestar comando', 'n8n-nodes-base.code', 2, [1792, 380], {'jsCode': leer('n8n', 'tg_comando.js')}),
+        nodo('Texto fijo', 'n8n-nodes-base.code', 2, [1568, 520], {'jsCode': "return [{ json: $input.first().json.envio }];"}),
+        tg_send('Mandar al grupo', [2912, 440], onError='continueRegularOutput'),
+        # avisos de cada hora
+        pg('Pendientes de avisar', [896, 600], avisos_sql, avisos_params),
+        nodo('Armar avisos', 'n8n-nodes-base.code', 2, [1120, 600], {'jsCode': leer('n8n', 'tg_avisos.js')}),
+        tg_send('Mandar aviso', [1344, 600]),
+        pg('Marcar avisados', [1568, 600], marcar_sql, "={{ [ '{' + $('Armar avisos').all().flatMap(i => i.json.claves).map(c => '\"' + c + '\"').join(',') + '}' ] }}", executeOnce=True),
+        # resumen del día
+        pg('Leer resumen', [896, 760], tablero_sql, resumen_params),
+        nodo('Armar resumen', 'n8n-nodes-base.code', 2, [1120, 760], {'jsCode': leer('n8n', 'tg_resumen.js')}),
+        tg_send('Mandar resumen', [1344, 760]),
+        # conectar el bot (una vez)
+        nodo('Datos del bot', 'n8n-nodes-base.code', 2, [896, 920], {'jsCode': leer('n8n', 'tg_conectar.js')}),
+        nodo('Conectar webhook', 'n8n-nodes-base.httpRequest', 4.2, [1120, 920], {
+            'method': 'POST', 'url': "=https://api.telegram.org/bot{{ $('Configuración del bot').first().json.telegram_token }}/setWebhook",
+            'sendBody': True, 'specifyBody': 'json', 'jsonBody': '={{ JSON.stringify($json) }}', 'options': {}}),
         # ligas
         nodo('Ver ligas', 'n8n-nodes-base.manualTrigger', 1, [0, 680], {}),
         nodo('Configuración (ligas)', 'n8n-nodes-base.set', 3.4, [224, 680], {'assignments': {'assignments': [
@@ -147,8 +187,17 @@ def armar():
         'Página': c(['Mostrar página']), 'API': c(['Acceso']), 'Acceso': c(['Preparar']), 'Preparar': c(['¿Válido?']),
         '¿Válido?': c(['Consultar'], ['Responder']), 'Consultar': c(['Armar respuesta']), 'Armar respuesta': c(['Responder']),
         'Foto': c(['Buscar foto']), 'Buscar foto': c(['Foto a imagen']), 'Foto a imagen': c(['¿Hay foto?']), '¿Hay foto?': c(['Mostrar foto'], ['Sin foto']),
-        'Cada hora': c(['Configuración (avisos)']), 'Configuración (avisos)': c(['Pendientes de avisar']), 'Pendientes de avisar': c(['Armar aviso']),
-        'Armar aviso': c(['Enviar a Telegram']), 'Enviar a Telegram': c(['Marcar avisados']),
+        'Telegram': c(['Configuración del bot']), 'Cada hora': c(['Configuración del bot']), 'Resumen del día': c(['Configuración del bot']),
+        'Conectar bot': c(['Configuración del bot']), 'Configuración del bot': c(['Origen']),
+        'Origen': c(['¿Mensaje del grupo?']), '¿Mensaje del grupo?': c(['Leer mensaje'], ['¿Avisos?']), '¿Avisos?': c(['Pendientes de avisar'], ['¿Resumen?']),
+        '¿Resumen?': c(['Leer resumen'], ['Datos del bot']),
+        'Leer mensaje': c(['¿Foto?']), '¿Foto?': c(['Pedir archivo'], ['¿Comando?']), 'Pedir archivo': c(['Bajar foto']), 'Bajar foto': c(['Foto a texto']),
+        'Foto a texto': c(['Guardar desde Telegram']), 'Guardar desde Telegram': c(['Pedir estado']), 'Pedir estado': c(['Estado']), 'Estado': c(['Contestar foto']),
+        'Contestar foto': c(['Mandar al grupo']), '¿Comando?': c(['Consultar comando'], ['Texto fijo']), 'Consultar comando': c(['Contestar comando']),
+        'Contestar comando': c(['Mandar al grupo']), 'Texto fijo': c(['Mandar al grupo']),
+        'Pendientes de avisar': c(['Armar avisos']), 'Armar avisos': c(['Mandar aviso']), 'Mandar aviso': c(['Marcar avisados']),
+        'Leer resumen': c(['Armar resumen']), 'Armar resumen': c(['Mandar resumen']),
+        'Datos del bot': c(['Conectar webhook']),
         'Ver ligas': c(['Configuración (ligas)']), 'Configuración (ligas)': c(['Ligas']), 'Ligas': c(['Ligas para abrir']),
     }
     flujo = {'name': 'Auditoría de movimientos (Microsip)', 'nodes': nodes, 'connections': connections, 'pinData': {}, 'active': False,

@@ -54,20 +54,43 @@ Cada movimiento guarda, para abrirlo meses después (Historial → `R-01842`):
 Las fotos se guardan en la base (`mov_comprobante.foto`, JPEG reducido a 1600 px).
 Solo las ven la auditora, el administrador y el empleado que las subió.
 
-## Avisos por Telegram
-El nodo **Cada hora** corre de 8:05 a 22:05. Manda **un solo mensaje** con lo que venció en rojo y todavía no se había avisado, de los últimos 3 días:
-```
-⚠️ Comprobación pendiente
-🔴 R-01842 · $500 · JUAN
-Pedido P4509
-comprar 10 block ligero
-Falta: registro de compra en Microsip · 8 h
-```
-Cada pendiente se avisa una sola vez (`mov_aviso`). Antes de activarlo, pon `telegram_token` y `chat_id` en **Configuración (avisos)**.
+## En el grupo de choferes (Telegram)
+Todo se puede manejar desde el **grupo de choferes**, con un **bot de auditoría** que se agrega al grupo. El encargado y el dueño, que también están en el grupo, ven todo.
+
+**Reportar desde el grupo:**
+- Mandar la **foto del ticket** con el texto `R-01842 500 P4509 block ligero`. El folio del retiro, el importe, el pedido y el motivo pueden ir en cualquier orden.
+- Sin retiro de caja: `350 gasolina tarjeta`.
+- O **responder con la foto** a un aviso del bot. La foto queda ligada a ese retiro, movimiento o compra.
+- El bot contesta en el grupo con el semáforo: 🟢 cuadrado, 🟠 qué falta o ⏳ hasta qué hora tiene.
+- El chofer se identifica con el nombre que ya tiene en el bot de choferes (`choferes_tg`). Si no está ahí, se usa su nombre de Telegram.
+- Fotos sin folio, sin importe y sin palabras como "ticket" o "comprobante" se ignoran, para no mezclarse con las fotos de entregas.
+
+**Comandos:** `/pendientes` (resumen de hoy y problemas), `/folio R-01842` (cómo va), `/ayuda`.
+
+**Avisos (cada hora de 8:05 a 22:05):**
+- Un mensaje por cada movimiento que pasó la hora límite y sigue en 🔴 o 🟠.
+- Etiqueta al responsable si mandó por Telegram.
+- Trae "↩️ Responde a este mensaje con la foto".
+- Se avisa una vez por estado: si pasa de 🟠 a 🔴, se vuelve a avisar.
+- Lo que la auditora ya revisó no se repite.
+- Si hay más de 8 a la vez, el resto va en un solo mensaje.
+
+**Resumen del día (20:20):** 🟢/🟠/🔴, dinero sin comprobar, problemas de días anteriores y problemas por persona.
+Si cambias la hora de cierre, mueve también la hora de "Resumen del día".
+
+**Seguridad:**
+- El bot solo atiende al grupo configurado.
+- Telegram firma cada mensaje con la `secreto` (`X-Telegram-Bot-Api-Secret-Token`).
+- En los mensajes del grupo nunca se ponen ligas con llave.
+
+**Por qué un bot aparte:** Telegram solo deja un receptor de mensajes por bot. El bot de choferes ya lo usa el flujo "ML inventario + ventas (Telegram)". Con un bot propio no se toca ese flujo.
+**No pongas el token del bot de choferes aquí**: "Conectar bot" le quitaría sus mensajes a ese flujo.
 
 ## Instalar
 1. `python3 auditoria/armar_flujo.py` genera `n8n/Auditoría de movimientos (Microsip).json`. Ya viene generado.
-2. Importa el archivo en n8n, revisa la credencial de Postgres, pon el token y el chat del bot, y **activa** el flujo.
+2. Importa el archivo en n8n y revisa la credencial de Postgres.
+   Crea el bot de auditoría (ver la nota dentro del flujo) y pon su token en **Configuración del bot**.
+   **Activa** el flujo y corre **Conectar bot** una vez.
 3. Corre **Ver ligas**: crea la llave de la auditora si no existe y te da las ligas.
 4. Con la liga de administrador entra a **Empleados** y da de alta a quien maneja dinero. Cada uno recibe su liga.
 5. En **Ajustes** revisa:
@@ -88,7 +111,7 @@ La auditoría empieza **el día que se instala**: no revisa todo el pasado de Mi
 
 ## Pruebas
 ```
-python3 auditoria/pruebas/probar_todo.py     # 71 casos del cruce y del semáforo (base de prueba 'auditoria')
-node auditoria/pruebas/probar_nodos.js       # 29 casos: permisos por rol, fotos, avisos de Telegram, ligas
+python3 auditoria/pruebas/probar_todo.py     # 84 casos del cruce, del semáforo y del registro por Telegram (base de prueba 'auditoria')
+node auditoria/pruebas/probar_nodos.js       # 49 casos: permisos, fotos, mensajes del grupo, avisos, resumen, ligas
 AHORA='2026-10-07 21:00' node auditoria/pruebas/servidor.js   # página en http://localhost:5683/webhook/auditoria-mov?k=...
 ```
