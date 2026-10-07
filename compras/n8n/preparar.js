@@ -164,7 +164,7 @@ switch (op) {
       varios: v => { try { new RegExp(v, 'i'); return String(v).length <= 300; } catch (e) { return false; } }, dias_lento: v => numOk(v, 7, 1000), max_lento: v => numOk(v, 1, 100),
       lineas_excluidas: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       entrega_def: v => numOk(v, 0, 120), dia_a: v => ['1', '2', '3', '4', '5', '6', '7'].includes(String(v)), frec_b: v => numOk(v, 1, 90),
-      regla: v => ['bajo_minimo', 'hasta_maximo'].includes(v), atrasadas: v => ['cuentan', 'confirmar'].includes(v), gracia_oc: v => numOk(v, 0, 60), dias_ligar: v => numOk(v, 0, 30),
+      regla: v => ['bajo_minimo', 'hasta_maximo'].includes(v), atrasadas: v => ['cuentan', 'confirmar'].includes(v), surtir: v => ['si', 'no'].includes(v), gracia_oc: v => numOk(v, 0, 60), dias_ligar: v => numOk(v, 0, 30),
       almacenes: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       excluir: v => { try { new RegExp(v, 'i'); return String(v).length <= 200; } catch (e) { return false; } },
       monto_maximo: v => numOk(v, 1, 1e9), empresa: v => String(v).length <= 120, tienda: v => String(v).length <= 120,

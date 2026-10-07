@@ -14,7 +14,7 @@ def ok(c, msg):
         sys.exit(1)
 
 d = correr('datos')
-ok(d['ok'] and d['mes'] is None and d['oc_total'] == 17, 'datos sin cálculo previo')
+ok(d['ok'] and d['mes'] is None and d['oc_total'] == 18, 'datos sin cálculo previo')
 ok(sorted(x['linea'] for x in d['excluidos']) == ['Servicios (no son mercancía)', 'TINACOS Y CISTERNAS', 'Varios (artículo genérico)'],
    'avisa que tinacos, servicios y VARIOS no se toman en cuenta')
 c = correr('calcular', {'mes': '2026-10-01'})
@@ -64,11 +64,11 @@ ok(L['CEM50']['costo'] == 168.0 and L['CEM50']['costo_fuente'] == 'último costo
 ok(d['falta_razon'] == 1, 'pide razón del renglón no planeado')
 for m in ('2026-08-01', '2026-09-01'):
     x = correr('reconstruir', {'mes': m, 'solo_si_falta': 'si'}, hoy='2026-10-07')
-    ok(x['ocs'] == (5 if m < '2026-09' else 8), 'reconstruir ' + m + f" ({x['renglones']} renglones, sin la OC de tinacos)")
+    ok(x['ocs'] == (6 if m < '2026-09' else 8), 'reconstruir ' + m + f" ({x['renglones']} renglones, sin la OC de tinacos)")
 x = correr('reconstruir', {'mes': '2026-08-01', 'solo_si_falta': 'si'}, hoy='2026-10-07')
-ok(x['renglones'] == 13, 'reconstruir dos veces no duplica')
+ok(x['renglones'] == 14, 'reconstruir dos veces no duplica')
 o = correr('ocs', {'desde': '2026-08-01', 'hasta': '2026-09-30'})
-ok(len(o['ocs']) == 14 and all(bool(z['plan']) != z['excluida'] for z in o['ocs']), 'todas las OCs ligadas menos la de tinacos (marcada como excluida)')
+ok(len(o['ocs']) == 15 and all(bool(z['plan']) != z['excluida'] for z in o['ocs']), 'todas las OCs ligadas menos la de tinacos (marcada como excluida)')
 ok(correr('registro', {'mes': '2026-08-01'})['oc_sin_plan'] == [], 'la OC de tinacos no sale como OC sin plan')
 did = correr('registro', {'mes': '2026-08-01'})['planes'][0]['lineas'][0]['id']
 ok(correr('razon', {'id': did, 'razon': 'no_documentado', 'nota': ''})['razon'] == 'no_documentado', 'guardar razón')
@@ -113,6 +113,9 @@ ok('CLAVO25' in P('15'), 'regresar al proveedor del cálculo')
 l16 = P('16')['LLAVE38']
 ok(l16['atr_u'] == 5 and l16['pendiente'] == 5 and l16['atr_cuenta'] and any('atrasada' in r for r in l16['revisar']), 'OC atrasada: cuenta como por recibir (como Microsip) y avisa')
 ok('O0000096' not in {o['folio'] for o in correr('seguimiento', {}, hoy=H)['ocs']}, 'OC cancelada en Microsip (usuario de cancelación): no cuenta')
+pg = P('10')['PEGPVC85']
+ok(pg['atr_viejas_u'] == 7 and 'O0000097' not in (pg['folios'] or '') and any('sin confirmar' in r for r in pg['revisar']),
+   'OC atrasada con copia vieja de Microsip (pudo cancelarse después): no cuenta y pide confirmarla')
 correr('config', {'general': {'atrasadas': 'confirmar'}, 'proveedores': []})
 l16 = P('16')['LLAVE38']
 ok(l16['atr_u'] == 5 and l16['pendiente'] == 0 and not l16['atr_cuenta'], 'opción: la atrasada no cuenta hasta confirmarla')
@@ -171,6 +174,15 @@ ok(p15['CINTA']['estado'] == 'bajo_pedido' and p15['CINTAP' if 'CINTAP' in p15 e
 ok(sorted(x['clave'] for x in correr('limpieza', {})['bajo_pedido']) == ['CINTA', 'CINTAP'], 'lista de solo bajo pedido en Limpieza')
 correr('politica_varios', {'articulos': [12, 19], 'politica': '', 'nota': ''})
 ok(correr('limpieza', {})['bajo_pedido'] == [], 'quitar la política a varios')
+
+# ---- Por surtir (pedidos de clientes sin remisión), opcional ----
+c0 = P('14')['CEM50']
+ok(c0['por_surtir'] == 60, 'por surtir: 60 del pedido pendiente (el remisionado no cuenta)')
+correr('config', {'general': {'surtir': 'si'}, 'proveedores': []})
+c1 = P('14')['CEM50']
+ok(c1['sugerido'] >= c0['sugerido'] and (c1['sugerido'] > c0['sugerido'] or c0['sugerido'] == 0 and max(c1['existencia'], 0) + c1['pendiente'] - 60 > c1['punto_reorden']),
+   f"con la opción, lo por surtir se resta de lo disponible (sugerido {c0['sugerido']} → {c1['sugerido']})")
+correr('config', {'general': {'surtir': 'no'}, 'proveedores': []})
 
 print('Todo bien.')
 

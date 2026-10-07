@@ -557,7 +557,8 @@ if(presu) $("#presu").value = presu;
 const ivaF = () => 1 + (num(D && D.cfg.iva) ?? 16) / 100;
 const llave = f => f.articulo_id + "|" + (f.proveedor_id || "");
 const revisa = f => (f.revisar || []).length > 0;
-const pos = f => Math.max(f.existencia || 0, 0) + (f.pendiente || 0);
+const restaSurtir = () => !!(D && D.cfg && D.cfg.surtir === "si");
+const pos = f => Math.max(f.existencia || 0, 0) + (f.pendiente || 0) - (restaSurtir() ? (f.por_surtir || 0) : 0);
 
 async function cargarPlan(){
   if(!D) return;
@@ -713,10 +714,18 @@ function tarjeta(k, F, r){
 // una sola línea corta debajo de "por recibir"; el detalle completo al pasar el mouse
 const folioCorto = t => String(t).replace(/\bO0+(\d)/g, "O$1").replace(/ \(atrasada\)| \(parcial\)/g, "");
 function porRecibirTxt(f){
+  const viejas = num(f.atr_viejas_u) || 0, cuentaAtr = Math.max(0, (num(f.atr_u) || 0) - viejas);
   if(!f.folios && !f.atr_u) return "";
-  const det = [f.folios ? "OC: " + f.folios : "", f.atr_u ? (f.atr_cuenta ? "Incluye " + n0(f.atr_u) + " de OC atrasada (" + (f.atr_folios || "") + ")" : n0(f.atr_u) + " de OC atrasada que no se cuenta (" + (f.atr_folios || "") + ")") : ""].filter(Boolean).join(" · ");
-  const a = String(f.folios || "").split(", ").filter(Boolean), txt = a.length ? folioCorto(a[0]) + (a.length > 1 ? " +" + (a.length - 1) : "") : "";
-  return `<div class="meta1${f.atr_u ? " neg" : ""}" title="${esc(det)}">${f.atr_u ? "⚠ " : ""}${esc(txt || (f.atr_cuenta ? "" : "+" + n0(f.atr_u)))}${f.atr_u ? " atrasada" : ""}</div>`;
+  const det = [f.folios ? "Cuentan: " + f.folios : "",
+    cuentaAtr ? (f.atr_cuenta ? "Incluye " + n0(cuentaAtr) + " de OC atrasada (" + (f.atr_folios || "") + ")" : n0(cuentaAtr) + " de OC atrasada que no se cuenta (" + (f.atr_folios || "") + ")") : "",
+    viejas ? "No cuentan " + n0(viejas) + " de OC sin confirmar: " + (f.atr_viejas_folios || "") + ". No se han vuelto a copiar de Microsip desde antes de atrasarse; si se cancelaron, la copia no lo sabe." : ""].filter(Boolean).join(" · ");
+  const a = String(f.folios || "").split(", ").filter(Boolean);
+  const lin = [];
+  if(a.length) lin.push(`<div class="meta1${cuentaAtr && f.atr_cuenta ? " neg" : ""}" title="${esc(det)}">${cuentaAtr && f.atr_cuenta ? "⚠ " : ""}${esc(folioCorto(a[0]) + (a.length > 1 ? " +" + (a.length - 1) : ""))}${cuentaAtr && f.atr_cuenta ? " atrasada" : ""}</div>`);
+  if(cuentaAtr && !f.atr_cuenta) lin.push(`<div class="meta1 neg" title="${esc(det)}">⚠ +${n0(cuentaAtr)} atrasada</div>`);
+  if(viejas){ const v = String(f.atr_viejas_folios || "").split(", ")[0].replace(/ \(copiada.*/, "");
+    lin.push(`<div class="meta1 neg" title="${esc(det)}">⚠ ${esc(folioCorto(v))} sin confirmar</div>`); }
+  return lin.join("");
 }
 function cortaFolios(t){ const a = String(t).split(", "); return a.length <= 2 ? t : a.slice(0, 2).join(", ") + " y " + (a.length - 2) + " más"; }
 function renglon(f){
@@ -727,7 +736,7 @@ function renglon(f){
       <div class="meta">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque > 1 ? " · empaque " + n0(f.empaque) : ""}</div>
       <div class="meta">Última venta: ${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " d)" : "—"} · Última recepción: ${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) : "—"}</div>
       ${f.presentaciones ? `<div class="meta">Incluye: ${esc(f.presentaciones)}</div>` : ""}</td>
-    <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
+    <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span>${f.por_surtir > 0 ? `<div class="meta1" title="Pedidos de clientes sin remisión (últimos 90 días): ${esc(f.surtir_folios || "")}. ${restaSurtir() ? "Se restan de lo disponible." : "No se restan (se activa en Configuración)."}">por surtir ${n0(f.por_surtir)}</div>` : ""}</td>
     <td class="n" data-l="Por recibir">${n0(f.pendiente)}${porRecibirTxt(f)}</td>
     <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span>${rv ? `<div class="tag prov">provisional</div>` : ""}${f.sug_guardado !== null && f.sug_guardado !== undefined && num(f.sug_guardado) !== num(f.sugerido)
       ? `<div class="meta" title="Lo guardaste hoy cuando el sugerido era ${n0(f.sug_guardado)}. Cambió (por ejemplo, una OC atrasada que ahora cuenta como por recibir).">antes ${n0(f.sug_guardado)}${soloLectura() ? "" : ` · <button class="mas-link usar" title="Poner el sugerido nuevo en Compro">usar ${n0(f.sugerido)}</button>`}</div>` : ""}</td>
@@ -753,7 +762,7 @@ function detalle(f){
       <li>Venta: <b>${n0(f.vd)} ${u}/día</b>${f.unidades !== null && f.unidades !== undefined && f.dias_periodo ? ` (${n0(f.unidades)} en ${Math.round(f.dias_periodo / 30.4)} meses)` : ""}</li>
       <li>Entrega: ${ltTxt(f)} · revisión cada ${n0(f.rev)} días</li>
       <li>Mínimo (colchón) <b>${n0(f.minimo)}</b> · Punto de reorden <b>${n0(f.punto_reorden)}</b> · Máximo <b>${n0(f.maximo)}</b></li>
-      <li>Hoy: existencia ${n0(Math.max(f.existencia, 0))}${f.existencia < 0 ? " (es " + n0(f.existencia) + ", se usa 0)" : ""} + por recibir ${n0(f.pendiente)} = <b>${n0(p)}</b></li>
+      <li>Hoy: existencia ${n0(Math.max(f.existencia, 0))}${f.existencia < 0 ? " (es " + n0(f.existencia) + ", se usa 0)" : ""} + por recibir ${n0(f.pendiente)}${restaSurtir() && f.por_surtir > 0 ? " − por surtir " + n0(f.por_surtir) : ""} = <b>${n0(p)}</b>${!restaSurtir() && f.por_surtir > 0 ? ` <span class="muted">(por surtir ${n0(f.por_surtir)} no se resta)</span>` : ""}</li>
       <li>Sugerido: ${sugTxt}</li>
       <li>Costo: ${f.costo ? money(f.costo) + " c/u (" + esc(f.costo_fuente || "") + ")" : "sin costo en Microsip"}</li>
       ${f.presentaciones ? `<li>Suma ventas y existencias de: ${esc(f.presentaciones)}</li>` : ""}
@@ -916,7 +925,7 @@ function pintarSeg(){
     .map(([v, t, b]) => `<div class="kpi ${b && v ? "bad" : ""}"><b>${n0(v)}</b><span>${t}</span></div>`).join("");
   $("#ocsSeg").innerHTML = O.length ? O.map(o => { const [et, ec] = OCEST[o.estado] || [o.estado, "bien"]; return `<div class="oc ${o.estado === "atrasada" ? "atrasada" : ""}">
       <div class="row"><b class="grow">${esc(o.folio)} · ${esc(o.proveedor || "")}</b><span class="est ${ec}">${et}</span></div>
-      <div class="muted">Hecha el ${fecha(o.fecha)} (hace ${o.dias} días; se esperaba en ${n0(o.lt)}) · pedido ${n0(o.pedido)} · recibido ${n0(o.recibido)} · <b>falta ${n0(o.falta)}</b>${o.seguimiento ? " · marcada: " + esc({en_camino: "sigue en camino", cancelada: "cancelada", recibida: "ya llegó"}[o.seguimiento]) + (o.por ? " por " + esc(o.por) : "") : ""}</div>
+      <div class="muted">Hecha el ${fecha(o.fecha)} (hace ${o.dias} días; se esperaba en ${n0(o.lt)}) · pedido ${n0(o.pedido)} · recibido ${n0(o.recibido)} · <b>falta ${n0(o.falta)}</b>${o.copiado ? " · copiada de Microsip el " + fecha(o.copiado) : ""}${o.copia_vieja && o.estado === "atrasada" ? `<div class="neg" style="font-weight:600;margin-top:3px">⚠ No se ha vuelto a copiar de Microsip desde antes de atrasarse: si la cancelaste, aquí no se sabe. No se cuenta como por recibir hasta que la confirmes.</div>` : ""}${o.seguimiento ? " · marcada: " + esc({en_camino: "sigue en camino", cancelada: "cancelada", recibida: "ya llegó"}[o.seguimiento]) + (o.por ? " por " + esc(o.por) : "") : ""}</div>
       <div class="scroll" style="margin-top:6px"><table class="tbl"><thead><tr><th>Artículo</th><th class="n">Pedido</th><th class="n">Recibido</th><th class="n">Falta</th></tr></thead><tbody>
         ${o.lineas.map(l => `<tr><td>${esc(l.articulo || "")}<div class="meta">${esc(l.clave || "")}</div></td><td class="n">${n0(l.pedido)}</td><td class="n">${n0(l.recibido)}${l.sin_ligar > 0 ? `<div class="meta" title="Recepción capturada en Microsip sin ligarla a la OC">${n0(l.sin_ligar)} sin ligar</div>` : ""}</td><td class="n"><b>${n0(l.falta)}</b></td></tr>`).join("")}</tbody></table></div>
       ${soloLectura() || !["atrasada", "en_camino"].includes(o.estado) ? "" : `<div class="row" style="margin-top:8px">
@@ -1294,6 +1303,7 @@ const GEN = [
   ["regla", "Cuándo sugerir compra", "regla", ""],
   ["gracia_oc", "Días extra antes de marcar una OC como atrasada", "number", "Pasados los días de entrega + estos días, la OC sale como atrasada"],
   ["atrasadas", "Las OC atrasadas", "atrasadas", ""],
+  ["surtir", "Lo por surtir (pedidos de clientes sin remisión)", "surtir", "Como «Por surtir» de Microsip"],
   ["dias_ligar", "Días para reconocer la OC después del plan", "number", ""],
   ["almacenes", "Almacenes que cuentan (vacío = todos)", "text", "Ej.: GENERAL|BODEGA"],
   ["excluir", "Excluir artículos cuyo nombre diga", "text", "Además de servicios y VARIOS. Ej.: muestra|regalo"],
@@ -1315,6 +1325,7 @@ function pintarCfg(){
     let inp;
     if(tipo === "dia") inp = `<select data-k="${k}" ${ro}>${[1,2,3,4,5,6].map(d => `<option value="${d}" ${String(v) === String(d) ? "selected" : ""}>${DIAS[d]}</option>`).join("")}</select>`;
     else if(tipo === "metodo") inp = `<select data-k="${k}" ${ro}><option value="retail" ${v !== "simple" ? "selected" : ""}>Recomendado: con variación de la venta y rotación</option><option value="simple" ${v === "simple" ? "selected" : ""}>Simple: días de seguridad fijos</option></select>`;
+    else if(tipo === "surtir") inp = `<select data-k="${k}" ${ro}><option value="no" ${v !== "si" ? "selected" : ""}>Solo se muestra en cada renglón</option><option value="si" ${v === "si" ? "selected" : ""}>Se resta de lo disponible y se pide de una vez</option></select>`;
     else if(tipo === "atrasadas") inp = `<select data-k="${k}" ${ro}><option value="cuentan" ${v !== "confirmar" ? "selected" : ""}>Cuentan como por recibir, igual que Microsip (y se avisan en rojo)</option><option value="confirmar" ${v === "confirmar" ? "selected" : ""}>No cuentan hasta que confirmes que siguen en camino</option></select>`;
     else if(tipo === "area") inp = `<textarea data-k="${k}" style="min-height:90px" ${ro}>${esc(v)}</textarea>`;
     else if(tipo === "regla") inp = `<select data-k="${k}" ${ro}><option value="bajo_minimo" ${v === "bajo_minimo" ? "selected" : ""}>Cuando existencia + por recibir llega al punto de reorden (pedir hasta el máximo)</option><option value="hasta_maximo" ${v === "hasta_maximo" ? "selected" : ""}>Siempre completar hasta el máximo</option></select>`;
@@ -1334,7 +1345,8 @@ function pintarCfg(){
 $("#guardarGen").addEventListener("click", () => ocupado($("#guardarGen"), async () => {
   const general = {}; $$("#formGen [data-k]").forEach(i => general[i.dataset.k] = i.value.trim());
   await api("config", {general});
-  Object.assign(D.cfg, general); toast("Reglas guardadas ✓ Recalcula el mes para aplicarlas.");
+  Object.assign(D.cfg, general); P = null; PROVFULL = {};   // el planeador se vuelve a leer con las reglas nuevas (atrasadas, por surtir…)
+  toast("Reglas guardadas ✓ Las del planeador (OC atrasadas, por surtir) ya cuentan; las de mínimos y máximos, al recalcular el mes.");
   $("#genEstado").textContent = "Guardado " + new Date().toLocaleTimeString("es-MX");
 }));
 $("#guardarProv").addEventListener("click", () => ocupado($("#guardarProv"), async () => {

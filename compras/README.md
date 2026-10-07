@@ -127,6 +127,14 @@ Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/plan
 - **Por recibir**: otras OCs del mismo artículo hechas en los días de entrega anteriores.
 - **Máximos/mínimos**: los del mes de la OC, calculados con los 6 meses anteriores a ese mes.
 
+**OC con copia vieja**: el programa que copia Microsip a Postgres solo vuelve a copiar lo reciente; si una OC se cancela después, la copia no se
+entera. Por eso una OC atrasada que **no se ha vuelto a copiar desde antes de su fecha de entrega** sale como «sin confirmar» y **no cuenta** como
+por recibir (en Seguimiento dice desde cuándo es la copia). Confírmala con «Sigue en camino» / «No va a llegar», o vuelve a copiar Microsip con
+`python microsip_sync.py --dias 120`.
+
+**Por surtir** (pedidos de clientes sin remisión ni factura, últimos 90 días): se muestra en cada renglón. Opcional en Configuración: restarlo de lo
+disponible para pedirlo de una vez.
+
 **OC atrasadas**: por omisión **cuentan como por recibir, igual que Microsip**, y se avisan en rojo («incluye N atrasado») y en Seguimiento.
 En Configuración se puede cambiar a «no cuentan hasta confirmarlas». Una OC cancelada en Microsip se reconoce por `ESTATUS = C`, `CANCELADO`
 o usuario/fecha de cancelación; si se canceló después de copiarse a Postgres y la copia no se actualizó, márcala «No va a llegar» en Seguimiento.

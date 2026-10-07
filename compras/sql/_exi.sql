@@ -53,14 +53,18 @@ ocl AS (  -- renglones de OC con lo pedido, lo recibido y lo que falta, y el est
               WHEN x.fecha >= cfg.hoy - (x.lt + cfg.gracia)::int
                 THEN CASE WHEN x.rec_lig + x.rec_suelto > 0 THEN 'parcial' ELSE 'abierta' END
               WHEN x.seg = 'en_camino' THEN 'atrasada_confirmada'
-              ELSE 'atrasada' END AS estado
+              ELSE 'atrasada' END AS estado,
+         -- copia vieja: la OC no se ha vuelto a copiar de Microsip desde antes de que se atrasara; si se canceló después, la copia no lo sabe
+         (x.copiado IS NOT NULL AND x.copiado::date < x.fecha + (x.lt + cfg.gracia)::int) AS copia_vieja
   FROM ocl1 x CROSS JOIN cfg),
 pend AS (  -- por recibir: abiertas, parciales (lo que falta) y atrasadas que confirmaste; las atrasadas sin confirmar van aparte
   SELECT coalesce(q.base_id, l.articulo_id) AS articulo_id,
          sum(l.falta * coalesce(q.factor, 1)) FILTER (WHERE l.estado IN ('abierta', 'parcial', 'atrasada_confirmada')
-                                                      OR (l.estado = 'atrasada' AND cfg.atrasadas = 'cuentan')) AS u,
+                                                      OR (l.estado = 'atrasada' AND cfg.atrasadas = 'cuentan' AND NOT l.copia_vieja)) AS u,
          string_agg(DISTINCT l.folio || CASE WHEN l.estado = 'parcial' THEN ' (parcial)' WHEN l.estado LIKE 'atrasada%' THEN ' (atrasada)' ELSE '' END, ', ')
-           FILTER (WHERE l.estado IN ('abierta', 'parcial', 'atrasada_confirmada') OR (l.estado = 'atrasada' AND cfg.atrasadas = 'cuentan')) AS folios,
+           FILTER (WHERE l.estado IN ('abierta', 'parcial', 'atrasada_confirmada') OR (l.estado = 'atrasada' AND cfg.atrasadas = 'cuentan' AND NOT l.copia_vieja)) AS folios,
+         sum(l.falta * coalesce(q.factor, 1)) FILTER (WHERE l.estado = 'atrasada' AND l.copia_vieja) AS atr_viejas_u,
+         string_agg(DISTINCT l.folio || ' (copiada el ' || to_char(l.copiado, 'DD/MM') || ')', ', ') FILTER (WHERE l.estado = 'atrasada' AND l.copia_vieja) AS atr_viejas_folios,
          bool_or(cfg.atrasadas = 'cuentan') AS atr_cuenta,
          sum(l.falta * coalesce(q.factor, 1)) FILTER (WHERE l.estado = 'atrasada') AS atr_u,
          string_agg(DISTINCT l.folio || ' del ' || to_char(l.fecha, 'DD/MM'), ', ') FILTER (WHERE l.estado = 'atrasada') AS atr_folios

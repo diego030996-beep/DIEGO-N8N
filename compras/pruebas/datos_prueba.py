@@ -181,5 +181,17 @@ sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 
            f"{q(json.dumps({'DOCTO_CM_ID': 5096, 'TIPO_DOCTO': 'O', 'FOLIO': 'O0000096', 'FECHA': '2026-08-20', 'PROVEEDOR_ID': 16, 'ESTATUS': 'P', 'USUARIO_CANCELACION': 'SYSDBA', 'IMPORTE_NETO': 2000}))});")
 sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5096-0', {q(json.dumps({'DOCTO_CM_ID': 5096, 'ARTICULO_ID': 21, 'UNIDADES': 200, 'PRECIO_UNITARIO': 10}))});")
 
+# OC O97 copiada de Microsip el 02/08 y nunca más (como la O51 que se canceló después): no se sabe si sigue viva, no cuenta.
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos, actualizado) VALUES ({q(B)}, 'DOCTOS_CM', '5097', '2026-08-01', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 5097, 'TIPO_DOCTO': 'O', 'FOLIO': 'O0000097', 'FECHA': '2026-08-01', 'PROVEEDOR_ID': 10, 'ESTATUS': 'P', 'IMPORTE_NETO': 70}))}, '2026-08-02 10:00');")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos, actualizado) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5097-0', {q(json.dumps({'DOCTO_CM_ID': 5097, 'ARTICULO_ID': 10, 'UNIDADES': 7, 'PRECIO_UNITARIO': 10}))}, '2026-08-02 10:00');")
+
+# Pedidos de clientes (VE tipo P): uno pendiente de surtir (60 sacos de CEM50) y otro ya remisionado (ligado): solo cuenta el primero.
+sql.append(f"INSERT INTO ms_ventas VALUES ({q(B)}, 'VE', 990001, 'P', 'P', 'P0009001', '2026-10-05', '10:00', 'OBRA', 'GENERAL', 14400, 0, NULL);")
+sql.append(f"INSERT INTO ms_ventas_det VALUES ({q(B)}, 'VE', 990001, 990001, 'CEM50', 2, 'CEMENTO', 60, 240, 14400);")
+sql.append(f"INSERT INTO ms_ventas VALUES ({q(B)}, 'VE', 990002, 'P', 'P', 'P0009002', '2026-10-04', '10:00', 'OBRA', 'GENERAL', 2400, 0, NULL);")
+sql.append(f"INSERT INTO ms_ventas_det VALUES ({q(B)}, 'VE', 990002, 990002, 'CEM50', 2, 'CEMENTO', 10, 240, 2400);")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_VE_LIGAS', '990002-1', {q(json.dumps({'DOCTO_VE_FTE_ID': 990002, 'DOCTO_VE_DEST_ID': 990003}))});")
+
 subprocess.run(PSQL, input='\n'.join(sql), text=True, check=True)
 print('ok', len(sql), 'sentencias')
