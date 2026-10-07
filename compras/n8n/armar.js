@@ -23,7 +23,8 @@ const QUE = { datos: 'leer los datos', planeador: 'leer el planeador', guardar: 
   buscar: 'buscar', articulo: 'guardar el artículo', config: 'guardar la configuración', limpieza: 'revisar el catálogo',
   revision: 'guardar la decisión', gerencia: 'poner la autorización de gerencia', reactivar: 'regresar el artículo', seguimiento: 'leer el seguimiento de OC',
   oc_estado: 'guardar el seguimiento', politica: 'guardar la política', equivalencias: 'leer las presentaciones', equivalencia: 'guardar la presentación',
-  oc_articulo: 'leer las órdenes del artículo', proveedor_art: 'cambiar el proveedor' };
+  oc_articulo: 'leer las órdenes del artículo', proveedor_art: 'cambiar el proveedor',
+  proveedor_estado: 'pausar o reactivar el proveedor', politica_varios: 'guardar la política de los productos' };
 let respuesta;
 if (!r) {
   const m = textoError(err);

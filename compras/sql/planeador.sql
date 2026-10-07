@@ -138,7 +138,10 @@ g AS (
            CASE WHEN g0.politica IS NULL AND g0.lento IS DISTINCT FROM 'queda' AND (g0.rotacion = 'baja' OR (g0.clase = 'C' AND g0.rotacion IS DISTINCT FROM 'alta'))
                 THEN 'Vende poco: elige si se mantiene un mínimo, solo bajo pedido o se pausa.' END
          ], NULL) AS revisar
-  FROM g0)
+  FROM g0),
+pp AS (SELECT c.proveedor_id, c.nombre FROM compras_proveedores c, cfg WHERE c.base = cfg.base AND NOT c.activo),
+gv AS (   -- en la vista de todos no salen los proveedores pausados (eventuales); se ven abriendo el proveedor
+  SELECT g.* FROM g, cfg WHERE cfg.p->>'todos' IS DISTINCT FROM 'si' OR coalesce(g.proveedor_id, '') NOT IN (SELECT proveedor_id FROM pp))
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveedor_id', cfg.p->>'proveedor_id', 'regla', cfg.regla,
   'plan', (SELECT json_build_object('id', id, 'folio', folio, 'folio_oc', folio_oc, 'clase', clase, 'creado', creado, 'modificado', modificado)
            FROM pl WHERE cfg.p->>'todos' IS DISTINCT FROM 'si' LIMIT 1),
@@ -156,20 +159,25 @@ SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'proveed
       'lt_n', g.lt_n, 'rev', g.rev, 'politica', g.politica, 'pol_min', g.pol_min, 'presentaciones', g.presentaciones, 'por_almacen', g.por_almacen,
       'atr_u', g.atr_u, 'atr_folios', g.atr_folios, 'atr_cuenta', g.atr_cuenta, 'plan_sin_oc', g.plan_sin_oc)
       ORDER BY g.proveedor, g.clase, (g.sugerido > 0) DESC, (greatest(g.existencia, 0) + g.pendiente) / nullif(g.punto_reorden, 0), g.articulo), '[]'::json)
-    FROM g LEFT JOIN dec ON dec.articulo_id = g.articulo_id AND coalesce(dec.dprov, '') = coalesce(g.proveedor_id, '')
+    FROM gv g LEFT JOIN dec ON dec.articulo_id = g.articulo_id AND coalesce(dec.dprov, '') = coalesce(g.proveedor_id, '')
     WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id)   -- lo que se marcó para ya no comprar sale de inmediato
       AND (cfg.p->>'todos' IS DISTINCT FROM 'si' OR g.sugerido > 0 OR dec.articulo_id IS NOT NULL
        OR g.estado IN ('critico', 'pedir') OR coalesce(g.atr_u, 0) > 0 OR g.existencia < 0)),
   'resumen', (SELECT json_build_object(   -- conteos y costos de TODO (no solo de lo que se muestra)
-      'estados', (SELECT json_object_agg(estado, n) FROM (SELECT estado, count(*) AS n FROM g
+      'estados', (SELECT json_object_agg(estado, n) FROM (SELECT estado, count(*) AS n FROM gv g
                     WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id) GROUP BY 1) z),
-      'revisar', (SELECT count(*) FROM g WHERE cardinality(revisar) > 0 AND NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id)),
+      'revisar', (SELECT count(*) FROM gv g WHERE cardinality(revisar) > 0 AND NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id)),
       'proveedores', (SELECT coalesce(json_agg(z ORDER BY z.costo DESC NULLS LAST), '[]'::json) FROM (
           SELECT coalesce(g.proveedor_id, '') AS proveedor_id, max(g.proveedor) AS proveedor,
                  count(*) FILTER (WHERE estado = 'critico') AS critico, count(*) FILTER (WHERE estado = 'pedir') AS pedir,
                  count(*) FILTER (WHERE estado = 'proximo') AS proximo, count(*) FILTER (WHERE estado = 'bien') AS bien,
                  count(*) FILTER (WHERE cardinality(revisar) > 0) AS revisar,
                  round(sum(g.sugerido * coalesce(g.costo, 0)), 2) AS costo, count(*) FILTER (WHERE g.sugerido > 0 AND g.costo IS NULL) AS sin_costo
-          FROM g WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id) GROUP BY 1) z),
-      'iva', cfg.iva))) AS r
+          FROM gv g WHERE NOT EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = g.articulo_id) GROUP BY 1) z),
+      'iva', cfg.iva,
+      'proveedores_pausados', (SELECT coalesce(json_agg(json_build_object('proveedor_id', pp.proveedor_id,
+            'proveedor', coalesce((SELECT max(g.proveedor) FROM g WHERE g.proveedor_id = pp.proveedor_id), pp.nombre),
+            'productos', (SELECT count(*) FROM g WHERE g.proveedor_id = pp.proveedor_id),
+            'critico', (SELECT count(*) FROM g WHERE g.proveedor_id = pp.proveedor_id AND g.estado IN ('critico', 'pedir')))
+          ORDER BY pp.nombre), '[]'::json) FROM pp)))) AS r
 FROM cfg;

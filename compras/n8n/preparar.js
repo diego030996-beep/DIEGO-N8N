@@ -18,7 +18,7 @@ const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op]) return fail('Operación desconocida.');
 const ESCRIBE = ['guardar', 'razon', 'folio', 'reconstruir', 'calcular', 'articulo', 'config', 'revision', 'gerencia', 'reactivar',
-  'oc_estado', 'politica', 'equivalencia', 'proveedor_art'];
+  'oc_estado', 'politica', 'equivalencia', 'proveedor_art', 'proveedor_estado', 'politica_varios'];
 if (rol === 'auditor' && ESCRIBE.includes(op)) return fail('Esta liga es solo de consulta.');
 const quien = String(b.quien || '').replace(/[^\p{L}\p{N} .\-]/gu, '').trim().slice(0, 40);
 const por = quien ? quien + ' (' + rol + ')' : rol;
@@ -98,6 +98,15 @@ switch (op) {
     if (!idOk(b.articulo_id)) return fail('Artículo inválido.');
     if (!/^[0-9]{0,18}$/.test(String(b.proveedor_id ?? ''))) return fail('Proveedor inválido.');
     p = { articulo_id: Number(b.articulo_id), proveedor_id: String(b.proveedor_id ?? '') };
+    break;
+  case 'proveedor_estado':
+    if (!/^[0-9]{1,18}$/.test(String(b.proveedor_id || ''))) return fail('Proveedor inválido.');
+    p = { proveedor_id: String(b.proveedor_id), nombre: txt(b.nombre, 120), activo: b.activo === 'si' ? 'si' : 'no' };
+    break;
+  case 'politica_varios':
+    if (!Array.isArray(b.articulos) || !b.articulos.length || b.articulos.length > 500 || !b.articulos.every(idOk)) return fail('Elige de 1 a 500 productos.');
+    if (!['', 'bajo_pedido', 'pausar'].includes(String(b.politica || ''))) return fail('Política inválida.');
+    p = { articulos: [...new Set(b.articulos.map(Number))], politica: String(b.politica || ''), nota: txt(b.nota, 200) };
     break;
   case 'politica':
     if (!idOk(b.articulo_id)) return fail('Artículo inválido.');

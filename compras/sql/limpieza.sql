@@ -68,9 +68,16 @@ pausados AS (
   LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = x.articulo_id
   LEFT JOIN ex ON ex.articulo_id = x.articulo_id
   WHERE x.base = cfg.base AND x.politica = 'pausar'
-    AND NOT EXISTS (SELECT 1 FROM compras_articulos o WHERE o.base = cfg.base AND o.articulo_id = x.articulo_id AND o.excluir))
+    AND NOT EXISTS (SELECT 1 FROM compras_articulos o WHERE o.base = cfg.base AND o.articulo_id = x.articulo_id AND o.excluir)),
+bped AS (
+  SELECT x.articulo_id, a.clave, a.nombre AS articulo, a.unidad, coalesce(ex.e, 0) AS existencia, x.nota, x.por, x.actualizado AS fecha
+  FROM compras_politica x CROSS JOIN cfg
+  LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = x.articulo_id
+  LEFT JOIN ex ON ex.articulo_id = x.articulo_id
+  WHERE x.base = cfg.base AND x.politica = 'bajo_pedido')
 SELECT json_build_object('ok', true, 'mes', (SELECT mes FROM ms)::text, 'meses_c', cfg.meses_c,
   'pausados', (SELECT coalesce(json_agg(pausados ORDER BY pausados.fecha DESC), '[]'::json) FROM pausados),
+  'bajo_pedido', (SELECT coalesce(json_agg(bped ORDER BY bped.articulo), '[]'::json) FROM bped),
   'una_venta', (SELECT coalesce(json_agg(una ORDER BY una.existencia DESC, una.venta DESC), '[]'::json) FROM una),
   'duplicados', (SELECT coalesce(json_agg(json_build_object('llave', split_part(k, '|', 2), 'marcas', marcas, 'articulos', articulos) ORDER BY venta DESC), '[]'::json)
                  FROM (SELECT * FROM grupos WHERE pendiente OR (SELECT todos FROM ver) ORDER BY venta DESC LIMIT 150) g),

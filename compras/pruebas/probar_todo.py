@@ -157,6 +157,21 @@ ok(any(sorted(a['clave'] for a in g['articulos']) == ['CINTAN', 'CINTAP'] for g 
 d = correr('datos', hoy=H)
 ok(any('lt_medido' in p for p in d['proveedores']), 'días de entrega medidos por proveedor')
 
+# ---- Proveedores eventuales (pausados) y política para varios productos ----
+correr('proveedor_estado', {'proveedor_id': '16', 'nombre': 'TRUPER', 'activo': 'no'})
+tt = correr('planeador', {'todos': 'si'}, hoy=H)
+ok(not any(x['proveedor_id'] == '16' for x in tt['filas']) and not any(z['proveedor_id'] == '16' for z in tt['resumen']['proveedores'])
+   and [z['proveedor_id'] for z in tt['resumen']['proveedores_pausados']] == ['16'], 'proveedor pausado: sale de la vista general y de los totales')
+ok(len(P('16')) > 0, 'proveedor pausado: abriéndolo se siguen viendo sus productos')
+correr('proveedor_estado', {'proveedor_id': '16', 'nombre': 'TRUPER', 'activo': 'si'})
+ok(correr('planeador', {'todos': 'si'}, hoy=H)['resumen']['proveedores_pausados'] == [], 'reactivar el proveedor')
+correr('politica_varios', {'articulos': [12, 19], 'politica': 'bajo_pedido', 'nota': ''})
+p15 = P('15')
+ok(p15['CINTA']['estado'] == 'bajo_pedido' and p15['CINTAP' if 'CINTAP' in p15 else 'CINTA']['sugerido'] == 0, 'varios productos a solo bajo pedido')
+ok(sorted(x['clave'] for x in correr('limpieza', {})['bajo_pedido']) == ['CINTA', 'CINTAP'], 'lista de solo bajo pedido en Limpieza')
+correr('politica_varios', {'articulos': [12, 19], 'politica': '', 'nota': ''})
+ok(correr('limpieza', {})['bajo_pedido'] == [], 'quitar la política a varios')
+
 print('Todo bien.')
 
 # n8n (algunas versiones) mete la consulta con String.replace(): "$'", "$&", "$`" y "$$" cambian el texto. No debe haber ninguno.

@@ -128,6 +128,10 @@ textarea{width:100%;min-height:200px;resize:vertical}
 .cn.r{background:var(--c-redbg);color:var(--c-red)} .cn.o{background:var(--c-orbg);color:var(--c-or)} .cn.y{background:var(--c-yebg);color:var(--c-ye)}
 .cn.g{background:var(--c-grbg);color:var(--c-gr)} .cn.p{background:var(--c-pubg);color:var(--c-pu)}
 button.cn{border:2px solid transparent;cursor:pointer;font:inherit} button.cn:hover{border-color:currentColor} button.cn[aria-pressed=true]{border-color:currentColor;box-shadow:0 0 0 2px var(--panel) inset}
+.bulk{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--panel);border-radius:14px;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:8;box-shadow:0 8px 30px rgba(0,0,0,.3);max-width:94vw}
+.bulk .btn{background:var(--panel);color:var(--ink)} .bulk .btn-ghost{background:transparent;color:var(--panel);border-color:rgba(255,255,255,.35)}
+input.sel{width:16px;height:16px;vertical-align:-3px;margin:0 4px 0 0}
+.pausados-prov{margin-top:6px}
 .filtro-prov{padding:8px 18px;font-size:.85rem;color:var(--soft)}
 .ocs-art{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:6px} .ocs-art th,.ocs-art td{padding:4px 6px;border-bottom:1px solid var(--line2);text-align:left} .ocs-art .n{text-align:right}
 .tog{border:0;background:transparent;cursor:pointer;padding:6px;border-radius:8px;color:var(--soft)}
@@ -347,6 +351,11 @@ button.cn{border:2px solid transparent;cursor:pointer;font:inherit} button.cn:ho
       <p class="muted" style="margin:0 0 10px">Productos que marcaste como <b>Se va</b> o <b>Ya no comprar</b> (aquí o en el planeador). No se calculan ni salen en el planeador. Si vuelves a traer alguno, pulsa <b>Regresar</b>.</p>
       <div class="scroll"><table class="tbl cards" id="tblPaus"><thead><tr><th>Artículo</th><th>Por qué</th><th class="n">Existencia</th><th>Última venta</th><th>Pausado</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
+    <div class="card">
+      <h3>Solo bajo pedido</h3>
+      <p class="muted" style="margin:0 0 10px">No se tienen en existencia: el planeador nunca sugiere comprarlos. Se piden cuando un cliente los encarga.</p>
+      <div class="scroll"><table class="tbl cards" id="tblBped"><thead><tr><th>Artículo</th><th class="n">Existencia</th><th>Desde</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
   </section>
 
   <!-- ============ SEGUIMIENTO DE OC ============ -->
@@ -404,7 +413,7 @@ button.cn{border:2px solid transparent;cursor:pointer;font:inherit} button.cn:ho
       <h2>Proveedores</h2>
       <p class="sub">Días de entrega (aunque sea aproximado), qué día se revisan sus productos A y cada cuántos días sus productos B.</p>
       <div class="scroll"><table class="tbl" id="tblProv">
-        <thead><tr><th>Proveedor</th><th class="n">Productos A / B / C</th><th class="n">Días de entrega</th><th>Revisar A el</th><th class="n">B cada (días)</th><th>Activo</th></tr></thead>
+        <thead><tr><th>Proveedor</th><th class="n">Productos A / B / C</th><th class="n">Días de entrega</th><th>Revisar A el</th><th class="n">B cada (días)</th><th>Activo <span class="muted">(desmarca si es eventual)</span></th></tr></thead>
         <tbody></tbody></table></div>
       <div class="row" style="margin-top:14px"><span class="grow muted" id="provEstado"></span><button class="btn btn-main" id="guardarProv">Guardar proveedores</button></div>
     </div>
@@ -528,7 +537,7 @@ const ROT = {alta: "rota mucho", media: "rota medio", baja: "rota poco", nuevo: 
 const EST = {critico: "Crítico", pedir: "Pedir", proximo: "Próximo", bien: "Bien", bajo_pedido: "Bajo pedido"};
 const EST_ORD = {critico: 0, pedir: 1, proximo: 2, bien: 3, bajo_pedido: 4};
 const POL = {minimo: "Mantener un mínimo", bajo_pedido: "Solo bajo pedido", pausar: "Pausar resurtido"};
-let PROVFULL = {}, estProv = {}, OCART = {}, fEst = "necesita", abiertos = new Set(), cerrados = new Set(), SEG = null, PRES = null;
+let PROVFULL = {}, estProv = {}, OCART = {}, selec = new Set(), fEst = "necesita", abiertos = new Set(), cerrados = new Set(), SEG = null, PRES = null;
 let presu = null; try { presu = num(localStorage.getItem("compras_presu")); } catch(e) {}
 if(presu) $("#presu").value = presu;
 const ivaF = () => 1 + (num(D && D.cfg.iva) ?? 16) / 100;
@@ -539,11 +548,12 @@ const pos = f => Math.max(f.existencia || 0, 0) + (f.pendiente || 0);
 async function cargarPlan(){
   if(!D) return;
   if(!D.mes){ $("#kp").innerHTML = ""; $("#provs").innerHTML = `<div class="card muted">Todavía no hay máximos y mínimos calculados. Ve a <b>A/B/C y máximos-mínimos</b> y pulsa <b>Recalcular este mes</b>.</div>`; return; }
-  $("#provs").innerHTML = `<div class="card muted">Cargando…</div>`;
+  $("#provs").innerHTML = `<div class="card muted">Cargando…</div>`; selec.clear(); pintarBulk();
   try { P = await api("planeador", {todos: "si"}); } catch(e) { toast(e.message); $("#provs").innerHTML = ""; return; }
   PROVFULL = {}; estProv = {}; OCART = {}; prep(P.filas);
   const sel = $("#fProv"), v = sel.value;
-  sel.innerHTML = `<option value="*">Todos los proveedores</option>` + (P.resumen.proveedores || []).map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.proveedor || "Sin proveedor")}</option>`).join("");
+  sel.innerHTML = `<option value="*">Todos los proveedores</option>` + (P.resumen.proveedores || []).map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.proveedor || "Sin proveedor")}</option>`).join("")
+    + (P.resumen.proveedores_pausados || []).map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.proveedor || p.proveedor_id)} (pausado)</option>`).join("");
   if([...sel.options].some(o => o.value === v)) sel.value = v;
   pintarPlan();
 }
@@ -627,8 +637,32 @@ function pintarPlan(){
      || ((res.get(b[0]) || {}).pedir || 0) - ((res.get(a[0]) || {}).pedir || 0) || ((res.get(b[0]) || {}).costo || 0) - ((res.get(a[0]) || {}).costo || 0));
   $("#provs").innerHTML = orden.length ? orden.map(([k, F]) => tarjeta(k, F.sort(cmpPrio), res.get(k) || {})).join("")
     : `<div class="card muted">Nada con estos filtros. ${fEst === "necesita" ? "No hay nada urgente que comprar. " : ""}<button class="mas-link" id="verTodo">Ver todos los estados</button></div>`;
+  const PP = P.resumen.proveedores_pausados || [];
+  if(PP.length && $("#fProv").value === "*") $("#provs").insertAdjacentHTML("beforeend", `<div class="card pausados-prov"><h3>Proveedores pausados (eventuales)</h3>
+    <p class="muted" style="margin:0 0 10px">Sus productos no salen arriba ni cuentan en los totales; se siguen calculando.</p>
+    ${PP.map(p => `<div class="row" style="padding:6px 0;border-top:1px solid var(--line2)"><span class="grow"><b>${esc(p.proveedor || p.proveedor_id)}</b>
+      <span class="muted"> · ${n0(p.productos)} productos${p.critico ? " · " + n0(p.critico) + " para pedir" : ""}</span></span>
+      <button class="btn btn-ghost btn-sm" data-verprov="${esc(p.proveedor_id)}">Ver productos</button></div>`).join("")}</div>`);
   const vt = $("#verTodo"); if(vt) vt.addEventListener("click", () => { fEst = "todos"; $("#fEst").value = "todos"; pintarPlan(); });
   conectar();
+}
+const pausadoProv = k => ((P && P.resumen.proveedores_pausados) || []).some(p => p.proveedor_id === k);
+function pintarBulk(){
+  let el = $("#bulk");
+  if(!el){ el = document.createElement("div"); el.id = "bulk"; el.className = "bulk"; el.setAttribute("role", "region"); el.setAttribute("aria-label", "Productos seleccionados"); document.body.appendChild(el); }
+  el.hidden = !selec.size || soloLectura();
+  if(el.hidden) return;
+  el.innerHTML = `<b>${selec.size} seleccionado${selec.size === 1 ? "" : "s"}</b>
+    <button class="btn btn-sm" data-bp="bajo_pedido">Solo bajo pedido</button><button class="btn btn-sm" data-bp="pausar">Pausar resurtido</button>
+    <button class="btn btn-sm" data-bp="">Quitar política</button><button class="btn btn-ghost btn-sm" data-bp="x">Cancelar</button>`;
+  el.querySelectorAll("[data-bp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const pol = b.dataset.bp, ids = [...selec];
+    if(pol === "x"){ selec.clear(); pintarBulk(); pintarPlan(); return; }
+    if(pol === "pausar" && !confirm("¿Pausar el resurtido de " + ids.length + " producto(s)? Dejan de calcularse y de salir en el planeador. Se regresan en Limpieza de catálogo → Pausados.")) return;
+    await api("politica_varios", {articulos: ids, politica: pol, nota: ""});
+    toast((pol ? POL[pol] : "Política quitada") + " ✓ " + ids.length + " producto(s)");
+    selec.clear(); pintarBulk(); LIM = null; await cargarPlan();
+  })));
 }
 function tarjeta(k, F, r){
   const nombre = (F[0] && F[0].proveedor) || r.proveedor || "Sin proveedor", total = F.reduce((a, f) => a + (f._c || 0) * (f.costo || 0), 0);
@@ -650,6 +684,8 @@ function tarjeta(k, F, r){
         ${F.map(renglon).join("")}</tbody></table></div>` : `<p class="muted" style="padding:0 18px 12px">Nada con estos filtros en este proveedor.</p>`}
       <div class="pf">
         ${!full && nAll > F.length ? `<button class="mas-link" data-full="${esc(k)}">Ver los ${nAll} productos de este proveedor ⌄</button>` : ""}
+        ${k && !soloLectura() ? (pausadoProv(k) ? `<button class="btn btn-main btn-sm" data-pprov="si" data-nom="${esc(nombre)}">Reactivar proveedor</button>`
+          : `<button class="btn btn-ghost btn-sm" data-pprov="no" data-nom="${esc(nombre)}" title="Proveedor eventual: sus productos dejan de salir en la vista general">Pausar proveedor</button>`) : ""}
         <span class="grow"></span>
         ${k && !soloLectura() ? `<label class="muted">Folio OC <input type="text" class="fol" maxlength="30" placeholder="opcional" style="width:110px"></label>
           <button class="btn btn-ghost btn-sm" data-guardar="${esc(k)}">Guardar</button>
@@ -661,7 +697,7 @@ function renglon(f){
   const k = llave(f), dist = num(f._c) !== num(f.sugerido), m = deMas(f, f._c), sinProv = !f.proveedor_id, rv = revisa(f);
   const linea = (f._c || 0) * (f.costo || 0);
   return `<tr data-k="${esc(k)}">
-    <td class="art"><b>${esc(f.articulo)}</b> <span class="pill ${f.clase}">${f.clase}</span> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}
+    <td class="art">${soloLectura() ? "" : `<input type="checkbox" class="sel" ${selec.has(f.articulo_id) ? "checked" : ""} aria-label="Seleccionar ${esc(f.articulo)}"> `}<b>${esc(f.articulo)}</b> <span class="pill ${f.clase}">${f.clase}</span> ${f.rotacion ? `<span class="rot ${f.rotacion}">${ROT[f.rotacion] || f.rotacion}</span>` : ""}
       <div class="meta">${esc(f.clave)} · ${n0(f.vd)} ${esc(f.unidad || "")}/día${f.empaque > 1 ? " · empaque " + n0(f.empaque) : ""}</div>
       <div class="meta">Última venta: ${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " d)" : "—"} · Última recepción: ${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) : "—"}</div>
       ${f.presentaciones ? `<div class="meta">Incluye: ${esc(f.presentaciones)}</div>` : ""}</td>
@@ -731,6 +767,17 @@ function conectar(){
   $$("#provs select.r, #provs select.r2").forEach(s => s.addEventListener("change", e => { filaDe(s)._r = e.target.value; }));
   $$("#provs input.nota").forEach(s => s.addEventListener("input", e => { filaDe(s)._n = e.target.value; }));
   $$("#provs .vc").forEach(b => b.addEventListener("click", () => { const k = b.closest("tr").dataset.k; abiertos.has(k) ? abiertos.delete(k) : abiertos.add(k); pintarPlan(); }));
+  $$("#provs input.sel").forEach(c => c.addEventListener("change", () => { const f = filaDe(c); c.checked ? selec.add(f.articulo_id) : selec.delete(f.articulo_id); pintarBulk(); }));
+  $$("#provs [data-pprov]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const k = b.closest(".prov").dataset.p, act = b.dataset.pprov;
+    if(act === "no" && !confirm("¿Pausar a " + b.dataset.nom + "? Es para proveedores eventuales: sus productos dejan de salir en la vista general y en los totales (se siguen calculando). Lo regresas abajo, en «Proveedores pausados».")) return;
+    await api("proveedor_estado", {proveedor_id: k, nombre: b.dataset.nom, activo: act});
+    toast(act === "no" ? "Proveedor pausado ✓" : "Proveedor reactivado ✓"); await cargarPlan();
+  })));
+  $$("#provs [data-verprov]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const k = b.dataset.verprov, r = await api("planeador", {proveedor_id: k}); prep(r.filas); PROVFULL[k] = r.filas;
+    $("#fProv").value = k; fEst = "todos"; $("#fEst").value = "todos"; pintarPlan();
+  })));
   $$("#provs [data-ce]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
     const k = b.closest(".prov").dataset.p, e = b.dataset.ce;
     if(!e || estProv[k] === e){ delete estProv[k]; pintarPlan(); return; }
@@ -813,7 +860,11 @@ $("#generar").addEventListener("click", () => ocupado($("#generar"), async () =>
   REG = null; await cargarPlan();
 }));
 $("#qPlan").addEventListener("input", () => { clearTimeout(pintarPlan._t); pintarPlan._t = setTimeout(pintarPlan, 250); });
-$("#fProv").addEventListener("change", pintarPlan);
+$("#fProv").addEventListener("change", async () => {
+  const k = $("#fProv").value;
+  if(k !== "*" && pausadoProv(k) && !PROVFULL[k]){ try { const r = await api("planeador", {proveedor_id: k}); prep(r.filas); PROVFULL[k] = r.filas; } catch(e) { toast(e.message); } }
+  pintarPlan();
+});
 $("#fEst").addEventListener("change", e => { fEst = e.target.value; pintarPlan(); });
 function ponerClase(c){ clase = c; $$("#segClase button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === c)); }
 $$("#segClase button").forEach(b => b.addEventListener("click", () => { ponerClase(b.dataset.c); pintarPlan(); }));
@@ -1075,7 +1126,17 @@ function pintarLim(){
         <td data-l="Proveedor">${esc(a.proveedor || "—")}</td><td class="n" data-l="Vendido">${n0(a.unidades || 0)}<div class="muted">${money(a.venta)}</div></td>
         <td class="n" data-l="Existencia">${n0(a.existencia)}</td><td class="wide">${botonesDec(a.articulo_id, "duplicado", a.decision, g.llave)}</td></tr>`).join("")}
       </tbody></table></div>`).join("") : `<p class="muted">No encontré posibles duplicados por revisar.</p>`;
-  const PZ = LIM.pausados || [], TIPO = {una_venta: "vendido una sola vez", duplicado: "duplicado de otra marca", lento: "casi no se vende"};
+  const PZ = LIM.pausados || [], TIPO = {una_venta: "vendido una sola vez", duplicado: "duplicado de otra marca", lento: "casi no se vende", politica: "pausado desde el planeador"};
+  const BP = LIM.bajo_pedido || [];
+  $("#tblBped tbody").innerHTML = BP.length ? BP.map(x => `<tr>
+      <td class="art"><b>${esc(x.articulo || "Artículo " + x.articulo_id)}</b><div class="muted">${esc(x.clave || "")}</div></td>
+      <td class="n" data-l="Existencia">${n0(x.existencia)}</td><td data-l="Desde">${fecha(x.fecha)}<div class="muted">${esc(x.por || "")}</div></td>
+      <td>${soloLectura() ? "" : `<button class="btn btn-ghost btn-sm" data-quitabp="${x.articulo_id}">Volver a resurtir</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">No hay productos marcados como solo bajo pedido.</td></tr>`;
+  $$("#t-lim button[data-quitabp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    await api("politica", {articulo_id: Number(b.dataset.quitabp), politica: "", minimo: "", nota: ""});
+    toast("Listo ✓ Vuelve a calcularse con su venta."); cargarLim();
+  })));
   $("#tblPaus tbody").innerHTML = PZ.length ? PZ.map(x => `<tr>
       <td class="art"><b>${esc(x.articulo || "Artículo " + x.articulo_id)}</b><div class="muted">${esc(x.clave || "")}</div></td>
       <td data-l="Por qué">${esc(x.tipos ? x.tipos.split(",").map(t => TIPO[t] || t).join(", ") : (x.nota || "excluido a mano"))}</td>

@@ -138,6 +138,14 @@ capturada sin ligar del mismo proveedor y artículo cuenta como recibido; en Seg
 En «Ver cálculo» → **Órdenes de compra de este producto** se ve cada OC con el estatus de Microsip, lo pedido, lo recibido (ligado / Microsip /
 sin ligar) y lo que falta, para comparar con «Por recibir» de Microsip.
 
+**Productos solo bajo pedido o pausados, de uno en uno o varios**: en «Ver cálculo» o marcando las casillas de los renglones aparece una barra
+con «Solo bajo pedido», «Pausar resurtido» y «Quitar política». Los de solo bajo pedido se listan en Limpieza de catálogo («Volver a resurtir»);
+los pausados, en Pausados («Regresar»).
+
+**Proveedores eventuales**: «Pausar proveedor» al pie de su tarjeta. Sus productos dejan de salir en la vista general y en los totales (se siguen
+calculando); abajo aparece «Proveedores pausados» con «Ver productos» y desde su tarjeta «Reactivar proveedor». Es la misma casilla «Activo» de
+Configuración → Proveedores.
+
 En el planeador, los contadores de cada proveedor (Críticos, Por pedir, Próximos, Bien, Revisar) son filtros, y en «Ver cálculo» se cambia el
 proveedor del producto (cuenta de inmediato).
 
