@@ -118,6 +118,7 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
     <button class="tab" role="tab" data-t="rec" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="l">Recetas</span><span class="n" id="nrec" hidden></span></button>
     <button class="tab" role="tab" data-t="sim" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg><span class="l">Simulación y utilidad</span></button>
     <button class="tab" role="tab" data-t="exp" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 19h16"/></svg><span class="l">Semana: archivos Microsip</span><span class="n" id="nexp" hidden></span></button>
+    <button class="tab" role="tab" data-t="aud" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/></svg><span class="l">Auditoría de polímero</span><span class="n" id="naud" hidden></span></button>
     <button class="tab" role="tab" data-t="mat" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/></svg><span class="l">Materia prima</span></button>
     <button class="tab" role="tab" data-t="res" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="l">Cuánto se hizo</span></button>
     <button class="tab" role="tab" data-t="cfg" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.5 14H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 3.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span class="l">Configuración</span></button>
@@ -134,7 +135,7 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
     <div class="kpis" id="kpisCap"></div>
     <div class="card">
       <div class="row"><input type="search" id="capQ" class="grow" placeholder="Buscar tinaco…" aria-label="Buscar tinaco"><span class="muted" id="capSinRec"></span></div>
-      <div class="scroll" style="margin-top:10px"><table class="tbl" id="tblCap"><thead><tr><th>Tinaco</th><th class="n">Costo materiales</th><th class="n">Existencia</th><th class="n">Fabricados</th></tr></thead><tbody></tbody></table></div>
+      <div class="scroll" style="margin-top:10px"><table class="tbl" id="tblCap"><thead><tr><th>Tinaco</th><th class="n">Costo materiales</th><th class="n">Existencia</th><th class="n">Fabricados</th><th class="n" title="Opcional: pesa unos tinacos (sin tapa ni kit) y escribe el promedio. Sirve para saber si se le está echando más polímero que la receta.">Peso real (kg c/u)</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card" id="capConsumo" hidden>
       <h2>Lo que sale del inventario</h2>
@@ -177,9 +178,14 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
       <div class="row" id="simCostos"></div>
     </div>
     <div class="card">
-      <h2>Utilidad por tinaco</h2>
-      <div class="scroll"><table class="tbl" id="tblSim"><thead><tr><th>Tinaco</th><th class="n">Precio de venta</th><th class="n">Materiales</th><th class="n">Otros gastos</th><th class="n">Costo total</th><th class="n">Utilidad</th><th class="n">Margen</th><th class="n">Plan (piezas)</th></tr></thead><tbody></tbody></table></div>
-      <p class="muted">El precio de venta sale del precio de lista de Microsip; puedes escribir otro (se guarda solo para la simulación). Precios sin IVA.</p>
+      <h2>Simulador de precios</h2>
+      <p class="sub">Escribe el precio de cada canal y ve la utilidad y el margen. <b>Guardar</b> deja esos precios para la próxima vez (no cambia nada en Microsip). El público empieza con el precio de lista de Microsip.</p>
+      <details style="margin-bottom:12px"><summary class="muted">Mercado Libre y precios con IVA</summary>
+        <div class="row" style="margin-top:8px" id="mlParams"></div>
+        <p class="muted" style="margin:6px 0 0">Te deposita = precio − comisión − cargo fijo − envío − retención de ISR − retención de IVA (las retenciones se calculan sobre el precio sin IVA). Las retenciones se pueden acreditar en tu declaración: no son costo, por eso la utilidad no las resta.</p>
+      </details>
+      <div class="scroll"><table class="tbl" id="tblSim"><thead><tr><th>Tinaco</th><th class="n">Costo total</th><th class="n">Distribuidor</th><th class="n">Público</th><th class="n">Mercado Libre</th><th class="n">Plan (piezas)</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="muted">Costo total = materiales (receta × costo de Microsip, o el que pusiste arriba en «¿Qué pasa si…?») + otros gastos. Margen = utilidad ÷ precio sin IVA.</p>
     </div>
     <div class="card" id="simPlan" hidden>
       <h2>Si fabricas ese plan</h2>
@@ -201,6 +207,21 @@ input[type=text],input[type=number],input[type=date],input[type=search],select{p
       <h2>Exportados</h2>
       <p class="sub">Cuando ya lo importaste en Microsip, márcalo: desde ahí la existencia de Microsip ya trae esos movimientos y la página deja de descontarlos aparte.</p>
       <div class="scroll"><table class="tbl" id="tblExp"><thead><tr><th>#</th><th>Fechas</th><th class="n">Capturas</th><th>Exportado</th><th>¿Ya en Microsip?</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ AUDITORÍA DE POLÍMERO ============ -->
+  <section id="t-aud" hidden>
+    <div class="head"><div><h1>Auditoría de polímero</h1><p>Lo que <b>debe haber</b> (último pesaje + lo que entró en Microsip − lo que consumieron las recetas) contra lo que <b>hay</b> en la báscula.</p></div>
+      <button class="btn btn-ghost" id="audRecargar">Actualizar</button></div>
+    <div id="audAlertas"></div>
+    <div class="kpis" id="kpisAud"></div>
+    <div id="audPols"></div>
+    <div class="card">
+      <h2>Ajuste por merma (fin de semana)</h2>
+      <p class="sub">Las diferencias confirmadas se mandan a Microsip como <b>salida por merma</b> (si faltó) o entrada (si sobró), al costo del polímero. Así la existencia de Microsip queda igual que la báscula.</p>
+      <div id="audMerma"></div>
+      <div class="scroll" style="margin-top:12px"><table class="tbl" id="tblMerma"><thead><tr><th>#</th><th>Pesajes del</th><th class="n">Pesajes</th><th>Hecho</th><th>¿Ya en Microsip?</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
   </section>
 
@@ -267,7 +288,10 @@ function bajar(nombre, texto){
 }
 const lineasTxt = L => L.filter(x => x.clave && num(x.u) > 0).map(x => `${x.clave},${+Number(x.u).toFixed(4)},${+Number(x.costo || 0).toFixed(4)}`).join("\r\n") + "\r\n";
 
-let D = null, CAP = {}, REC = null, SIMC = {}, PLAN = {}, EXT = [], CP_TODOS = false;
+let D = null, CAP = {}, PESO = {}, REC = null, SIMC = {}, PLAN = {}, EXT = [], CP_TODOS = false, AUD = null;
+// kg de polímero de la receta (lo que se audita), para comparar con el peso real
+const esPol = c => new RegExp((D && D.cfg.auditar) || "POLIMERO|POLÍMERO", "i").test(c.nombre + " " + c.clave);
+const polKg = t => t.receta.filter(esPol).reduce((a, c) => a + (c.cantidad || 0), 0);
 const soloLectura = () => D && D.rol === "auditor";
 const tinacos = () => D ? D.tinacos : [];
 const conReceta = () => tinacos().filter(t => t.receta.length);
@@ -278,11 +302,12 @@ const comp = id => (D.componentes || []).find(c => c.articulo_id === id) || {};
 $$(".tab").forEach(b => b.addEventListener("click", () => abrir(b.dataset.t)));
 function abrir(t){
   $$(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
-  ["cap","rec","sim","exp","mat","res","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
+  ["cap","rec","sim","exp","aud","mat","res","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
   try { localStorage.setItem("prod_tab", t); } catch(e) {}
   if(t === "cap") cargarReg();
   if(t === "exp") verExport(false);
   if(t === "mat") cargarMat();
+  if(t === "aud") cargarAud();
   if(t === "res") cargarRes();
 }
 async function cargar(){
@@ -293,6 +318,8 @@ async function cargar(){
   EXT = (D.extras || []).map(x => ({...x}));
   const sinRec = tinacos().filter(t => !t.receta.length).length; $("#nrec").hidden = !sinRec || !!conReceta().length; $("#nrec").textContent = sinRec;
   const pend = (D.sin_exportar || {}).registros || 0; $("#nexp").hidden = !pend; $("#nexp").textContent = pend;
+  const rv = (D.alertas || {}).revisar || 0; $("#naud").hidden = !rv; $("#naud").textContent = rv;
+  if(rv) aviso(`⚖️ Vuelve a pesar: <b>${esc(D.alertas.polimeros || "")}</b>. El último pesaje no cuadra con lo que debía haber. <button class="btn btn-ghost btn-sm" onclick="abrir('aud')">Ir a la auditoría</button>`);
   $$("#capGuardar,#expBajar,#extGuardar,#cfgGuardar").forEach(b => b.hidden = soloLectura());
   pintarCap(); pintarRecLista(); pintarSim(); pintarCfg();
 }
@@ -307,8 +334,10 @@ function pintarCap(){
       <td><b>${esc(t.nombre)}</b><div class="meta">${esc(t.clave)} · ${t.receta.map(c => n0(c.cantidad) + " " + esc(uni(c.unidad)) + " " + esc(c.nombre)).join(" · ")}</div></td>
       <td class="n">${money(t.costo)}${t.sin_costo ? `<div class="meta neg">falta costo de algún componente</div>` : ""}</td>
       <td class="n">${n0(t.existencia)}${t.por_importar ? `<div class="meta">+${n0(t.por_importar)} por importar</div>` : ""}</td>
-      <td class="n"><input type="number" min="0" step="1" inputmode="numeric" data-cap="${t.articulo_id}" value="${CAP[t.articulo_id] || ""}" ${soloLectura() ? "disabled" : ""} aria-label="Fabricados de ${esc(t.nombre)}"></td></tr>`).join("")
-    : `<tr><td colspan="4" class="muted">${L.length ? "Nada con esa búsqueda." : "Todavía no hay recetas. Ve a <b>Recetas</b> y arma la de cada tinaco."}</td></tr>`;
+      <td class="n"><input type="number" min="0" step="1" inputmode="numeric" data-cap="${t.articulo_id}" value="${CAP[t.articulo_id] || ""}" ${soloLectura() ? "disabled" : ""} aria-label="Fabricados de ${esc(t.nombre)}"></td>
+      <td class="n"><input type="number" min="0" step="0.1" inputmode="decimal" data-peso="${t.articulo_id}" value="${PESO[t.articulo_id] ?? ""}" placeholder="${esc(polKg(t) ? n0(polKg(t)) : "")}" ${soloLectura() ? "disabled" : ""} aria-label="Peso real de ${esc(t.nombre)}" style="width:84px"></td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">${L.length ? "Nada con esa búsqueda." : "Todavía no hay recetas. Ve a <b>Recetas</b> y arma la de cada tinaco."}</td></tr>`;
+  $$("#tblCap input[data-peso]").forEach(i => i.addEventListener("input", () => { const v = num(i.value); if(v > 0) PESO[i.dataset.peso] = v; else delete PESO[i.dataset.peso]; }));
   $$("#tblCap input[data-cap]").forEach(i => i.addEventListener("input", () => { const v = num(i.value); if(v > 0) CAP[i.dataset.cap] = Math.round(v); else delete CAP[i.dataset.cap]; pintarConsumo(); }));
   pintarConsumo();
 }
@@ -333,12 +362,12 @@ function pintarConsumo(){
 $("#capQ").addEventListener("input", pintarCap);
 $("#capFecha").addEventListener("change", pintarConsumo);
 $("#capGuardar").addEventListener("click", () => ocupado($("#capGuardar"), async () => {
-  const lineas = Object.entries(CAP).filter(([, n]) => n > 0).map(([articulo_id, cantidad]) => ({articulo_id: Number(articulo_id), cantidad}));
+  const lineas = Object.entries(CAP).filter(([, n]) => n > 0).map(([articulo_id, cantidad]) => ({articulo_id: Number(articulo_id), cantidad, peso_real: PESO[articulo_id] ?? ""}));
   if(!lineas.length) throw new Error("Escribe cuántos se fabricaron.");
   const neg = consumoDe(CAP).filter(m => (comp(m.componente_id).disponible ?? 0) - m.usa < 0);
   if(neg.length && !confirm("⚠ No alcanza la materia prima según Microsip:\n" + neg.map(m => "• " + m.nombre).join("\n") + "\n\nPuede faltar capturar una compra en Microsip. ¿Guardar de todos modos?")) return;
   const r = await api("capturar", {fecha: $("#capFecha").value, nota: $("#capNota").value, lineas});
-  toast(`Guardado ✓ ${n0(r.tinacos)} tinacos`); CAP = {}; $("#capNota").value = ""; await cargar(); cargarReg();
+  toast(`Guardado ✓ ${n0(r.tinacos)} tinacos`); CAP = {}; PESO = {}; $("#capNota").value = ""; await cargar(); cargarReg();
 }));
 async function cargarReg(){
   if(!D) return;
@@ -445,26 +474,49 @@ function pintarSim(){
   const sl = $("#scLimpiar"); if(sl) sl.addEventListener("click", () => { SIMC = {}; pintarSim(); });
   pintarTablaSim();
 }
+const MLK = [["ml_comision", "Comisión ML (%)"], ["ml_fijo", "Cargo fijo ($)"], ["ml_envio", "Envío que pagas ($)"], ["ml_ret_isr", "Retención ISR (%)"], ["ml_ret_iva", "Retención IVA (%)"]];
+const cf = k => num(D.cfg[k]) ?? 0;
+function canal(precio, tipo, costo){
+  precio = num(precio); if(!precio) return null;
+  const iva = (num(D.cfg.iva) ?? 16) / 100, conIva = D.cfg.precios_con_iva !== "no", base = conIva ? precio / (1 + iva) : precio;
+  if(tipo !== "ml"){ const ut = base - costo; return {ut, mg: ut / base}; }
+  const cargos = precio * cf("ml_comision") / 100 + cf("ml_fijo") + cf("ml_envio"), cargosBase = conIva ? cargos / (1 + iva) : cargos;
+  const ret = base * (cf("ml_ret_isr") + cf("ml_ret_iva")) / 100, ut = base - cargosBase - costo;
+  return {ut, mg: ut / base, deposita: precio - cargos - ret, cargos, ret};
+}
+function celda(t, tipo, valor, costo){
+  const ro = soloLectura() ? "disabled" : "", c = canal(valor, tipo, costo);
+  return `<td class="n"><input type="number" min="0" step="any" value="${valor ?? ""}" data-cn="${tipo}" data-t="${t.articulo_id}" ${ro} aria-label="Precio ${tipo} de ${esc(t.nombre)}">
+    ${c ? `<div class="${c.ut < 0 ? "neg" : "pos"}">${money(c.ut)} · ${(c.mg * 100).toFixed(1)}%</div>${tipo === "ml" ? `<div class="meta" title="Comisión, cargos y envío ${money(c.cargos)} · retenciones ${money(c.ret)}">te deposita ${money(c.deposita)}</div>` : ""}` : `<div class="meta">sin precio</div>`}</td>`;
+}
 function pintarTablaSim(){
-  const L = conReceta(), ro = soloLectura() ? "disabled" : "";
-  $("#tblSim tbody").innerHTML = L.length ? L.map(t => { const mat = costoSim(t), ext = extrasDe(t), tot = mat + ext, ut = (num(t.precio) || 0) - tot, mg = t.precio ? ut / t.precio : null;
+  const L = conReceta(), ro = soloLectura();
+  $("#mlParams").innerHTML = MLK.map(([k, t]) => `<label class="muted" style="display:flex;flex-direction:column;gap:3px">${esc(t)}<input type="number" min="0" step="any" data-ml="${k}" value="${esc(D.cfg[k] ?? "")}" style="width:110px" ${ro ? "disabled" : ""}></label>`).join("")
+    + `<label class="muted" style="display:flex;flex-direction:column;gap:3px">Precios<select data-ml="precios_con_iva" ${ro ? "disabled" : ""}><option value="si" ${D.cfg.precios_con_iva !== "no" ? "selected" : ""}>con IVA</option><option value="no" ${D.cfg.precios_con_iva === "no" ? "selected" : ""}>sin IVA</option></select></label>`
+    + (ro ? "" : `<button class="btn btn-ghost btn-sm" id="mlGuardar">Guardar</button>`);
+  $$("#mlParams [data-ml]").forEach(i => i.addEventListener("change", () => { D.cfg[i.dataset.ml] = i.value; pintarTablaSim(); }));
+  const mg = $("#mlGuardar"); if(mg) mg.addEventListener("click", () => ocupado(mg, async () => { const general = {}; $$("#mlParams [data-ml]").forEach(i => general[i.dataset.ml] = i.value.trim()); await api("config", {general}); toast("Guardado ✓"); }));
+  $("#tblSim tbody").innerHTML = L.length ? L.map(t => { const costo = costoSim(t) + extrasDe(t);
     return `<tr><td><b>${esc(t.nombre)}</b><div class="meta">${esc(t.clave)}</div></td>
-      <td class="n"><input type="number" min="0" step="any" value="${t.precio ?? ""}" data-pr="${t.articulo_id}" ${ro}>${t.precio_propio ? `<div class="meta">lista: ${money(t.precio_lista)}</div>` : ""}</td>
-      <td class="n">${money(mat)}${Object.keys(SIMC).length && Math.abs(mat - (t.costo || 0)) > 0.005 ? `<div class="meta">hoy ${money(t.costo)}</div>` : ""}</td><td class="n">${money(ext)}</td><td class="n"><b>${money(tot)}</b></td>
-      <td class="n ${ut < 0 ? "neg" : "pos"}">${money(ut)}</td><td class="n ${mg !== null && mg < 0 ? "neg" : ""}">${mg === null ? "–" : (mg * 100).toFixed(1) + "%"}</td>
-      <td class="n"><input type="number" min="0" step="1" value="${PLAN[t.articulo_id] || ""}" data-pl="${t.articulo_id}" aria-label="Plan de ${esc(t.nombre)}"></td></tr>`; }).join("")
-    : `<tr><td colspan="8" class="muted">Primero arma las recetas.</td></tr>`;
-  $$("#tblSim [data-pr]").forEach(i => i.addEventListener("change", async () => { try { await api("precio", {articulo_id: Number(i.dataset.pr), precio: i.value.trim()});
-    const t = tinacos().find(x => x.articulo_id === Number(i.dataset.pr)); t.precio = num(i.value) ?? t.precio_lista; t.precio_propio = num(i.value) !== null; toast("Precio guardado ✓"); pintarTablaSim(); } catch(e) { toast(e.message); } }));
+      <td class="n"><b>${money(costo)}</b><div class="meta">${money(costoSim(t))} materiales + ${money(extrasDe(t))}</div></td>
+      ${celda(t, "dist", t.dist, costo)}${celda(t, "pub", t.precio, costo)}${celda(t, "ml", t.ml, costo)}
+      <td class="n"><input type="number" min="0" step="1" value="${PLAN[t.articulo_id] || ""}" data-pl="${t.articulo_id}" aria-label="Plan de ${esc(t.nombre)}" style="width:80px"></td>
+      <td>${ro ? "" : `<button class="btn btn-ghost btn-sm" data-gp="${t.articulo_id}">Guardar</button>`}</td></tr>`; }).join("")
+    : `<tr><td colspan="7" class="muted">Primero arma las recetas.</td></tr>`;
+  const campo = {dist: "dist", pub: "precio", ml: "ml"};
+  $$("#tblSim [data-cn]").forEach(i => i.addEventListener("change", () => { const t = tinacos().find(x => x.articulo_id === Number(i.dataset.t)); t[campo[i.dataset.cn]] = num(i.value); pintarTablaSim(); }));
+  $$("#tblSim [data-gp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { const t = tinacos().find(x => x.articulo_id === Number(b.dataset.gp));
+    const pub = num(t.precio) !== null && num(t.precio) !== num(t.precio_lista) ? t.precio : "";
+    await api("precio", {articulo_id: t.articulo_id, precio: pub ?? "", dist: t.dist ?? "", ml: t.ml ?? ""}); t.precio_propio = pub !== ""; toast("Precios guardados ✓ " + t.nombre); })));
   $$("#tblSim [data-pl]").forEach(i => i.addEventListener("input", () => { const v = num(i.value); if(v > 0) PLAN[i.dataset.pl] = v; else delete PLAN[i.dataset.pl]; pintarPlan(); }));
   pintarPlan();
 }
 function pintarPlan(){
   const piezas = Object.values(PLAN).reduce((a, b) => a + b, 0); $("#simPlan").hidden = !piezas; if(!piezas) return;
   const M = consumoDe(PLAN); let venta = 0, costo = 0;
-  for(const [id, n] of Object.entries(PLAN)){ const t = tinacos().find(x => String(x.articulo_id) === id); if(!t) continue; venta += n * (num(t.precio) || 0); costo += n * (costoSim(t) + extrasDe(t)); }
+  for(const [id, n] of Object.entries(PLAN)){ const t = tinacos().find(x => String(x.articulo_id) === id); if(!t) continue; venta += n * (num(t.precio) || 0) / (D.cfg.precios_con_iva !== "no" ? 1 + (num(D.cfg.iva) ?? 16) / 100 : 1); costo += n * (costoSim(t) + extrasDe(t)); }
   const falta = M.reduce((a, m) => a + Math.max(0, m.usa - (comp(m.componente_id).disponible ?? 0)) * (m.costo || 0), 0);
-  $("#kpisPlan").innerHTML = [[n0(piezas), "tinacos", ""], [money0(venta), "venta", ""], [money0(costo), "costo total", ""], [money0(venta - costo), "utilidad", venta - costo < 0 ? "bad" : "good"], [money0(falta), "materia prima por comprar", falta > 0 ? "bad" : ""]]
+  $("#kpisPlan").innerHTML = [[n0(piezas), "tinacos", ""], [money0(venta), "venta a precio público (sin IVA)", ""], [money0(costo), "costo total", ""], [money0(venta - costo), "utilidad", venta - costo < 0 ? "bad" : "good"], [money0(falta), "materia prima por comprar", falta > 0 ? "bad" : ""]]
     .map(([v, t, c]) => `<div class="kpi ${c}"><b>${v}</b><span>${t}</span></div>`).join("");
   $("#tblPlanMat tbody").innerHTML = M.map(m => { const disp = comp(m.componente_id).disponible ?? 0, f = Math.max(0, m.usa - disp);
     return `<tr><td>${esc(m.nombre)}</td><td class="n">${n0(m.usa)} ${esc(m.unidad || "")}</td><td class="n">${n0(disp)}</td><td class="n ${f > 0 ? "neg" : ""}">${f > 0 ? n0(Math.ceil(f * 100) / 100) : "—"}</td><td class="n">${money(m.usa * (m.costo || 0))}</td></tr>`; }).join("");
@@ -516,6 +568,101 @@ $("#expBajar").addEventListener("click", () => ocupado($("#expBajar"), async () 
   const r = await verExport(true); if(r) { bajarArchivos(r); toast("Archivos bajados ✓ Impórtalos en Microsip y luego marca «Ya lo importé»."); await cargar(); verExport(false); }
 }));
 
+/* ================= auditoría de polímero ================= */
+const EST_C = {inicial: ["punto de partida", "pu"], ok: ["cuadra", "ok"], revisar: ["vuelve a pesar", "red"], confirmado: ["confirmado", "no"], reemplazado: ["reemplazado", ""]};
+let RECONTEO = null;
+async function cargarAud(){
+  if(!D) return;
+  try { AUD = await api("auditoria", {dias: 45}); } catch(e) { toast(e.message); return; }
+  pintarAud(); verMerma(false);
+}
+function pintarAud(){
+  const A = AUD, P = A.polimeros, ro = soloLectura();
+  const rev = P.flatMap(p => p.conteos.filter(c => c.estado === "revisar").map(c => ({p, c})));
+  const viejos = P.filter(p => p.ult_fecha && p.dias_sin_pesar > A.dias_conteo);
+  const nunca = P.filter(p => !p.ult_fecha);
+  $("#audAlertas").innerHTML = rev.map(({p, c}) => `<div class="warn" style="border:1px solid var(--c-red)">⚖️ <b>Vuelve a pesar el ${esc(p.nombre)}.</b> El ${esc(fecha(c.fecha))} se pesaron <b>${n0(c.kg)} kg</b> y debía haber <b>${n0(c.teorico)} kg</b>:
+      ${c.dif < 0 ? "faltan" : "sobran"} <b>${n0(Math.abs(c.dif))} kg (${money(Math.abs(c.dinero))})</b>, más que la tolerancia. Pésalo otra vez y confirma.
+      ${ro ? "" : `<button class="btn btn-main btn-sm" data-recon="${c.id}" data-art="${p.articulo_id}">Ya lo volví a pesar</button>`}</div>`).join("")
+    + viejos.map(p => `<div class="warn">🕒 El ${esc(p.nombre)} no se pesa desde hace <b>${p.dias_sin_pesar} días</b> (cada ${A.dias_conteo} días).</div>`).join("")
+    + nunca.map(p => `<div class="warn">📍 El ${esc(p.nombre)} nunca se ha pesado: pésalo para tener el punto de partida.</div>`).join("");
+  const perd = P.reduce((a, p) => a + p.perdida.dinero, 0), kg = P.reduce((a, p) => a + p.perdida.kg, 0), exc = P.reduce((a, p) => a + p.perdida.exceso, 0), con = P.reduce((a, p) => a + p.perdida.consumo, 0);
+  $("#kpisAud").innerHTML = [[money0(perd), `perdido en ${A.dias} días (${n0(kg)} kg)`, perd > 0 ? "bad" : "good"], [con ? (kg / con * 100).toFixed(1) + "%" : "–", "del polímero consumido", kg > 0 ? "bad" : ""],
+    [n0(exc) + " kg", "por tinacos más pesados que la receta", exc > 0 ? "bad" : ""], [n0(Math.max(0, kg - Math.max(exc, 0))) + " kg", "merma sin explicar", ""],
+    [money0(-(A.pendiente_merma || {}).dinero || 0), `${(A.pendiente_merma || {}).conteos || 0} diferencias por ajustar`, ""]].map(([v, t, c]) => `<div class="kpi ${c}"><b>${v}</b><span>${t}</span></div>`).join("");
+  $("#audPols").innerHTML = P.length ? P.map(p => polCard(p)).join("") : `<div class="card muted">No hay polímero en las recetas (se reconoce por el nombre: ${esc(D.cfg.auditar || "POLIMERO")}; se cambia en Configuración).</div>`;
+  $$("#t-aud [data-recon]").forEach(b => b.addEventListener("click", () => { RECONTEO = Number(b.dataset.recon); const i = $(`#t-aud [data-kg="${b.dataset.art}"]`); pintarAud(); const j = $(`#t-aud [data-kg="${b.dataset.art}"]`); if(j){ j.scrollIntoView({behavior: "smooth", block: "center"}); j.focus(); } }));
+  $$("#t-aud [data-pesar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const art = b.dataset.pesar, kg = $(`#t-aud [data-kg="${art}"]`).value.trim(), f = $(`#t-aud [data-fe="${art}"]`).value, nota = $(`#t-aud [data-no="${art}"]`).value;
+    if(kg === "") throw new Error("Escribe los kg que pesaste.");
+    const rec = b.dataset.rec || "";
+    const r = await api("contar", {articulo_id: Number(art), fecha: f, kg, nota, reconteo_de: rec});
+    RECONTEO = null;
+    toast(r.estado === "inicial" ? "Punto de partida guardado ✓" : r.estado === "revisar" ? `⚠ ${r.dif < 0 ? "Faltan" : "Sobran"} ${n0(Math.abs(r.dif))} kg: vuelve a pesarlo` : `Guardado ✓ diferencia ${n0(r.dif)} kg (${money(r.dinero)})`);
+    await cargar(); await cargarAud(); })));
+  $$("#t-aud [data-cancel]").forEach(b => b.addEventListener("click", () => { RECONTEO = null; pintarAud(); }));
+}
+function polCard(p){
+  const ro = soloLectura(), rec = RECONTEO && p.conteos.find(c => c.id === RECONTEO) ? RECONTEO : null;
+  let saldo = null; const movs = [];
+  for(const m of p.movs){ if(m.tipo === "pesaje"){ saldo = m.kg; } else if(saldo !== null){ saldo += m.kg; } movs.push({...m, saldo}); }
+  return `<div class="card">
+    <div class="row"><h2 class="grow">${esc(p.nombre)} <span class="muted">${esc(p.clave)} · ${money(p.costo)} por kg</span></h2></div>
+    <div class="kpis" style="margin-top:8px">
+      <div class="kpi"><b>${p.teorico_hoy === null ? "–" : n0(p.teorico_hoy) + " kg"}</b><span>debe haber hoy${p.ult_fecha ? ` (pesaje del ${esc(fecha(p.ult_fecha))}: ${n0(p.ult_kg)} + entró ${n0(p.entradas)} − consumo ${n0(p.consumo)})` : ""}</span></div>
+      <div class="kpi"><b>${n0(p.existencia_ms)} kg</b><span>dice Microsip</span></div>
+      <div class="kpi ${p.perdida.kg > 0 ? "bad" : ""}"><b>${money0(p.perdida.dinero)}</b><span>perdido en el periodo (${n0(p.perdida.kg)} kg)</span></div>
+    </div>
+    ${ro ? "" : `<div class="row" style="margin-top:12px;${rec ? "background:var(--warn);padding:10px;border-radius:12px" : ""}"><b>${rec ? "Vuelve a pesarlo y confirma:" : "Pesar ahora:"}</b>
+      <label class="muted">Fecha <input type="date" data-fe="${p.articulo_id}" value="${esc(rec ? (p.conteos.find(c => c.id === rec) || {}).fecha : D.hoy)}" max="${esc(D.hoy)}"></label>
+      <label class="muted">kg en la báscula <input type="number" min="0" step="0.1" data-kg="${p.articulo_id}" style="width:120px"></label>
+      <input type="text" data-no="${p.articulo_id}" maxlength="200" placeholder="nota (quién pesó, costales…)" class="grow">
+      <button class="btn btn-main" data-pesar="${p.articulo_id}" data-rec="${rec || ""}">${rec ? "Confirmar pesaje" : "Guardar pesaje"}</button>${rec ? `<button class="btn btn-ghost" data-cancel="1">Cancelar</button>` : ""}</div>
+      <p class="muted" style="margin:6px 0 0">El pesaje cuenta al <b>cierre del día</b>: incluye lo que se fabricó ese día.</p>`}
+    <h3 style="margin:16px 0 6px">Pesajes</h3>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Fecha</th><th class="n">Pesado</th><th class="n">Debía haber</th><th class="n">Diferencia</th><th class="n">Tinacos más pesados</th><th class="n">Merma</th><th>Estado</th></tr></thead><tbody>
+    ${p.conteos.map(c => `<tr style="${c.estado === "reemplazado" ? "opacity:.55" : ""}"><td>${esc(fecha(c.fecha))}<div class="meta">${esc(c.por || "")}${c.nota ? " · " + esc(c.nota) : ""}</div></td>
+      <td class="n">${n0(c.kg)}</td><td class="n">${c.teorico === null ? "—" : n0(c.teorico)}${c.teorico !== null ? `<div class="meta">+${n0(c.entradas)} entró · −${n0(c.consumo)} consumo</div>` : ""}</td>
+      <td class="n ${c.dif < 0 ? "neg" : c.dif > 0 ? "pos" : ""}">${c.dif === null ? "—" : (c.dif > 0 ? "+" : "") + n0(c.dif) + " kg"}${c.dinero ? `<div class="meta">${money(c.dinero)}</div>` : ""}</td>
+      <td class="n">${c.exceso ? n0(c.exceso) + " kg" : "—"}</td><td class="n">${c.merma ? n0(c.merma) + " kg" : "—"}</td>
+      <td><span class="pill ${(EST_C[c.estado] || [])[1] || ""}">${esc((EST_C[c.estado] || [c.estado])[0])}</span>${c.ajuste ? `<div class="meta">${c.ajuste_importado ? "ajustado en Microsip" : "en ajuste #" + c.exporte_id}</div>` : ""}
+        ${c.estado === "revisar" && !ro ? `<div><button class="btn btn-main btn-sm" data-recon="${c.id}" data-art="${p.articulo_id}" style="margin-top:4px">Volver a pesar</button></div>` : ""}</td></tr>`).join("")
+      || `<tr><td colspan="7" class="muted">Sin pesajes en los últimos ${AUD.dias} días.</td></tr>`}</tbody></table></div>
+    <details style="margin-top:12px"><summary class="muted">Trazabilidad día por día (${movs.length} movimientos)</summary>
+      <div class="scroll"><table class="tbl" style="margin-top:6px"><thead><tr><th>Fecha</th><th>Movimiento</th><th class="n">kg</th><th class="n">Debe haber</th></tr></thead><tbody>
+      ${movs.map(m => `<tr><td>${esc(fecha(m.fecha))}</td><td>${m.tipo === "entrada" ? "📥 Entró " + esc(m.ref || "") : m.tipo === "consumo" ? "🏭 Producción: " + n0(m.piezas) + " tinacos (" + esc(m.ref || "") + ")" : "⚖️ Pesaje (" + esc((EST_C[m.ref] || [m.ref])[0]) + ")"}</td>
+        <td class="n ${m.tipo === "consumo" ? "neg" : ""}">${m.tipo === "pesaje" ? n0(m.kg) : (m.kg > 0 ? "+" : "") + n0(m.kg)}</td><td class="n">${m.saldo === null ? "—" : n0(m.saldo)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Sin movimientos.</td></tr>`}
+      </tbody></table></div></details>
+  </div>`;
+}
+let MERMA = null;
+async function verMerma(marcar, exporte_id){
+  try { MERMA = await api("merma", exporte_id ? {exporte_id} : {marcar: marcar ? "si" : ""}); } catch(e) { toast(e.message); return null; }
+  pintarMerma(); return MERMA;
+}
+function pintarMerma(){
+  const m = MERMA, ro = soloLectura();
+  $("#audMerma").innerHTML = !m.conteos ? `<p class="muted">No hay diferencias pendientes de ajustar.</p>`
+    : `<p><b>${n0(m.conteos)}</b> pesajes del ${esc(fecha(m.desde))} al ${esc(fecha(m.hasta))} · ${m.dinero < 0 ? "pérdida" : "a favor"} de <b>${money(Math.abs(m.dinero || 0))}</b></p>`
+      + (m.salida.length ? tablaMov(m.salida, "Salida por merma (faltó)") : "") + (m.entrada.length ? tablaMov(m.entrada, "Entrada (sobró)") : "")
+      + (ro ? "" : `<div class="row" style="margin-top:10px"><span class="grow"></span><button class="btn btn-main" id="mermaBajar">Bajar archivo y marcar como ajustado</button></div>`);
+  const bb = $("#mermaBajar"); if(bb) bb.addEventListener("click", () => ocupado(bb, async () => {
+    if(!confirm("Se baja el archivo del ajuste por merma y las diferencias quedan marcadas como ajustadas. ¿Continuar?")) return;
+    const r = await verMerma(true); if(r) { bajarMerma(r); toast("Archivo bajado ✓ Impórtalo en Microsip y luego marca «Ya lo importé»."); await cargar(); cargarAud(); } }));
+  $("#tblMerma tbody").innerHTML = (m.anteriores || []).length ? m.anteriores.map(x => `<tr><td>${x.id}</td><td>${esc(fecha(x.desde))} – ${esc(fecha(x.hasta))}</td><td class="n">${n0(x.registros)}</td>
+      <td>${esc(fecha(x.creado))}<div class="meta">${esc(x.por || "")}</div></td><td>${x.importado ? `<span class="pill ok">sí, ${esc(fecha(x.importado))}</span>` : `<span class="pill no">todavía no</span>`}</td>
+      <td class="row"><button class="btn btn-ghost btn-sm" data-mbajar="${x.id}">Bajar otra vez</button>${ro ? "" : x.importado ? "" : `<button class="btn btn-main btn-sm" data-mimp="${x.id}">Ya lo importé en Microsip</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="muted">Todavía no hay ajustes por merma.</td></tr>`;
+  $$("#tblMerma [data-mbajar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { const r = await api("merma", {exporte_id: Number(b.dataset.mbajar)}); bajarMerma(r); })));
+  $$("#tblMerma [data-mimp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { await api("importado", {exporte_id: Number(b.dataset.mimp)}); toast("Listo ✓"); await cargar(); cargarAud(); })));
+}
+function bajarMerma(r){
+  const tag = (r.desde || "") + (r.hasta && r.hasta !== r.desde ? "_a_" + r.hasta : "") + (r.exporte_id ? " #" + r.exporte_id : "");
+  if(r.salida.length) bajar("Merma salida polimero " + tag + ".txt", lineasTxt(r.salida));
+  if(r.entrada.length) setTimeout(() => bajar("Merma entrada polimero " + tag + ".txt", lineasTxt(r.entrada)), 400);
+}
+$("#audRecargar").addEventListener("click", () => ocupado($("#audRecargar"), cargarAud));
+
 /* ================= materia prima ================= */
 async function cargarMat(){
   if(!D) return;
@@ -552,7 +699,11 @@ $("#resVer").addEventListener("click", () => ocupado($("#resVer"), cargarRes));
 /* ================= configuración ================= */
 const CFG = [["tienda", "Nombre en la página", "Ej. Producción Adhesipro"], ["empresa", "Empresa", ""],
   ["lineas", "Líneas o grupos de Microsip que son tinacos", "Ej. tinaco|cisterna. También salen los que ya tienen receta."],
-  ["almacenes", "Almacenes de materia prima (vacío = todos)", "Ej. PLANTA|BODEGA"], ["iva", "IVA (%)", ""]];
+  ["almacenes", "Almacenes de materia prima (vacío = todos)", "Ej. PLANTA|BODEGA"], ["iva", "IVA (%)", ""],
+  ["auditar", "Qué materia prima se audita con pesajes", "Por nombre o clave. Ej. POLIMERO|POLÍMERO"],
+  ["tolerancia_kg", "Tolerancia del pesaje (kg)", "Si la diferencia pasa de esto (o del % de abajo, lo que sea mayor) pide volver a pesar"],
+  ["tolerancia_pct", "Tolerancia del pesaje (% de lo consumido)", "2 = 2% del polímero que se usó desde el pesaje anterior"],
+  ["dias_conteo", "Pesar el polímero cada (días)", "Avisa si pasa más tiempo sin pesar"]];
 function pintarCfg(){
   $("#formCfg").innerHTML = CFG.map(([k, t, h]) => `<label style="display:flex;flex-direction:column;gap:4px;width:100%;max-width:520px">${esc(t)}<input type="text" data-k="${k}" value="${esc(D.cfg[k] ?? "")}" ${soloLectura() ? "disabled" : ""}>${h ? `<small class="muted">${esc(h)}</small>` : ""}</label>`).join("");
 }

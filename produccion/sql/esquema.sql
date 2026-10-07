@@ -18,3 +18,22 @@ CREATE TABLE IF NOT EXISTS prod_registro (id BIGSERIAL PRIMARY KEY, base TEXT NO
 CREATE INDEX IF NOT EXISTS prod_registro_fecha ON prod_registro (base, fecha);
 CREATE TABLE IF NOT EXISTS prod_registro_det (registro_id BIGINT NOT NULL REFERENCES prod_registro(id) ON DELETE CASCADE, componente_id BIGINT NOT NULL,
   cantidad NUMERIC NOT NULL, costo_unit NUMERIC, PRIMARY KEY (registro_id, componente_id));
+-- ---- auditoría de polímero ----
+-- columnas nuevas (peso real del tinaco, tipo de exporte, precios por canal): solo se agregan si faltan, sin bloquear las tablas en cada petición
+DO 'BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = ''prod_registro'' AND column_name = ''peso_real'') THEN
+    ALTER TABLE prod_registro ADD COLUMN peso_real NUMERIC;
+    ALTER TABLE prod_exporte ADD COLUMN tipo TEXT NOT NULL DEFAULT ''produccion'';
+    ALTER TABLE prod_precio ALTER COLUMN precio DROP NOT NULL;
+    ALTER TABLE prod_precio ADD COLUMN dist NUMERIC;
+    ALTER TABLE prod_precio ADD COLUMN ml NUMERIC;
+  END IF;
+END';
+-- pesajes físicos del polímero. teorico = lo que debía haber según el pesaje anterior + entradas − consumo de recetas
+CREATE TABLE IF NOT EXISTS prod_conteo (id BIGSERIAL PRIMARY KEY, base TEXT NOT NULL, articulo_id BIGINT NOT NULL, fecha DATE NOT NULL, kg NUMERIC NOT NULL,
+  base_id BIGINT, teorico NUMERIC, entradas NUMERIC, consumo NUMERIC, exceso NUMERIC, estado TEXT NOT NULL,   -- inicial | ok | revisar | confirmado | reemplazado
+  reconteo_de BIGINT, nota TEXT, por TEXT, creado TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS prod_conteo_art ON prod_conteo (base, articulo_id, fecha);
+-- ajustes por merma (diferencias confirmadas) que se mandan a Microsip
+CREATE TABLE IF NOT EXISTS prod_ajuste (id BIGSERIAL PRIMARY KEY, base TEXT NOT NULL, conteo_id BIGINT NOT NULL UNIQUE, articulo_id BIGINT NOT NULL,
+  kg NUMERIC NOT NULL, costo NUMERIC, exporte_id BIGINT, por TEXT, creado TIMESTAMPTZ NOT NULL DEFAULT now());

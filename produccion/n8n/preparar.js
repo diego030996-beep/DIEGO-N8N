@@ -9,8 +9,8 @@ if (!rol) return fail('Esta liga no tiene permiso. Pide la liga de producción a
 const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op]) return fail('Operación desconocida.');
-const ESCRIBE = ['receta', 'copiar', 'capturar', 'borrar', 'exportar', 'importado', 'precio', 'extras', 'config'];
-if (rol === 'auditor' && ESCRIBE.includes(op) && !(op === 'exportar' && b.marcar !== 'si')) return fail('Esta liga es solo de consulta.');
+const ESCRIBE = ['receta', 'copiar', 'capturar', 'borrar', 'exportar', 'importado', 'precio', 'extras', 'config', 'contar', 'merma'];
+if (rol === 'auditor' && ESCRIBE.includes(op) && !(['exportar', 'merma'].includes(op) && b.marcar !== 'si')) return fail('Esta liga es solo de consulta.');
 const quien = String(b.quien || '').replace(/[^\p{L}\p{N} .\-]/gu, '').trim().slice(0, 40);
 const por = quien ? quien + ' (' + rol + ')' : rol;
 const txt = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
@@ -44,8 +44,10 @@ switch (op) {
     if (!fechaOk(b.fecha) || b.fecha > hoyMX) return fail('Fecha inválida (no puede ser de mañana).');
     const L = Array.isArray(b.lineas) ? b.lineas : [];
     if (!L.length || L.length > 100) return fail('Captura al menos un tinaco.');
-    for (const l of L) { if (!idOk(l.articulo_id)) return fail('Tinaco inválido.'); if (!cantOk(l.cantidad, 10000) || !Number.isInteger(Number(l.cantidad))) return fail('Cantidad inválida (piezas enteras).'); }
-    p = { fecha: b.fecha, nota: txt(b.nota, 200), lineas: L.map(l => ({ articulo_id: Number(l.articulo_id), cantidad: String(Number(l.cantidad)) })) };
+    for (const l of L) { if (!idOk(l.articulo_id)) return fail('Tinaco inválido.'); if (!cantOk(l.cantidad, 10000) || !Number.isInteger(Number(l.cantidad))) return fail('Cantidad inválida (piezas enteras).');
+      if (l.peso_real !== undefined && l.peso_real !== null && l.peso_real !== '' && !cantOk(l.peso_real, 2000)) return fail('Peso real inválido (kg por tinaco).'); }
+    p = { fecha: b.fecha, nota: txt(b.nota, 200), lineas: L.map(l => ({ articulo_id: Number(l.articulo_id), cantidad: String(Number(l.cantidad)),
+      peso_real: l.peso_real === undefined || l.peso_real === null || l.peso_real === '' ? '' : String(Number(l.peso_real)) })) };
     break; }
   case 'registros': case 'materia': case 'resumen': { const r = rango(); if (!r) return fail('Fechas inválidas.'); p = r; break; }
   case 'borrar': if (!idOk(b.id)) return fail('Captura inválida.'); p = { id: Number(b.id) }; break;
@@ -54,10 +56,23 @@ switch (op) {
     else { const r = rango(); if (!r) return fail('Fechas inválidas.'); p = { ...r, marcar: b.marcar === 'si' ? 'si' : '' }; }
     break;
   case 'importado': if (!idOk(b.exporte_id)) return fail('Exporte inválido.'); p = { exporte_id: Number(b.exporte_id), quitar: b.quitar === 'si' ? 'si' : '' }; break;
-  case 'precio':
+  case 'precio': {
     if (!idOk(b.articulo_id)) return fail('Tinaco inválido.');
-    if (b.precio !== '' && b.precio != null && !cantOk(b.precio, 1e7)) return fail('Precio inválido.');
-    p = { articulo_id: Number(b.articulo_id), precio: b.precio === '' || b.precio == null ? '' : String(Number(b.precio)) };
+    const pr = v => v === '' || v == null ? '' : String(Number(v));
+    for (const k of ['precio', 'dist', 'ml']) if (b[k] !== '' && b[k] != null && !cantOk(b[k], 1e7)) return fail('Precio inválido.');
+    p = { articulo_id: Number(b.articulo_id), precio: pr(b.precio), dist: pr(b.dist), ml: pr(b.ml) };
+    break; }
+  case 'contar':
+    if (!idOk(b.articulo_id)) return fail('Polímero inválido.');
+    if (!fechaOk(b.fecha) || b.fecha > hoyMX) return fail('Fecha inválida (no puede ser de mañana).');
+    if (!(isFinite(Number(b.kg)) && Number(b.kg) >= 0 && Number(b.kg) <= 1e6) || b.kg === '' || b.kg == null) return fail('Escribe los kg que pesaste.');
+    if (b.reconteo_de && !idOk(b.reconteo_de)) return fail('Pesaje inválido.');
+    p = { articulo_id: Number(b.articulo_id), fecha: b.fecha, kg: String(Number(b.kg)), nota: txt(b.nota, 200), reconteo_de: b.reconteo_de ? String(Number(b.reconteo_de)) : '' };
+    break;
+  case 'auditoria': p = { dias: Number.isInteger(Number(b.dias)) ? String(Number(b.dias)) : '' }; break;
+  case 'merma':
+    if (b.exporte_id) { if (!idOk(b.exporte_id)) return fail('Ajuste inválido.'); p = { exporte_id: String(Number(b.exporte_id)) }; }
+    else p = { marcar: b.marcar === 'si' ? 'si' : '' };
     break;
   case 'extras': {
     const L = Array.isArray(b.lista) ? b.lista : [];
@@ -67,9 +82,13 @@ switch (op) {
     p = { lista: L.map(x => ({ concepto: txt(x.concepto, 60), monto: String(Number(x.monto)), articulo_id: x.articulo_id ? String(Number(x.articulo_id)) : '' })) };
     break; }
   case 'config': {
-    const g = b.general || {}, OK = { lineas: 200, almacenes: 200, iva: 5, empresa: 80, tienda: 80 }, general = {};
+    const g = b.general || {}, OK = { lineas: 200, almacenes: 200, iva: 5, empresa: 80, tienda: 80, auditar: 200, tolerancia_kg: 10, tolerancia_pct: 10, dias_conteo: 5,
+      ml_comision: 10, ml_fijo: 10, ml_envio: 10, ml_ret_isr: 10, ml_ret_iva: 10, precios_con_iva: 2 }, general = {};
     for (const [k, v] of Object.entries(g)) { if (!(k in OK)) return fail('Ajuste desconocido: ' + k); general[k] = txt(v, OK[k]); }
-    for (const k of ['lineas', 'almacenes']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
+    for (const k of ['lineas', 'almacenes', 'auditar']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
+    for (const k of ['tolerancia_kg', 'tolerancia_pct', 'dias_conteo', 'ml_comision', 'ml_fijo', 'ml_envio', 'ml_ret_isr', 'ml_ret_iva'])
+      if (general[k] && !(Number(general[k]) >= 0 && Number(general[k]) <= 100000)) return fail('Número inválido en ' + k + '.');
+    if (general.precios_con_iva && !['si', 'no'].includes(general.precios_con_iva)) return fail('Precios con IVA: si o no.');
     if (general.iva && !(Number(general.iva) >= 0 && Number(general.iva) <= 30)) return fail('IVA inválido.');
     p = { general };
     break; }

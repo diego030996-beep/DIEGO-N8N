@@ -19,7 +19,7 @@ comp AS (  -- componentes que se usan en alguna receta
 SELECT json_build_object('ok', true, 'hoy', cfg.hoy, 'base', cfg.base, 'cfg', cfg.c,
   'tinacos', (SELECT coalesce(json_agg(json_build_object('articulo_id', t.articulo_id, 'clave', t.clave, 'nombre', t.nombre, 'unidad', t.unidad, 'linea', t.linea,
       'existencia', coalesce(exi.e, 0), 'por_importar', coalesce(fab.u, 0), 'mes', coalesce(mes.u, 0),
-      'precio', coalesce(pp.precio, t.precio_lista), 'precio_lista', t.precio_lista, 'precio_propio', pp.precio IS NOT NULL,
+      'precio', coalesce(pp.precio, t.precio_lista), 'precio_lista', t.precio_lista, 'precio_propio', pp.precio IS NOT NULL, 'dist', pp.dist, 'ml', pp.ml,
       'receta', coalesce(rec.comps, '[]'::json), 'costo', round(rec.costo, 2), 'sin_costo', coalesce(rec.sin_costo, false))
       ORDER BY (rec.articulo_id IS NULL), t.nombre), '[]'::json)
     FROM tin t LEFT JOIN rec ON rec.articulo_id = t.articulo_id LEFT JOIN exi ON exi.articulo_id = t.articulo_id
@@ -34,6 +34,9 @@ SELECT json_build_object('ok', true, 'hoy', cfg.hoy, 'base', cfg.base, 'cfg', cf
     FROM prod_extra x WHERE x.base = cfg.base),
   'sin_exportar', (SELECT json_build_object('registros', count(*), 'tinacos', coalesce(sum(cantidad), 0), 'desde', min(fecha), 'hasta', max(fecha))
     FROM prod_registro r WHERE r.base = cfg.base AND r.exporte_id IS NULL),
-  'sin_confirmar', (SELECT coalesce(json_agg(json_build_object('id', x.id, 'desde', x.desde, 'hasta', x.hasta, 'registros', x.registros, 'creado', x.creado) ORDER BY x.id), '[]'::json)
+  'alertas', (SELECT json_build_object('revisar', count(*) FILTER (WHERE c.estado = 'revisar'),
+      'polimeros', string_agg(DISTINCT a.nombre, ', ') FILTER (WHERE c.estado = 'revisar'))
+    FROM prod_conteo c CROSS JOIN cfg LEFT JOIN ms_articulos a ON a.base = c.base AND a.articulo_id = c.articulo_id WHERE c.base = cfg.base),
+  'sin_confirmar', (SELECT coalesce(json_agg(json_build_object('id', x.id, 'tipo', x.tipo, 'desde', x.desde, 'hasta', x.hasta, 'registros', x.registros, 'creado', x.creado) ORDER BY x.id), '[]'::json)
     FROM prod_exporte x WHERE x.base = cfg.base AND x.importado IS NULL)) AS r
 FROM cfg;

@@ -3,5 +3,15 @@
   "almacenes": "",
   "iva": "16",
   "empresa": "",
-  "tienda": "Producción de tinacos"
+  "tienda": "Producción de tinacos",
+  "auditar": "POLIMERO|POLÍMERO",
+  "tolerancia_kg": "5",
+  "tolerancia_pct": "2",
+  "dias_conteo": "7",
+  "ml_comision": "15",
+  "ml_fijo": "0",
+  "ml_envio": "0",
+  "ml_ret_isr": "2.5",
+  "ml_ret_iva": "8",
+  "precios_con_iva": "si"
 }

@@ -3,8 +3,8 @@
 SET LOCAL statement_timeout = '20s';
 WITH /*CTX*/, /*INV*/,
 ins AS (
-  INSERT INTO prod_registro (base, fecha, articulo_id, cantidad, costo_unit, nota, por)
-  SELECT cfg.base, (cfg.p->>'fecha')::date, (x->>'articulo_id')::bigint, (x->>'cantidad')::numeric,
+  INSERT INTO prod_registro (base, fecha, articulo_id, cantidad, peso_real, costo_unit, nota, por)
+  SELECT cfg.base, (cfg.p->>'fecha')::date, (x->>'articulo_id')::bigint, (x->>'cantidad')::numeric, nullif(x->>'peso_real', '')::numeric,
          (SELECT sum(r.cantidad * coalesce(cos.costo, 0)) FROM prod_receta r LEFT JOIN cos ON cos.articulo_id = r.componente_id
           WHERE r.base = cfg.base AND r.articulo_id = (x->>'articulo_id')::bigint),
          nullif(cfg.p->>'nota', ''), cfg.por

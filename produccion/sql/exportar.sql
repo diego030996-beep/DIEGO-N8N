@@ -23,5 +23,5 @@ SELECT json_build_object('ok', true, 'exporte_id', coalesce((SELECT id FROM nuev
   'entrada', (SELECT coalesce(json_agg(ent ORDER BY ent.nombre), '[]'::json) FROM ent),
   'anteriores', (SELECT coalesce(json_agg(json_build_object('id', x.id, 'desde', x.desde, 'hasta', x.hasta, 'registros', x.registros, 'creado', x.creado,
                   'por', x.por, 'importado', x.importado, 'importado_por', x.importado_por) ORDER BY x.id DESC), '[]'::json)
-                 FROM (SELECT x.* FROM prod_exporte x, cfg WHERE x.base = cfg.base ORDER BY x.id DESC LIMIT 20) x)) AS r
+                 FROM (SELECT x.* FROM prod_exporte x, cfg WHERE x.base = cfg.base AND x.tipo = 'produccion' ORDER BY x.id DESC LIMIT 20) x)) AS r
 FROM cfg;

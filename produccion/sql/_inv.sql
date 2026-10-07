@@ -4,7 +4,12 @@ exi AS (  -- existencia en Microsip (almacenes de la configuración; vacío = to
 sinimp AS (  -- lo capturado que todavía no se ha importado a Microsip (sin exportar, o exportado pero sin confirmar que se importó)
   SELECT r.* FROM prod_registro r CROSS JOIN cfg LEFT JOIN prod_exporte x ON x.id = r.exporte_id
   WHERE r.base = cfg.base AND (r.exporte_id IS NULL OR x.importado IS NULL)),
-cons AS (SELECT d.componente_id AS articulo_id, sum(d.cantidad) AS u FROM sinimp r JOIN prod_registro_det d ON d.registro_id = r.id GROUP BY 1),
+cons AS (  -- lo que falta reflejar en Microsip: consumo de recetas + diferencias de pesaje (merma) que no se han importado
+  SELECT articulo_id, sum(u) AS u FROM (
+    SELECT d.componente_id AS articulo_id, d.cantidad AS u FROM sinimp r JOIN prod_registro_det d ON d.registro_id = r.id
+    UNION ALL
+    SELECT c.articulo_id, c.teorico - c.kg FROM prod_conteo c CROSS JOIN cfg LEFT JOIN prod_ajuste j ON j.conteo_id = c.id LEFT JOIN prod_exporte x ON x.id = j.exporte_id
+    WHERE c.base = cfg.base AND c.estado IN ('ok', 'confirmado') AND c.teorico IS NOT NULL AND x.importado IS NULL) z GROUP BY 1),
 fab AS (SELECT r.articulo_id, sum(r.cantidad) AS u FROM sinimp r GROUP BY 1),
 ulc AS (  -- precio de la última compra (recepción o compra) de cada artículo: por si Microsip no tiene último costo
   SELECT DISTINCT ON (z.articulo_id) z.articulo_id, z.precio FROM (
