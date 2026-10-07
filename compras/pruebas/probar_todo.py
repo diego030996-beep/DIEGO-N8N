@@ -14,7 +14,7 @@ def ok(c, msg):
         sys.exit(1)
 
 d = correr('datos')
-ok(d['ok'] and d['mes'] is None and d['oc_total'] == 14, 'datos sin cálculo previo')
+ok(d['ok'] and d['mes'] is None and d['oc_total'] == 16, 'datos sin cálculo previo')
 ok(sorted(x['linea'] for x in d['excluidos']) == ['Servicios (no son mercancía)', 'TINACOS Y CISTERNAS', 'Varios (artículo genérico)'],
    'avisa que tinacos, servicios y VARIOS no se toman en cuenta')
 c = correr('calcular', {'mes': '2026-10-01'})
@@ -64,11 +64,11 @@ ok(L['CEM50']['costo'] == 168.0 and L['CEM50']['costo_fuente'] == 'último costo
 ok(d['falta_razon'] == 1, 'pide razón del renglón no planeado')
 for m in ('2026-08-01', '2026-09-01'):
     x = correr('reconstruir', {'mes': m, 'solo_si_falta': 'si'}, hoy='2026-10-07')
-    ok(x['ocs'] == (5 if m < '2026-09' else 6), 'reconstruir ' + m + f" ({x['renglones']} renglones, sin la OC de tinacos)")
+    ok(x['ocs'] == (5 if m < '2026-09' else 8), 'reconstruir ' + m + f" ({x['renglones']} renglones, sin la OC de tinacos)")
 x = correr('reconstruir', {'mes': '2026-08-01', 'solo_si_falta': 'si'}, hoy='2026-10-07')
 ok(x['renglones'] == 13, 'reconstruir dos veces no duplica')
 o = correr('ocs', {'desde': '2026-08-01', 'hasta': '2026-09-30'})
-ok(len(o['ocs']) == 12 and all(bool(z['plan']) != z['excluida'] for z in o['ocs']), 'todas las OCs ligadas menos la de tinacos (marcada como excluida)')
+ok(len(o['ocs']) == 14 and all(bool(z['plan']) != z['excluida'] for z in o['ocs']), 'todas las OCs ligadas menos la de tinacos (marcada como excluida)')
 ok(correr('registro', {'mes': '2026-08-01'})['oc_sin_plan'] == [], 'la OC de tinacos no sale como OC sin plan')
 did = correr('registro', {'mes': '2026-08-01'})['planes'][0]['lineas'][0]['id']
 ok(correr('razon', {'id': did, 'razon': 'no_documentado', 'nota': ''})['razon'] == 'no_documentado', 'guardar razón')
@@ -108,6 +108,8 @@ ok(l16['atr_u'] == 5 and l16['pendiente'] == 0 and any('atrasada' in r for r in 
 sg = correr('seguimiento', {}, hoy=H)
 E = {o['folio']: o for o in sg['ocs']}
 ok(E['O0000091']['estado'] == 'atrasada' and E['O0000090']['estado'] == 'parcial' and E['O0000090']['falta'] == 30, 'seguimiento: atrasada y parcial')
+ok('O0000092' not in E and 'O0000093' not in E, 'recepción sin ligar y UNIDADES_A_REC de Microsip: no salen como atrasadas')
+ok(not P('13')['FLEX5'].get('atr_u') and not P('10')['SIL300'].get('atr_u'), 'no salen como «atrasado» en el planeador')
 ok(correr('oc_estado', {'docto_cm_id': '5091', 'estado': 'en_camino', 'nota': 'llega el lunes'})['ok'], 'confirmar que la OC atrasada sigue en camino')
 ok(P('16')['LLAVE38']['pendiente'] == 5, 'confirmada en camino: ya cuenta como por recibir')
 correr('oc_estado', {'docto_cm_id': '5091', 'estado': 'cancelada', 'nota': ''})

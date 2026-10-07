@@ -128,7 +128,9 @@ Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/plan
 - **Máximos/mínimos**: los del mes de la OC, calculados con los 6 meses anteriores a ese mes.
 
 **Por recibir hoy** = lo que falta de cada OC (pedido − recibido por `DOCTOS_CM_LIGAS`) mientras no pase de (días de entrega + 5) días,
-o si confirmaste que sigue en camino.
+o si confirmaste que sigue en camino. Si la copia de Microsip trae `UNIDADES_A_REC` / `UNIDADES_REC_DEV` en el renglón de la OC, manda lo que
+dice Microsip. Las recepciones capturadas **sin ligar** a la OC (mismo proveedor y artículo, después de la fecha de la OC) también cuentan como
+recibido, a la OC más vieja primero; en Seguimiento salen como «sin ligar».
 
 ## Tablas que crea
 

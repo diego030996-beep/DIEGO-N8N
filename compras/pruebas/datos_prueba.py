@@ -154,5 +154,17 @@ for folio, f, p, a, u, rec in [(90, '2026-10-02', '15', 11, 50, 20), (91, '2026-
         sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_LIGAS', '{did}-{rid}', "
                    f"{q(json.dumps({'DOCTO_CM_FTE_ID': did, 'DOCTO_CM_DEST_ID': rid}))});")
 
+# OC O92: la recepción se capturó SIN ligarla a la OC (Microsip dice 0 por recibir). OC O93: Microsip trae UNIDADES_A_REC = 0.
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '5092', '2026-09-01', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 5092, 'TIPO_DOCTO': 'O', 'FOLIO': 'O0000092', 'FECHA': '2026-09-01', 'PROVEEDOR_ID': 13, 'ESTATUS': 'P', 'IMPORTE_NETO': 50}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5092-0', {q(json.dumps({'DOCTO_CM_ID': 5092, 'ARTICULO_ID': 13, 'UNIDADES': 5, 'PRECIO_UNITARIO': 10}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '7092', '2026-09-04', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 7092, 'TIPO_DOCTO': 'R', 'FOLIO': 'R0000092', 'FECHA': '2026-09-04', 'PROVEEDOR_ID': 13, 'ESTATUS': 'N'}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '7092-0', {q(json.dumps({'DOCTO_CM_ID': 7092, 'ARTICULO_ID': 13, 'UNIDADES': 5}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '5093', '2026-09-01', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 5093, 'TIPO_DOCTO': 'O', 'FOLIO': 'O0000093', 'FECHA': '2026-09-01', 'PROVEEDOR_ID': 10, 'ESTATUS': 'P', 'IMPORTE_NETO': 40}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5093-0', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 5093, 'ARTICULO_ID': 9, 'UNIDADES': 4, 'UNIDADES_REC_DEV': 4, 'UNIDADES_A_REC': 0, 'PRECIO_UNITARIO': 10}))});")
+
 subprocess.run(PSQL, input='\n'.join(sql), text=True, check=True)
 print('ok', len(sql), 'sentencias')

@@ -9,7 +9,7 @@ abiertas AS (
               WHEN bool_or(l.estado = 'parcial') OR (sum(l.recibido) > 0) THEN 'parcial' ELSE 'abierta' END AS estado,
          sum(l.pedido) AS pedido, sum(l.recibido) AS recibido, sum(l.falta) AS falta,
          json_agg(json_build_object('articulo_id', l.articulo_id, 'clave', a.clave, 'articulo', a.nombre, 'unidad', a.unidad,
-                  'pedido', l.pedido, 'recibido', l.recibido, 'falta', l.falta) ORDER BY a.nombre) AS lineas
+                  'pedido', l.pedido, 'recibido', l.recibido, 'sin_ligar', l.rec_suelto, 'falta', l.falta) ORDER BY a.nombre) AS lineas
   FROM ocl l CROSS JOIN cfg LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = l.articulo_id
   WHERE l.estado NOT IN ('cerrada', 'completa') GROUP BY l.id),
 planes AS (
