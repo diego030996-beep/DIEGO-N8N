@@ -1,5 +1,5 @@
 -- Expediente completo de un movimiento: registro, comprobantes, retiro, compra de Microsip, pedido, compras candidatas y bitácora.
--- p = {clase: 'registro' | 'retiro' | 'compra', ref}
+-- p = {clase: 'registro' | 'retiro' | 'compra' | 'cobro', ref}
 SET LOCAL statement_timeout = '25s';
 WITH /*CTX*/, /*MOV*/,
 x AS (SELECT mov.* FROM mov, cfg WHERE mov.clase = cfg.p->>'clase' AND mov.ref = cfg.p->>'ref'
@@ -26,6 +26,9 @@ ELSE json_build_object('ok', true,
                    FROM mov_comprobante k, e WHERE k.registro_id = e.id),
   'retiro', (SELECT json_build_object('folio', r.folio, 'fecha', r.fecha, 'hora', r.hora, 'descripcion', r.descripcion, 'usuario', r.usuario, 'importe', r.importe)
              FROM ret r, x LEFT JOIN e ON true WHERE r.id = CASE WHEN x.clase = 'retiro' THEN x.ref ELSE e.retiro_id END),
+  'cobro', (SELECT json_build_object('folio', k.folio, 'fecha', k.fecha, 'hora', k.hora, 'forma', k.forma, 'que', k.que, 'cliente', k.cliente,
+               'usuario', k.usuario, 'importe', k.importe, 'referencia', k.referencia)
+             FROM cob k, x LEFT JOIN e ON true WHERE k.id = CASE WHEN x.clase = 'cobro' THEN x.ref ELSE e.cobro_id END),
   'compra', (SELECT json_build_object('folio', c.folio, 'fecha', c.fecha, 'total', c.total, 'proveedor', c.proveedor, 'condicion', c.cond_nombre)
              FROM cmp c, x WHERE x.clase = 'compra' AND c.id = x.ref),
   'cand', CASE WHEN cfg.p->>'_rol' IN ('admin', 'auditora') THEN (SELECT coalesce(json_agg(cand), '[]') FROM cand) END,

@@ -1,6 +1,9 @@
 # Auditoría de movimientos (Microsip)
 
-Control de comprobación encima de Microsip: **dinero que sale → comprobante → compra en Microsip → pedido → auditoría**.
+Control de comprobación encima de Microsip, para el **corte de caja**:
+- **Cobros con tarjeta, transferencia o Mercado Pago**: cada uno debe tener su voucher o comprobante.
+- **Retiros de caja** (siempre en efectivo): dinero que sale → comprobante → compra en Microsip → pedido.
+  Los retiros de **préstamo** y **nómina** no piden comprobante.
 El empleado reporta y sube la foto, el sistema cruza todo y la auditora solo revisa las excepciones.
 
 ## Quién hace qué
@@ -18,6 +21,11 @@ Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
 - **Compras**: `DOCTOS_CM` tipo `C` (compra) y `R` (recepción). Una recepción que ya pasó a compra cuenta una sola vez.
   El total es importe neto más impuestos.
 - **Pedido**: Ventas `P`, `R` o `F`. Se compara solo el número (`P4509` = `P0004509`). Avisa si no existe o si está cancelado.
+- **Cobros**: `DOCTOS_PV_COBROS` de tickets de caja (`V`/`P`, sin cancelados), por ticket y forma.
+  Piden comprobante las formas cuyo nombre en `FORMAS_COBRO` coincide con "Formas de cobro que piden comprobante" (por omisión `TARJETA|TRANSFER|SPEI|MERCADO ?PAGO`).
+  Tarjeta pide **voucher**; transferencia y Mercado Pago, **comprobante**. Efectivo y crédito no piden nada.
+  El importe es el de esa forma de pago en ese ticket. Si Microsip trae `REFERENCIA` o `NUM_AUTORIZACION`, también se muestra.
+- **Retiros que no piden comprobante**: los que dicen préstamo o nómina en la descripción (Ajustes → `PR[EÉ]STAMO|N[OÓ]MINA`). Se pueden agregar más palabras.
 - **Retiros sin reportar** salen solos, aunque nadie los capture. Las **compras de contado sin comprobante** también, si se activa en Ajustes.
 
 ## Semáforo (la primera regla que aplica)
@@ -28,6 +36,7 @@ Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
 | 🔴 FALTA COMPROBANTE | Sin foto después de la hora límite |
 | 🔴 COMPRA NO REGISTRADA | Tipo compra, sin compra en Microsip después de la hora límite |
 | 🔴 RETIRO SIN COMPROBAR | Retiro de caja que nadie reportó a la hora límite |
+| 🔴 FALTA VOUCHER / COMPROBANTE DE TRANSFERENCIA / DE MERCADO PAGO | Cobro con esa forma de pago sin foto a la hora límite |
 | 🔴 FALTA COMPROBANTE de la compra | Compra de contado en Microsip sin ningún movimiento ligado (al día siguiente a la hora límite) |
 | 🔴 INCONSISTENCIA | La auditora lo marcó, con la nota de qué está mal |
 | 🟠 Faltan comprobar $X / comprobado de más | Lo comprobado no llega a lo retirado, o se pasa |
@@ -101,7 +110,7 @@ La auditoría empieza **el día que se instala**: no revisa todo el pasado de Mi
 
 ## Pruebas
 ```
-python3 auditoria/pruebas/probar_todo.py     # 73 casos del cruce y del semáforo (base de prueba 'auditoria')
+python3 auditoria/pruebas/probar_todo.py     # 91 casos del cruce, los cobros y el semáforo (base de prueba 'auditoria')
 node auditoria/pruebas/probar_nodos.js       # 36 casos: permisos, fotos, avisos, resumen y ligas
 AHORA='2026-10-07 21:00' node auditoria/pruebas/servidor.js   # página en http://localhost:5683/webhook/auditoria-mov?k=...
 ```

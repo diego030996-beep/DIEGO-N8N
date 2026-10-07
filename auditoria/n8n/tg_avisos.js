@@ -7,6 +7,7 @@ const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 const $$ = n => '$' + Number(Math.abs(n || 0)).toLocaleString('es-MX', { maximumFractionDigits: 2 });
 const falta = a => {
   if (a.clase === 'retiro') return 'reportarlo + ticket';
+  if (a.clase === 'cobro') return String(a.motivo).replace(/^FALTA /, '').toLowerCase();
   if (a.clase === 'compra') return 'comprobante de la compra';
   if (/FALTA COMPROBANTE/.test(a.motivo)) return a.tipo === 'compra' ? 'ticket + registro de compra en Microsip' : 'ticket';
   if (/COMPRA NO REGISTRADA/.test(a.motivo)) return 'registro de compra en Microsip';

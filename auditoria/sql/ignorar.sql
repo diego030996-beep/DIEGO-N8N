@@ -1,4 +1,4 @@
--- Marca un retiro o compra de Microsip como "no requiere comprobación" (o lo regresa). p = {tipo: 'retiro' | 'compra', ref, motivo, quitar}
+-- Marca un retiro o compra de Microsip como "no requiere comprobación" (o lo regresa). p = {tipo: 'retiro' | 'compra' | 'cobro', ref, motivo, quitar}
 SET LOCAL statement_timeout = '15s';
 WITH /*CTX*/,
 del AS (DELETE FROM mov_ignorado i USING cfg WHERE cfg.p->>'quitar' = 'si' AND i.base = cfg.base AND i.tipo = cfg.p->>'tipo' AND i.ref = cfg.p->>'ref' RETURNING 1),

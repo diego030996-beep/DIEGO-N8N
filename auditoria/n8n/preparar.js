@@ -18,11 +18,11 @@ const por = rol === 'empleado' ? nombre : rol === 'auditora' ? 'Auditora' : 'Adm
 const txt = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 const fechaOk = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) && String(v) >= '2020-01-01';
 const idOk = v => /^\d{1,15}$/.test(String(v ?? ''));
-const refOk = v => /^[0-9A-Za-z_\-]{1,40}$/.test(String(v ?? ''));
+const refOk = v => /^[0-9A-Za-z_\-:]{1,40}$/.test(String(v ?? ''));
 const montoOk = v => v !== '' && v != null && isFinite(Number(v)) && Number(v) > 0 && Number(v) <= 5e6;
 const METODOS = ['efectivo', 'tarjeta', 'transferencia'];
 const TIPOS = ['compra', 'gasto', 'gasolina', 'deposito', 'otro'];
-const TCOMP = ['ticket', 'factura', 'transferencia', 'voucher', 'otro'];
+const TCOMP = ['ticket', 'factura', 'transferencia', 'voucher', 'mercado pago', 'otro'];
 function comprobantes(L, obligatorio) {
   L = Array.isArray(L) ? L : [];
   if (obligatorio && !L.length) return 'Falta la foto del comprobante.';
@@ -41,8 +41,15 @@ switch (op) {
     if ((b.desde && !fechaOk(b.desde)) || (b.hasta && !fechaOk(b.hasta))) return fail('Fechas inválidas.');
     p = { desde: b.desde || '', hasta: b.hasta || '', ver: b.ver === 'todo' ? 'todo' : 'problemas' }; break;
   case 'registrar': {
-    const retiro = b.retiro_id ? String(b.retiro_id) : '';
+    const retiro = b.retiro_id ? String(b.retiro_id) : '', cobro = b.cobro_id ? String(b.cobro_id) : '';
     if (retiro && !refOk(retiro)) return fail('Retiro inválido.');
+    if (cobro) {   // cobro con tarjeta / transferencia / Mercado Pago: todo sale de Microsip, solo se sube el comprobante
+      if (!/^\d{1,15}:\d{1,15}$/.test(cobro)) return fail('Cobro inválido.');
+      const L = comprobantes(b.comprobantes, false);
+      if (typeof L === 'string') return fail(L);
+      p = { cobro_id: cobro, comprobantes: L };
+      break;
+    }
     if (!TIPOS.includes(b.tipo)) return fail('Escoge para qué fue el dinero.');
     if (!retiro && !METODOS.includes(b.metodo)) return fail('Escoge cómo se pagó.');
     if (!retiro && !montoOk(b.importe)) return fail('Escribe el importe.');
@@ -65,7 +72,7 @@ switch (op) {
     if (b.tipo) { if (!TIPOS.includes(b.tipo)) return fail('Tipo inválido.'); p.tipo = b.tipo; }
     break; }
   case 'detalle':
-    if (!['registro', 'retiro', 'compra'].includes(b.clase) || !refOk(b.ref)) return fail('Movimiento inválido.');
+    if (!['registro', 'retiro', 'compra', 'cobro'].includes(b.clase) || !refOk(b.ref)) return fail('Movimiento inválido.');
     p = { clase: b.clase, ref: String(b.ref) }; break;
   case 'revisar':
     if (!idOk(b.id) || !['aprobar', 'inconsistencia', 'reabrir'].includes(b.accion)) return fail('Acción inválida.');
@@ -75,7 +82,7 @@ switch (op) {
     if (!idOk(b.id) || (b.compra_id && !refOk(b.compra_id))) return fail('Datos inválidos.');
     p = { id: String(b.id), compra_id: b.compra_id ? String(b.compra_id) : '' }; break;
   case 'ignorar':
-    if (!['retiro', 'compra'].includes(b.tipo) || !refOk(b.ref)) return fail('Datos inválidos.');
+    if (!['retiro', 'compra', 'cobro'].includes(b.tipo) || !refOk(b.ref)) return fail('Datos inválidos.');
     if (!b.quitar && txt(b.motivo, 200).length < 3) return fail('Escribe por qué no requiere comprobación.');
     p = { tipo: b.tipo, ref: String(b.ref), motivo: txt(b.motivo, 200), quitar: b.quitar ? 'si' : '' }; break;
   case 'buscar': p = { q: txt(b.q, 40) }; if (p.q.length < 2) return fail('Escribe al menos 2 letras o números.'); break;
@@ -84,7 +91,7 @@ switch (op) {
     else { p = { nombre: txt(b.nombre, 40).toUpperCase() }; if (p.nombre.length < 2) return fail('Escribe el nombre.'); }
     break;
   case 'config': {
-    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10 }, general = {};
+    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, formas_comprobante: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10 }, general = {};
     for (const [k, v] of Object.entries(g)) { if (!(k in OK)) return fail('Ajuste desconocido: ' + k); general[k] = txt(v, OK[k]); }
     if (general.hora_cierre && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(general.hora_cierre)) return fail('Hora de cierre inválida (ej. 20:00).');
     if (general.tolerancia && !(Number(general.tolerancia) >= 0 && Number(general.tolerancia) <= 1000)) return fail('Tolerancia inválida.');
@@ -93,7 +100,7 @@ switch (op) {
     if (general.desde && !fechaOk(general.desde)) return fail('Fecha de inicio inválida.');
     if (general.compras_sin_comprobante && !['contado', 'mostrador', 'todas', 'no'].includes(general.compras_sin_comprobante)) return fail('Opción inválida.');
     if (general.tipos_compra && !general.tipos_compra.split(',').every(t => TIPOS.includes(t))) return fail('Tipos inválidos.');
-    for (const k of ['retiros_excluir', 'proveedores_mostrador']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
+    for (const k of ['retiros_excluir', 'proveedores_mostrador', 'formas_comprobante']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
     p = { general }; break; }
   case 'borrar': if (!idOk(b.id)) return fail('Movimiento inválido.'); p = { id: String(b.id), nota: txt(b.nota, 200) }; break;
 }

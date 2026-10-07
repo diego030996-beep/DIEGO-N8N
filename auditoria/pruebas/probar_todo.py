@@ -42,6 +42,11 @@ d = correr('datos', {}, rol='empleado', por='JUAN')
 folios = [r['folio'] for r in d['retiros']]
 ok('R-01848' not in folios, 'retiro de depósito excluido por configuración', folios)
 ok('R-01860' not in folios and 'R-01849' not in folios, 'sin cancelados ni anteriores al inicio', folios)
+ok('R-01852' not in folios and 'R-01853' not in folios, 'préstamo y nómina no piden comprobante', folios)
+cb = {c['folio'] + ' ' + c['forma']: c for c in d['cobros']}
+ok(set(cb) == {'T-100 TARJETA DE DEBITO', 'T-101 TRANSFERENCIA', 'T-102 MERCADO PAGO', 'T-105 TARJETA DE DEBITO'}, 'cobros que piden comprobante (sin efectivo, crédito ni cancelados)', list(cb))
+ok(cb['T-100 TARJETA DE DEBITO']['importe'] == 1160 and cb['T-100 TARJETA DE DEBITO']['que'] == 'voucher' and cb['T-100 TARJETA DE DEBITO']['referencia'] == 'AUT3100', 'cobro con tarjeta: importe de esa forma, voucher y referencia')
+ok(cb['T-102 MERCADO PAGO']['que'] == 'Mercado Pago' and cb['T-101 TRANSFERENCIA']['que'] == 'transferencia', 'qué comprobante pide cada forma')
 ok(next(r for r in d['retiros'] if r['folio'] == 'R-01842')['importe'] == 500, 'importe del retiro desde los cobros')
 ok(d['config'] is None and d.get('empleados') is None, 'empleado no ve configuración ni empleados')
 
@@ -159,10 +164,32 @@ correr('config', {'general': {'hora_cierre': '20:00', 'compras_sin_comprobante':
 ok(fila(tab(), 'C-8399') is None, 'compras sin comprobante apagado')
 ok(correr('borrar', {'id': str(r14['id'])}, rol='admin')['ok'] and fila(tab(), 'M-' + str(r14['id'])) is None, 'borrar movimiento')
 
+# ---------- cobros con tarjeta / transferencia / Mercado Pago ----------
+t = tab()
+f = fila(t, 'T-100'); ok(f and f['clase'] == 'cobro' and f['estado'] == 'rojo' and f['motivo'] == 'FALTA VOUCHER', '🔴 tarjeta sin voucher', f)
+f = fila(t, 'T-101'); ok(f['motivo'] == 'FALTA COMPROBANTE DE TRANSFERENCIA', '🔴 transferencia sin comprobante', f)
+f = fila(t, 'T-102'); ok(f['motivo'] == 'FALTA COMPROBANTE DE MERCADO PAGO', '🔴 Mercado Pago sin comprobante', f)
+f = fila(t, 'T-105'); ok(f['estado'] == 'pendiente' and 'voucher' in f['motivo'], 'cobro después del cierre vence mañana', f)
+ok(fila(t, 'T-103') is None and fila(t, 'T-106') is None and fila(t, 'T-104') is None, 'crédito, efectivo y cancelado no salen')
+kid = cb['T-100 TARJETA DE DEBITO']['id']
+rc = correr('registrar', {'cobro_id': kid, 'comprobantes': comp(1160)}, ahora='2026-10-07 18:00', por='JUAN', rol='empleado')
+ok(rc['ok'], 'subir voucher', rc)
+ok(psql(f"SELECT tipo || '|' || metodo || '|' || importe::int || '|' || retiro_folio FROM mov_registro WHERE id = {rc['id']}") == 'cobro|tarjeta|1160|T-100', 'el cobro toma todo de Microsip')
+f = fila(tab(), 'T-100'); ok(f['clase'] == 'registro' and f['estado'] == 'verde', '🟢 voucher cuadra', f)
+ok('ya tiene comprobante' in correr('registrar', {'cobro_id': kid, 'comprobantes': comp(1160)}, por='JUAN', rol='empleado')['msg'], 'no se sube dos veces el mismo cobro')
+rc2 = correr('registrar', {'cobro_id': cb['T-101 TRANSFERENCIA']['id'], 'comprobantes': comp(2400)}, por='JUAN', rol='empleado')
+f = fila(tab(), 'T-101'); ok(f['estado'] == 'naranja' and 'Faltan comprobar 100.00' in f['motivo'], '🟠 comprobante de transferencia por menos', f)
+dc = correr('detalle', {'clase': 'registro', 'ref': str(rc['id'])})
+ok(dc['cobro']['forma'] == 'TARJETA DE DEBITO' and dc['cobro']['referencia'] == 'AUT3100', 'expediente del cobro', dc.get('cobro'))
+dc = correr('detalle', {'clase': 'cobro', 'ref': cb['T-102 MERCADO PAGO']['id']})
+ok(dc['ok'] and dc['cobro']['importe'] == 800, 'detalle de cobro sin comprobante', dc)
+ok(correr('ignorar', {'tipo': 'cobro', 'ref': cb['T-102 MERCADO PAGO']['id'], 'motivo': 'cliente frecuente, se revisa en Mercado Pago'})['ok'] and fila(tab(), 'T-102') is None, 'cobro: no requiere comprobante')
+ok(not correr('registrar', {'cobro_id': '1:1'}, por='JUAN', rol='empleado')['ok'], 'cobro inexistente')
+
 # avisos: incluyen 🟠 que pasaron la hora límite
 psql('DELETE FROM mov_aviso')
 a = correr('avisos', {}, ahora='2026-10-08 21:00')
 ok(all(x['estado'] in ('rojo', 'naranja') for x in a['avisos']) and any(x['estado'] == 'naranja' for x in a['avisos']), 'avisos incluyen 🟠 vencidos', [x['folio'] + x['estado'] for x in a['avisos']])
-ok(all(x['clave'].count(':') == 2 for x in a['avisos']), 'la clave lleva el estado (si empeora se vuelve a avisar)')
+ok(all(x['clave'].endswith(':' + x['estado']) for x in a['avisos']), 'la clave lleva el estado (si empeora se vuelve a avisar)')
 print(oks, 'OK,', fallas, 'fallas')
 sys.exit(1 if fallas else 0)

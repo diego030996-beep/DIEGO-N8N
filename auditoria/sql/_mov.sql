@@ -8,6 +8,23 @@ rcob AS (   -- importe del retiro según sus cobros (efectivo que salió)
   SELECT c.datos->>'DOCTO_PV_ID' AS id, abs(sum(CASE WHEN jsonb_typeof(c.datos->'IMPORTE') = 'number' THEN (c.datos->>'IMPORTE')::numeric ELSE 0 END)) AS importe
   FROM ms_raw c, cfg WHERE c.base = cfg.base AND c.tabla = 'DOCTOS_PV_COBROS' AND c.datos->>'DOCTO_PV_ID' IN (SELECT id FROM ret0) GROUP BY 1),
 ret AS (SELECT r.*, coalesce(nullif(rc.importe, 0), r.total) AS importe FROM ret0 r LEFT JOIN rcob rc ON rc.id = r.id),
+cob0 AS (   -- cobros de caja con formas que piden comprobante (tarjeta → voucher, transferencia, Mercado Pago), por ticket y forma
+  SELECT v.docto_id::text AS docto, v.folio, v.fecha, left(coalesce(v.hora, ''), 5) AS hora, coalesce(v.usuario, '') AS usuario, coalesce(v.cliente, '') AS cliente,
+         c.datos->>'FORMA_COBRO_ID' AS forma_id, coalesce(fc.datos->>'NOMBRE', 'Forma ' || (c.datos->>'FORMA_COBRO_ID')) AS forma,
+         sum(CASE WHEN upper(coalesce(c.datos->>'TIPO', 'C')) = 'A' THEN -1 ELSE 1 END
+             * CASE WHEN jsonb_typeof(c.datos->'IMPORTE') = 'number' THEN (c.datos->>'IMPORTE')::numeric ELSE 0 END) AS importe,
+         max(nullif(trim(coalesce(c.datos->>'REFERENCIA', c.datos->>'NUM_AUTORIZACION', '')), '')) AS referencia
+  FROM ms_ventas_v v CROSS JOIN cfg
+  JOIN ms_raw c ON c.base = v.base AND c.tabla = 'DOCTOS_PV_COBROS' AND c.datos->>'DOCTO_PV_ID' = v.docto_id::text
+  JOIN ms_raw fc ON fc.base = v.base AND fc.tabla = 'FORMAS_COBRO' AND fc.pk = c.datos->>'FORMA_COBRO_ID'
+  WHERE v.base = cfg.base AND v.origen = 'PV' AND upper(v.tipo) IN ('V', 'P') AND NOT v.cancelado AND v.fecha >= cfg.desde
+    AND cfg.formas <> '' AND coalesce(fc.datos->>'NOMBRE', '') ~* cfg.formas
+  GROUP BY 1, 2, 3, 4, 5, 6, 7, 8),
+cob AS (
+  SELECT c.*, c.docto || ':' || c.forma_id AS id,
+         CASE WHEN c.forma ~* 'tarjeta|t\.? ?d\.? ?[cd]|terminal|d[eé]bito|cr[eé]dito' THEN 'voucher' WHEN c.forma ~* 'mercado' THEN 'Mercado Pago' ELSE 'transferencia' END AS que,
+         (CASE WHEN c.hora ~ '^[0-9]{1,2}:[0-9]{2}' AND c.hora::time > cfg.cierre THEN c.fecha + 1 ELSE c.fecha END) + cfg.cierre AS vence
+  FROM cob0 c, cfg WHERE c.importe > 0),
 cm0 AS (   -- compras (C) y recepciones (R) de Microsip, sin canceladas
   SELECT r.datos->>'DOCTO_CM_ID' AS id, upper(r.datos->>'TIPO_DOCTO') AS tipo, coalesce(r.datos->>'FOLIO', '') AS folio,
          coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) AS fecha, r.datos->>'PROVEEDOR_ID' AS prov, r.datos->>'COND_PAGO_ID' AS cond,
@@ -28,6 +45,9 @@ cmp AS (
   LEFT JOIN ms_raw cp ON cp.base = cfg.base AND cp.tabla = 'CONDICIONES_PAGO' AND cp.pk = c.cond
   WHERE NOT (c.tipo = 'R' AND c.id IN (SELECT fte FROM cml WHERE fte IS NOT NULL))),
 ign AS (SELECT i.tipo, i.ref, i.motivo, i.por, i.creado FROM mov_ignorado i, cfg WHERE i.base = cfg.base),
+cbr AS (   -- cobros con tarjeta / transferencia / Mercado Pago sin comprobante subido
+  SELECT c.* FROM cob c WHERE c.id NOT IN (SELECT cobro_id FROM mov_registro g, cfg WHERE g.base = cfg.base AND NOT g.borrado AND g.cobro_id IS NOT NULL)
+    AND NOT EXISTS (SELECT 1 FROM ign WHERE ign.tipo = 'cobro' AND ign.ref = c.id)),
 reg0 AS (
   SELECT g.*, coalesce(k.n, 0) AS fotos, coalesce(k.comprobado, 0) AS comprobado, (g.tipo = ANY (cfg.tipos_compra)) AS req_compra,
          upper(regexp_replace(coalesce(g.pedido, ''), '[^A-Za-z]', '', 'g')) || coalesce(nullif(ltrim(regexp_replace(coalesce(g.pedido, ''), '[^0-9]', '', 'g'), '0'), ''), '') AS ped_norm
@@ -116,4 +136,11 @@ mov AS (   -- todo junto, con el mismo formato
   SELECT 'compra', c.id, c.fecha, NULL, c.folio, c.proveedor, 'Compra en Microsip ' || c.folio || coalesce(' · ' || nullif(c.proveedor, ''), ''), 'compra', coalesce(nullif(c.cond_nombre, ''), 'contado'),
          c.total, 0, c.total, CASE WHEN cfg.ahora > c.vence THEN 'rojo' ELSE 'pendiente' END,
          CASE WHEN cfg.ahora > c.vence THEN 'FALTA COMPROBANTE de la compra' ELSE 'Compra sin comprobante' END, c.vence, 0, NULL, c.folio, c.total, c.proveedor, NULL, NULL, NULL
-  FROM csr c, cfg)
+  FROM csr c, cfg
+  UNION ALL
+  SELECT 'cobro', c.id, c.fecha, c.hora, c.folio, c.usuario, c.forma || coalesce(' · ' || nullif(c.cliente, ''), ''), 'cobro', c.forma,
+         c.importe, 0, c.importe, CASE WHEN cfg.ahora > c.vence THEN 'rojo' ELSE 'pendiente' END,
+         CASE WHEN cfg.ahora > c.vence THEN 'FALTA ' || upper(CASE c.que WHEN 'voucher' THEN 'voucher' ELSE 'comprobante de ' || c.que END)
+              ELSE 'Falta subir ' || CASE c.que WHEN 'voucher' THEN 'el voucher' ELSE 'el comprobante de ' || c.que END END,
+         c.vence, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+  FROM cbr c, cfg)

@@ -13,7 +13,7 @@ CREATE TABLE ms_ventas (base TEXT, origen TEXT, docto_id BIGINT, tipo TEXT, esta
 CREATE VIEW ms_ventas_v AS SELECT v.*, v.importe + v.impuestos AS total, (v.estatus = 'C') AS cancelado FROM ms_ventas v;
 CREATE TABLE ms_raw (base TEXT, tabla TEXT, pk TEXT, fecha DATE, datos JSONB, sync_id TEXT, actualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (base, tabla, pk));
 CREATE TABLE mov_config (clave TEXT PRIMARY KEY, valor TEXT, por TEXT, actualizado TIMESTAMPTZ NOT NULL DEFAULT now());
-INSERT INTO mov_config (clave, valor) VALUES ('desde', '2026-10-01'), ('retiros_excluir', 'DEPOSITO'), ('compras_sin_comprobante', 'contado');
+INSERT INTO mov_config (clave, valor) VALUES ('desde', '2026-10-01'), ('retiros_excluir', 'DEPOSITO|PR[EÉ]STAMO|N[OÓ]MINA'), ('formas_comprobante', 'TARJETA|TRANSFER|SPEI|MERCADO ?PAGO'), ('compras_sin_comprobante', 'contado');
 """]
 # retiros de caja (PV, tipo R). importe en ms_ventas = 0; lo real viene de DOCTOS_PV_COBROS
 ret = [  # id, folio, fecha, hora, descripcion, importe
@@ -27,6 +27,8 @@ ret = [  # id, folio, fecha, hora, descripcion, importe
     (1849, 'R-01849', '2026-09-20', '10:00', 'RETIRO VIEJO', 400),
     (1850, 'R-01850', '2026-10-07', '15:00', 'COMPRA TABICON', 1000),
     (1851, 'R-01851', '2026-10-07', '16:00', 'COMPRA CEMENTO', 700),
+    (1852, 'R-01852', '2026-10-07', '17:00', 'PRÉSTAMO A PEDRO', 1000),
+    (1853, 'R-01853', '2026-10-07', '17:30', 'Nomina semana 40', 8000),
 ]
 for i, f, d, h, desc, imp in ret:
     S.append(f"INSERT INTO ms_ventas (base, origen, docto_id, tipo, estatus, folio, fecha, hora, importe, impuestos, descripcion, usuario) VALUES ('B', 'PV', {i}, 'R', 'N', {q(f)}, {q(d)}, {q(h + ':00')}, 0, 0, {q(desc)}, 'CAJERA1');")
@@ -34,6 +36,22 @@ for i, f, d, h, desc, imp in ret:
 # un retiro cancelado
 S.append("INSERT INTO ms_ventas (base, origen, docto_id, tipo, estatus, folio, fecha, hora, importe, impuestos, descripcion) VALUES ('B', 'PV', 1860, 'R', 'C', 'R-01860', '2026-10-07', '09:00:00', 0, 0, 'CANCELADO');")
 S.append("INSERT INTO ms_raw VALUES ('B', 'DOCTOS_PV_COBROS', 'c1860', '2026-10-07', '{\"DOCTO_PV_ID\": 1860, \"IMPORTE\": 50}');")
+# formas de cobro y tickets cobrados con tarjeta / transferencia / Mercado Pago (piden comprobante); efectivo y crédito no
+for pk, n in [(1, 'EFECTIVO'), (2, 'TARJETA DE DEBITO'), (3, 'TRANSFERENCIA'), (4, 'MERCADO PAGO'), (5, 'CREDITO')]:
+    S.append(f"INSERT INTO ms_raw VALUES ('B', 'FORMAS_COBRO', '{pk}', NULL, {q(json.dumps({'NOMBRE': n}))});")
+tk = [  # docto, folio, hora, estatus, [(forma, importe)]
+    (3100, 'T-100', '10:30', 'N', [(2, 1160), (1, 200)]),
+    (3101, 'T-101', '12:00', 'N', [(3, 2500)]),
+    (3102, 'T-102', '13:00', 'N', [(4, 800)]),
+    (3103, 'T-103', '13:30', 'N', [(5, 5000)]),
+    (3104, 'T-104', '14:00', 'C', [(2, 999)]),
+    (3105, 'T-105', '20:40', 'N', [(2, 450)]),
+    (3106, 'T-106', '15:00', 'N', [(1, 300)]),
+]
+for i, f, h, est, cobros in tk:
+    S.append(f"INSERT INTO ms_ventas (base, origen, docto_id, tipo, estatus, folio, fecha, hora, cliente, importe, impuestos, usuario) VALUES ('B', 'PV', {i}, 'V', {q(est)}, {q(f)}, '2026-10-07', {q(h + ':00')}, 'PUBLICO', {sum(x[1] for x in cobros) / 1.16:.2f}, {sum(x[1] for x in cobros) - sum(x[1] for x in cobros) / 1.16:.2f}, 'CAJERA1');")
+    for j, (fid, imp) in enumerate(cobros):
+        S.append(f"INSERT INTO ms_raw VALUES ('B', 'DOCTOS_PV_COBROS', 'k{i}{j}', '2026-10-07', {q(json.dumps({'DOCTO_PV_ID': i, 'FORMA_COBRO_ID': fid, 'TIPO': 'C', 'IMPORTE': imp, 'REFERENCIA': 'AUT' + str(i) if fid == 2 else ''}))});")
 # ventas normales (no deben salir)
 S.append("INSERT INTO ms_ventas (base, origen, docto_id, tipo, estatus, folio, fecha, hora, importe, impuestos) VALUES ('B', 'PV', 2000, 'V', 'N', 'T-1', '2026-10-07', '10:00:00', 100, 16);")
 # pedidos de Ventas

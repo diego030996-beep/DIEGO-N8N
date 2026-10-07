@@ -4,7 +4,8 @@
   "dias_compra": "3",
   "margen_compra": "10",
   "tipos_compra": "compra",
-  "retiros_excluir": "",
+  "retiros_excluir": "PR[EÉ]STAMO|N[OÓ]MINA",
   "compras_sin_comprobante": "no",
-  "proveedores_mostrador": ""
+  "proveedores_mostrador": "",
+  "formas_comprobante": "TARJETA|TRANSFER|SPEI|MERCADO ?PAGO"
 }

@@ -8,6 +8,13 @@ CREATE TABLE IF NOT EXISTS mov_registro (id BIGSERIAL PRIMARY KEY, base TEXT NOT
   borrado BOOLEAN NOT NULL DEFAULT false, creado TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE UNIQUE INDEX IF NOT EXISTS mov_registro_retiro ON mov_registro (base, retiro_id) WHERE retiro_id IS NOT NULL AND NOT borrado;
 CREATE INDEX IF NOT EXISTS mov_registro_fecha ON mov_registro (fecha);
+-- cobros con tarjeta / transferencia / Mercado Pago: "ticket:forma" de Microsip
+DO 'BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = ''mov_registro'' AND column_name = ''cobro_id'') THEN
+    ALTER TABLE mov_registro ADD COLUMN cobro_id TEXT;
+    CREATE UNIQUE INDEX mov_registro_cobro ON mov_registro (base, cobro_id) WHERE cobro_id IS NOT NULL AND NOT borrado;
+  END IF;
+END';
 CREATE TABLE IF NOT EXISTS mov_comprobante (id BIGSERIAL PRIMARY KEY, registro_id BIGINT NOT NULL REFERENCES mov_registro (id), importe NUMERIC NOT NULL,
   tipo TEXT NOT NULL DEFAULT 'ticket', foto TEXT NOT NULL, por TEXT, creado TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS mov_comprobante_reg ON mov_comprobante (registro_id);

@@ -72,10 +72,13 @@ label.l{display:block;font-size:.8rem;font-weight:600;color:var(--soft);margin:0
 .tabla{width:100%;border-collapse:collapse;font-size:.88rem} .tabla th{text-align:left;color:var(--soft);font-weight:600;font-size:.78rem;padding:6px 8px;border-bottom:1px solid var(--line)}
 .tabla td{padding:8px;border-bottom:1px solid var(--line)}
 /* captura */
-.retiros{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-height:260px;overflow:auto;margin-bottom:6px}
+.retiros{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-height:380px;overflow:auto;margin-bottom:6px}
 .ret{display:flex;min-width:0;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;background:var(--panel)}
 .ret input{width:18px;height:18px;flex:none} .ret .q{flex:1;min-width:0} .ret b{font-size:.92rem} .ret span{display:block;color:var(--soft);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ret:has(input:checked){border-color:var(--blue);background:var(--blue2)}
+.grupo{font-size:.76rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.05em;margin:6px 2px 0}
+.ret span.forma{display:inline-block;white-space:nowrap}
+.forma{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--blue2);color:var(--blue);margin-left:6px;vertical-align:1px}
 .fotos{display:grid;gap:10px;margin-top:8px}
 .foto{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px}
 .foto img{width:72px;height:72px;object-fit:cover;border-radius:8px;background:var(--panel2)}
@@ -136,30 +139,31 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
   <!-- REPORTAR (todos) -->
   <section id="v-rep" hidden>
     <form class="card" id="fRep" autocomplete="off">
-      <h2>Reportar movimiento</h2>
-      <p class="sub">Si sacaste dinero de caja, escoge el retiro. Si pagaste con tarjeta o transferencia, escoge "Sin retiro de caja".</p>
-      <label class="l">Retiro de caja</label>
+      <h2>Comprobar</h2>
+      <p class="sub">Escoge el cobro o el retiro de caja y sube la foto del comprobante.</p>
       <div class="retiros" id="retiros"></div>
       <div id="sinRetiro" hidden class="g3" style="margin:10px 0">
         <div><label class="l" for="rMetodo">¿Cómo se pagó?</label><select id="rMetodo"><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo (no de caja)</option></select></div>
         <div><label class="l" for="rImporte">Importe</label><input id="rImporte" type="number" step="0.01" min="0" inputmode="decimal"></div>
         <div><label class="l" for="rFecha">Fecha</label><input id="rFecha" type="date"></div>
       </div>
+      <div id="camposRet" hidden>
       <div class="g2" style="margin-top:12px">
         <div><label class="l" for="rTipo">¿Para qué fue?</label><select id="rTipo"><option value="compra">Compra de mercancía</option><option value="gasto">Gasto</option><option value="gasolina">Gasolina</option><option value="deposito">Depósito al banco</option><option value="otro">Otro</option></select></div>
         <div><label class="l" for="rPedido">Pedido relacionado (opcional)</label><input id="rPedido" type="text" placeholder="P4509" maxlength="30"></div>
       </div>
       <div class="g2" style="margin-top:12px">
-        <div><label class="l" for="rConcepto">Motivo</label><input id="rConcepto" type="text" placeholder="comprar 10 block ligero" maxlength="200" required></div>
+        <div><label class="l" for="rConcepto">Motivo</label><input id="rConcepto" type="text" placeholder="comprar 10 block ligero" maxlength="200"></div>
         <div><label class="l" for="rProv">Proveedor (opcional)</label><input id="rProv" type="text" maxlength="80"></div>
       </div>
+      </div>
       <div class="sec"><h4>Comprobantes</h4>
-        <label class="subir"><input type="file" id="rFotos" accept="image/*" capture="environment" multiple hidden>📷 Tomar foto del ticket / factura / transferencia</label>
+        <label class="subir"><input type="file" id="rFotos" accept="image/*" capture="environment" multiple hidden>📷 Tomar foto del voucher / transferencia / ticket</label>
         <div class="fotos" id="lFotos"></div>
         <div class="total" id="rTotal"></div>
       </div>
       <div id="msgRep"></div>
-      <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit" id="bRep">Guardar movimiento</button></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit" id="bRep">Guardar</button></div>
     </form>
   </section>
 
@@ -196,7 +200,8 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
       <div class="g2" style="margin-top:12px">
         <div><label class="l" for="c_tipos_compra">Tipos que deben tener compra en Microsip</label><input id="c_tipos_compra" type="text" placeholder="compra"></div>
         <div><label class="l" for="c_proveedores_mostrador">Proveedores de mostrador (texto o regex)</label><input id="c_proveedores_mostrador" type="text" placeholder="BLOCKERA|ARENERA"></div>
-        <div><label class="l" for="c_retiros_excluir">Retiros que NO se auditan (texto en la descripción)</label><input id="c_retiros_excluir" type="text" placeholder="DEPOSITO|CORTE"></div>
+        <div><label class="l" for="c_retiros_excluir">Retiros que NO piden comprobante (texto en la descripción)</label><input id="c_retiros_excluir" type="text" placeholder="PRÉSTAMO|NÓMINA"></div>
+        <div><label class="l" for="c_formas_comprobante">Formas de cobro que piden comprobante</label><input id="c_formas_comprobante" type="text" placeholder="TARJETA|TRANSFER|MERCADO PAGO"></div>
       </div>
       <div id="msgCfg"></div>
       <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit">Guardar</button></div>
@@ -219,7 +224,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const $$ = n => (Number(n) < 0 ? '-$' : '$') + Math.abs(Number(n || 0)).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const EMO = { verde: '🟢', naranja: '🟠', rojo: '🔴', pendiente: '⏳' };
 const NOM = { verde: 'Cuadrado', naranja: 'Por revisar', rojo: 'Inconsistencia', pendiente: 'En plazo' };
-const TIPO = { compra: 'Compra', gasto: 'Gasto', gasolina: 'Gasolina', deposito: 'Depósito', otro: 'Otro', retiro: 'Retiro de caja' };
+const TIPO = { compra: 'Compra', gasto: 'Gasto', gasolina: 'Gasolina', deposito: 'Depósito', otro: 'Otro', retiro: 'Retiro de caja', cobro: 'Cobro' };
 let D = null, ROL = '', vista = '', periodo = 'hoy', ver = 'problemas', filtroEstado = '';
 
 async function api(body) {
@@ -243,8 +248,8 @@ async function iniciar() {
   if (!r.ok) { $('error').hidden = false; $('error').textContent = r.msg || 'No se pudo abrir.'; $('quien').textContent = ''; return; }
   D = r; ROL = r.rol;
   $('quien').textContent = (ROL === 'empleado' ? r.yo : ROL === 'auditora' ? 'Auditora' : 'Administrador') + ' · cierre de comprobación ' + r.cierre + ' h';
-  const T = ROL === 'empleado' ? [['rep', 'Reportar'], ['mis', 'Mis movimientos'], ['bus', 'Buscar']]
-    : [['hoy', 'Auditoría'], ['rep', 'Reportar'], ['bus', 'Historial']].concat(ROL === 'admin' ? [['emp', 'Empleados'], ['cfg', 'Ajustes']] : []);
+  const T = ROL === 'empleado' ? [['rep', 'Comprobar'], ['mis', 'Mis movimientos'], ['bus', 'Buscar']]
+    : [['hoy', 'Auditoría'], ['rep', 'Comprobar'], ['bus', 'Historial']].concat(ROL === 'admin' ? [['emp', 'Empleados'], ['cfg', 'Ajustes']] : []);
   $('tabs').innerHTML = T.map(([v, t]) => '<button type="button" role="tab" data-v="' + v + '">' + t + '</button>').join('');
   $('tabs').onclick = e => { const b = e.target.closest('button'); if (b) ir(b.dataset.v); };
   pintarRetiros(); $('rFecha').value = hoyMX();
@@ -291,7 +296,7 @@ function pintarTablero() {
 }
 function filaMov(x) {
   const venc = x.estado === 'rojo' && x.horas > 0 && !x.motivo.startsWith('INCONSISTENCIA') ? ' · vencido hace ' + horas(x.horas) : x.estado === 'pendiente' && x.vence ? ' · vence ' + x.vence.slice(11) + (x.vence.slice(0, 10) !== hoyMX() ? ' ' + fCorta(x.vence) : '') : '';
-  const quien = x.clase === 'retiro' ? 'cajero ' + (x.empleado || '?') : x.clase === 'compra' ? (x.empleado || 'proveedor') : x.empleado;
+  const quien = x.clase === 'retiro' || x.clase === 'cobro' ? 'cajero ' + (x.empleado || '?') : x.clase === 'compra' ? (x.empleado || 'proveedor') : x.empleado;
   return '<div class="mov" data-c="' + x.clase + '" data-r="' + esc(x.ref) + '"><span class="punto p-' + x.estado + '"></span><div style="min-width:0">' +
     '<div class="t">' + esc(x.folio) + ' · ' + esc(x.concepto) + '</div>' +
     '<div class="d">' + (x.atrasado ? '<span class="chip c-rojo">' + fCorta(x.fecha) + '</span> ' : fCorta(x.fecha) + ' ' + esc(x.hora || '') + ' · ') + esc(quien) + (x.pedido ? ' · pedido ' + esc(x.pedido) : '') + (x.compra ? ' · compra ' + esc(x.compra) : '') + '</div>' +
@@ -315,9 +320,21 @@ function eslabon(k, ok, titulo, sub) {
 function pintarDetalle() {
   const r = DET, m = r.mov, g = r.registro, aud = ROL !== 'empleado';
   $('dTit').textContent = m.folio + ' — ' + $$(m.importe) + (m.clase === 'registro' ? ' ' + (m.metodo || '') : '');
-  $('dSub').textContent = (m.clase === 'retiro' ? 'Retiro de caja · cajero ' + m.empleado : m.clase === 'compra' ? 'Compra en Microsip · ' + m.empleado : 'Responsable: ' + m.empleado) + ' · ' + fCorta(m.fecha) + ' ' + (m.hora || '');
+  $('dSub').textContent = (m.clase === 'cobro' ? 'Cobro en caja · cajero ' + m.empleado : m.clase === 'retiro' ? 'Retiro de caja · cajero ' + m.empleado : m.clase === 'compra' ? 'Compra en Microsip · ' + m.empleado : 'Responsable: ' + m.empleado) + ' · ' + fCorta(m.fecha) + ' ' + (m.hora || '');
   let h = '<div class="estado e-' + m.estado + '">' + EMO[m.estado] + ' ' + esc(m.motivo) + (m.estado === 'pendiente' && m.vence ? ' · tiene hasta ' + m.vence.slice(11) + ' h' : '') + '</div>';
-  if (m.clase === 'registro') {
+  const kb = r.cobro;
+  if (m.clase === 'registro' && kb) {   // comprobante de un cobro con tarjeta / transferencia / Mercado Pago
+    h += '<div class="cadena" style="grid-template-columns:repeat(2,minmax(0,1fr))">' +
+      eslabon('Cobro en caja', true, $$(kb.importe), esc(kb.forma) + ' · ticket ' + esc(kb.folio) + (kb.referencia ? ' · ref ' + esc(kb.referencia) : '')) +
+      eslabon('Comprobantes', m.comprobado > 0 ? Math.abs(m.falta) <= 1 : false, $$(m.comprobado), r.comprobantes.length + ' foto' + (r.comprobantes.length === 1 ? '' : 's') + (Math.abs(m.falta) > 1 ? ' · dif. ' + $$(m.falta) : '')) + '</div>';
+    h += '<div class="sec"><h4>Evidencia</h4>' + (r.comprobantes.length ? '<div class="miniaturas">' + r.comprobantes.map(k =>
+      '<a href="' + FOTO(k.id) + '" target="_blank" rel="noopener"><img src="' + FOTO(k.id) + '" alt="comprobante" loading="lazy">' + $$(k.importe) + ' · ' + esc(k.tipo) + '</a>').join('') + '</div>' : '<div class="vacio" style="padding:8px">Sin comprobantes.</div>') + '</div>';
+    if (m.revision !== 'aprobado') h += '<div class="sec"><h4>Completar</h4><label class="subir" style="padding:9px"><input type="file" id="xFotos" accept="image/*" capture="environment" multiple hidden>📷 Agregar foto</label><input id="xPed" type="hidden" value="' + esc(m.pedido || '') + '"><div class="fotos" id="xLista"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri mini" type="button" id="xGuardar">Guardar cambios</button></div><div id="msgX"></div></div>';
+    if (g.revision) h += '<div class="sec"><h4>Revisión</h4><div>' + (g.revision === 'aprobado' ? '🟢 Aprobado' : '🔴 Inconsistencia') + ' por ' + esc(g.revisado_por) + (g.revisado_en ? ' · ' + new Date(g.revisado_en).toLocaleString('es-MX') : '') + (g.revision_nota ? '<br><i>' + esc(g.revision_nota) + '</i>' : '') + '</div></div>';
+  } else if (m.clase === 'cobro') {
+    h += '<div><b>' + esc(kb.forma) + ' · ticket ' + esc(kb.folio) + ' · ' + $$(kb.importe) + '</b><div style="color:var(--soft);font-size:.84rem">' + fCorta(kb.fecha) + ' ' + esc(kb.hora) + ' · cajero ' + esc(kb.usuario) + (kb.cliente ? ' · ' + esc(kb.cliente) : '') + (kb.referencia ? ' · ref ' + esc(kb.referencia) : '') +
+      '<br>Falta subir ' + (kb.que === 'voucher' ? 'el voucher' : 'el comprobante de ' + esc(kb.que)) + '. Se sube en la pestaña Comprobar escogiendo este cobro.</div></div>';
+  } else if (m.clase === 'registro') {
     const ret = r.retiro, c = g.compra, p = g.pedido;
     h += '<div class="cadena">' +
       eslabon('Dinero que salió', true, $$(m.importe), ret ? 'retiro ' + esc(ret.folio) + ' · ' + esc(ret.hora) : esc(m.metodo)) +
@@ -340,10 +357,10 @@ function pintarDetalle() {
   } else if (m.clase === 'retiro') {
     const ret = r.retiro;
     h += '<div class="g2"><div><div class="k" style="font-size:.78rem;color:var(--soft)">En caja dice</div><b>' + esc(ret.descripcion || '—') + '</b><div style="color:var(--soft);font-size:.84rem">cajero ' + esc(ret.usuario) + ' · ' + fCorta(ret.fecha) + ' ' + esc(ret.hora) + '</div></div>' +
-      '<div><div class="k" style="font-size:.78rem;color:var(--soft)">Qué falta</div><b>Que alguien lo reporte con su comprobante</b><div style="color:var(--soft);font-size:.84rem">Se reporta en la pestaña Reportar escogiendo este retiro.</div></div></div>';
+      '<div><div class="k" style="font-size:.78rem;color:var(--soft)">Qué falta</div><b>Que alguien lo reporte con su comprobante</b><div style="color:var(--soft);font-size:.84rem">Se reporta en la pestaña Comprobar escogiendo este retiro.</div></div></div>';
   } else {
     const c = r.compra;
-    h += '<div><b>' + esc(c.folio) + ' · ' + esc(c.proveedor) + ' · ' + $$(c.total) + '</b><div style="color:var(--soft);font-size:.84rem">' + fCorta(c.fecha) + ' · ' + esc(c.condicion || 'contado') + '. Nadie ha subido el comprobante de esta compra; repórtala en Reportar (sin retiro de caja) o márcala como que no lo requiere.</div></div>';
+    h += '<div><b>' + esc(c.folio) + ' · ' + esc(c.proveedor) + ' · ' + $$(c.total) + '</b><div style="color:var(--soft);font-size:.84rem">' + fCorta(c.fecha) + ' · ' + esc(c.condicion || 'contado') + '. Nadie ha subido el comprobante de esta compra; repórtala en Comprobar (otro gasto) o márcala como que no lo requiere.</div></div>';
   }
   if (r.ignorado) h += '<div class="sec"><h4>No requiere comprobación</h4>' + esc(r.ignorado.motivo) + ' · ' + esc(r.ignorado.por) + '</div>';
   if (r.bitacora.length) h += '<div class="sec"><h4>Bitácora</h4><ul class="bit">' + r.bitacora.map(b => '<li>' + new Date(b.creado).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' · <b>' + esc(b.por) + '</b> ' + esc(b.accion) + (b.detalle ? ' — ' + esc(b.detalle) : '') + '</li>').join('') + '</ul></div>';
@@ -401,13 +418,23 @@ function recargarVista() { if (vista === 'hoy') cargarTablero(); if (vista === '
 
 /* ---------------- reportar ---------------- */
 let FOTOS = [];
+const QUE = { voucher: 'voucher', transferencia: 'transferencia', 'Mercado Pago': 'mercado pago' };
 function pintarRetiros() {
-  const L = D.retiros || [];
-  $('retiros').innerHTML = L.map(r => '<label class="ret"><input type="radio" name="ret" value="' + esc(r.id) + '" data-imp="' + r.importe + '"><div class="q"><b>' + esc(r.folio) + ' · ' + $$(r.importe) + '</b><span>' + fCorta(r.fecha) + ' ' + esc(r.hora) + ' · ' + esc(r.descripcion || 'sin descripción') + ' · ' + esc(r.usuario) + '</span></div></label>').join('') +
-    '<label class="ret"><input type="radio" name="ret" value=""><div class="q"><b>Sin retiro de caja</b><span>Pagué con tarjeta, transferencia u otro dinero</span></div></label>';
-  $('retiros').onchange = () => { $('sinRetiro').hidden = retSel() !== ''; pintarTotal(); };
+  const C = D.cobros || [], L = D.retiros || [];
+  $('retiros').innerHTML =
+    (C.length ? '<div class="grupo">💳 Cobros sin comprobante (' + C.length + ')</div>' + C.map(c => '<label class="ret"><input type="radio" name="ret" value="' + esc(c.id) + '" data-k="cobro" data-que="' + esc(c.que) + '" data-imp="' + c.importe + '"><div class="q"><b>' + esc(c.folio) + ' · ' + $$(c.importe) + '<span class="forma">' + esc(c.forma) + '</span></b><span>' + fCorta(c.fecha) + ' ' + esc(c.hora) + ' · ' + (c.que === 'voucher' ? 'sube el voucher' : 'sube el comprobante') + (c.referencia ? ' · ref ' + esc(c.referencia) : '') + (c.cliente && c.cliente !== 'PUBLICO' ? ' · ' + esc(c.cliente) : '') + '</span></div></label>').join('') : '') +
+    '<div class="grupo">💵 Retiros de caja' + (L.length ? ' (' + L.length + ')' : '') + '</div>' +
+    L.map(r => '<label class="ret"><input type="radio" name="ret" value="' + esc(r.id) + '" data-k="retiro" data-imp="' + r.importe + '"><div class="q"><b>' + esc(r.folio) + ' · ' + $$(r.importe) + '</b><span>' + fCorta(r.fecha) + ' ' + esc(r.hora) + ' · ' + esc(r.descripcion || 'sin descripción') + ' · ' + esc(r.usuario) + '</span></div></label>').join('') +
+    '<label class="ret"><input type="radio" name="ret" value="" data-k="otro"><div class="q"><b>Otro gasto (sin retiro de caja)</b><span>Se pagó con otro dinero</span></div></label>';
+  $('retiros').onchange = () => {
+    const k = kindSel();
+    $('sinRetiro').hidden = k !== 'otro'; $('camposRet').hidden = k === 'cobro' || !k;
+    if (k === 'cobro') { const q = document.querySelector('input[name=ret]:checked').dataset.que; FOTOS.forEach(f => f.tipo = QUE[q] || 'voucher'); if (FOTOS.length === 1) FOTOS[0].importe = impSel(); pintarFotos('lFotos', FOTOS); }
+    pintarTotal();
+  };
 }
 const retSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i ? i.value : null; };
+const kindSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i ? i.dataset.k : ''; };
 const impSel = () => { const i = document.querySelector('input[name=ret]:checked'); return i && i.value ? Number(i.dataset.imp) : Number($('rImporte').value || 0); };
 async function comprimir(file) {
   const img = await new Promise((ok, mal) => { const u = URL.createObjectURL(file), i = new Image(); i.onload = () => { URL.revokeObjectURL(u); ok(i); }; i.onerror = mal; i.src = u; });
@@ -420,14 +447,15 @@ async function comprimir(file) {
 async function leerFotos(files, arr, listo) {
   for (const f of files) {
     if (arr.length >= 6) { toast('Máximo 6 comprobantes'); break; }
-    try { const x = await comprimir(f); arr.push({ url: x.url, b64: x.b64, importe: '', tipo: 'ticket' }); } catch (e) { toast('No pude leer una foto'); }
+    const q = arr === FOTOS && kindSel() === 'cobro' ? QUE[document.querySelector('input[name=ret]:checked').dataset.que] : '';
+    try { const x = await comprimir(f); arr.push({ url: x.url, b64: x.b64, importe: '', tipo: q || 'ticket' }); } catch (e) { toast('No pude leer una foto'); }
   }
   if (arr.length === 1 && !arr[0].importe && arr === FOTOS) arr[0].importe = impSel() || '';
   listo();
 }
 function pintarFotos(id, arr) {
   $(id).innerHTML = arr.map((f, i) => '<div class="foto"><img src="' + f.url + '" alt=""><div class="campos"><input type="number" step="0.01" min="0" inputmode="decimal" placeholder="Importe" value="' + esc(f.importe) + '" data-i="' + i + '" data-k="importe">' +
-    '<select data-i="' + i + '" data-k="tipo">' + ['ticket', 'factura', 'transferencia', 'voucher', 'otro'].map(t => '<option' + (f.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div><button type="button" class="btn mini" data-quitar="' + i + '" aria-label="Quitar">✕</button></div>').join('');
+    '<select data-i="' + i + '" data-k="tipo">' + ['ticket', 'factura', 'voucher', 'transferencia', 'mercado pago', 'otro'].map(t => '<option' + (f.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div><button type="button" class="btn mini" data-quitar="' + i + '" aria-label="Quitar">✕</button></div>').join('');
   $(id).oninput = e => { const t = e.target; if (t.dataset.k) { arr[+t.dataset.i][t.dataset.k] = t.value; if (arr === FOTOS) pintarTotal(); } };
   $(id).onclick = e => { const b = e.target.closest('[data-quitar]'); if (b) { arr.splice(+b.dataset.quitar, 1); pintarFotos(id, arr); if (arr === FOTOS) pintarTotal(); } };
   if (arr === FOTOS) pintarTotal();
@@ -441,19 +469,21 @@ $('rImporte').oninput = pintarTotal;
 $('fRep').onsubmit = async e => {
   e.preventDefault();
   const ret = retSel();
-  if (ret === null) return aviso('msgRep', 'Escoge el retiro de caja (o "Sin retiro de caja").');
+  if (ret === null) return aviso('msgRep', 'Escoge el cobro o el retiro de caja.');
+  const k = kindSel();
+  if (k !== 'cobro' && $('rConcepto').value.trim().length < 3) return aviso('msgRep', 'Escribe el motivo (qué se compró o pagó).');
   if (FOTOS.some(f => !(Number(f.importe) > 0))) return aviso('msgRep', 'Pon el importe de cada comprobante.');
   if (!FOTOS.length && !confirm('No subiste comprobante. ¿Guardar así? Tendrás hasta las ' + D.cierre + ' h para subirlo.')) return;
-  const body = { op: 'registrar', retiro_id: ret, tipo: $('rTipo').value, concepto: $('rConcepto').value, proveedor: $('rProv').value, pedido: $('rPedido').value,
+  const body = k === 'cobro' ? { op: 'registrar', cobro_id: ret, comprobantes: FOTOS.map(f => ({ importe: f.importe, tipo: f.tipo, foto: f.b64 })) } : { op: 'registrar', retiro_id: ret, tipo: $('rTipo').value, concepto: $('rConcepto').value, proveedor: $('rProv').value, pedido: $('rPedido').value,
     comprobantes: FOTOS.map(f => ({ importe: f.importe, tipo: f.tipo, foto: f.b64 })) };
-  if (!ret) Object.assign(body, { metodo: $('rMetodo').value, importe: $('rImporte').value, fecha: $('rFecha').value });
+  if (k === 'otro') Object.assign(body, { metodo: $('rMetodo').value, importe: $('rImporte').value, fecha: $('rFecha').value });
   $('bRep').disabled = true; $('bRep').textContent = 'Guardando…';
   const r = await api(body);
-  $('bRep').disabled = false; $('bRep').textContent = 'Guardar movimiento';
+  $('bRep').disabled = false; $('bRep').textContent = 'Guardar';
   if (!r.ok) return aviso('msgRep', r.msg);
-  FOTOS = []; pintarFotos('lFotos', FOTOS); $('fRep').reset(); $('rFecha').value = hoyMX(); $('sinRetiro').hidden = true; aviso('msgRep', '');
+  FOTOS = []; pintarFotos('lFotos', FOTOS); $('fRep').reset(); $('rFecha').value = hoyMX(); $('sinRetiro').hidden = true; $('camposRet').hidden = true; aviso('msgRep', '');
   toast('Movimiento M-' + r.id + ' guardado');
-  const d = await api({ op: 'datos' }); if (d.ok) { D.retiros = d.retiros; pintarRetiros(); pintarTotal(); }
+  const d = await api({ op: 'datos' }); if (d.ok) { D.retiros = d.retiros; D.cobros = d.cobros; pintarRetiros(); pintarTotal(); }
   abrir('registro', String(r.id));
 };
 
@@ -487,7 +517,7 @@ $('tEmpleados').onclick = async e => {
   if (b) { if (!b.dataset.act && !confirm('¿Desactivar? Su liga deja de funcionar.')) return; const r = await api({ op: 'empleado', token: b.dataset.emp, activo: !!b.dataset.act }); if (!r.ok) return toast(r.msg); recargarDatos(); }
 };
 async function recargarDatos() { const d = await api({ op: 'datos' }); if (d.ok) { D = Object.assign(D, d); pintarEmpleados(); pintarConfig(); pintarRetiros(); } }
-const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir'];
+const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir', 'formas_comprobante'];
 function pintarConfig() { const c = D.config || {}; CFG.forEach(k => { if ($('c_' + k)) $('c_' + k).value = c[k] ?? ''; }); }
 $('fCfg').onsubmit = async e => {
   e.preventDefault();
