@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Panel general</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F9; --panel:#FFFFFF; --panel2:#F8FAFC; --ink:#0F172A; --soft:#64748B; --line:#E5E9F0;
+  --side:#0E2A47; --sideink:#C9D6E5; --blue:#2563EB; --blue2:#DBEAFE; --red:#DC2626; --redbg:#FEE2E2; --green:#15803D; --greenbg:#DCFCE7;
+  --sh:0 1px 2px rgba(15,23,42,.05),0 4px 14px rgba(15,23,42,.05);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A;
+  --side:#08111F; --blue:#60A5FA; --blue2:#1E3A5F; --red:#F87171; --redbg:#3B1416; --green:#4ADE80; --greenbg:#0E2E1B;
+}}
+:root[data-theme="dark"]{
+  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A;
+  --side:#08111F; --blue:#60A5FA; --blue2:#1E3A5F; --red:#F87171; --redbg:#3B1416; --green:#4ADE80; --greenbg:#0E2E1B;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+[hidden]{display:none!important}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 13px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--ink);font-size:.88rem;white-space:nowrap}
+.btn:hover{border-color:var(--blue)}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.mini{padding:5px 10px;font-size:.82rem;border-radius:8px}
+.btn.rojo{color:var(--red)}
+.btn svg{width:16px;height:16px}
+input[type=text],input[type=url],input[type=password],input[type=search]{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 12px;width:100%;min-width:0}
+.msg{border-radius:10px;padding:9px 12px;font-size:.9rem;margin-top:12px}
+.msg.mal{background:var(--redbg);color:var(--red)} .msg.bien{background:var(--greenbg);color:var(--green)}
+
+/* ---------- candado ---------- */
+.candado{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(160deg,var(--side) 0%,#1d4f86 100%)}
+.caja{background:var(--panel);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:28px 24px;width:100%;max-width:360px;text-align:center}
+.caja h1{margin:10px 0 2px;font-size:1.3rem}
+.caja p{margin:0;color:var(--soft);font-size:.9rem}
+.escudo{width:52px;height:52px;border-radius:16px;background:var(--blue2);color:var(--blue);display:inline-flex;align-items:center;justify-content:center}
+.escudo svg{width:28px;height:28px}
+.puntos{display:flex;justify-content:center;gap:12px;margin:22px 0 18px;min-height:16px}
+.puntos i{width:14px;height:14px;border-radius:50%;border:2px solid var(--soft)}
+.puntos i.on{background:var(--ink);border-color:var(--ink)}
+.puntos.sacude{animation:sac .35s}
+@keyframes sac{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.teclas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.teclas button{border:1px solid var(--line);background:var(--panel2);border-radius:14px;height:58px;font-size:1.35rem;font-weight:600;cursor:pointer}
+.teclas button:active{background:var(--blue2)}
+.teclas .ok{background:var(--blue);border-color:var(--blue);color:#fff;font-size:1rem}
+.recordar{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;color:var(--soft);font-size:.86rem}
+.campos{display:grid;gap:10px;margin-top:18px;text-align:left}
+.campos label{font-size:.82rem;font-weight:600;color:var(--soft)}
+
+/* ---------- panel ---------- */
+.top{position:sticky;top:0;z-index:5;background:var(--side);color:#fff;padding:12px 16px}
+.top .fila{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top b{font-size:1.08rem}
+.top small{display:block;color:var(--sideink);font-weight:500;font-size:.75rem}
+.top .esp{flex:1}
+.top .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.25)}
+.top input{max-width:280px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff}
+.top input::placeholder{color:var(--sideink)}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);overflow:hidden;min-width:0}
+.card header{display:flex;gap:12px;align-items:center;padding:14px 16px 10px}
+.ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;font-size:1.2rem}
+.card h2{margin:0;font-size:1rem}
+.card header p{margin:0;color:var(--soft);font-size:.8rem}
+.liga{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--line);min-width:0}
+.liga .q{flex:1;min-width:0}
+.liga .q b{display:block;font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.liga .q span{display:block;font-size:.74rem;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:ui-monospace,Menlo,monospace}
+.liga .q .tag{display:inline;font-family:inherit}
+.liga.falta{opacity:.6}
+.liga.falta .q span{font-family:inherit}
+.tag{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--blue2);color:var(--blue);margin-left:6px;vertical-align:1px}
+.vacio{padding:14px 16px;color:var(--soft);font-size:.88rem;border-top:1px solid var(--line)}
+.alta{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel2)}
+.alta input:nth-child(2){grid-column:1/-1}
+.pie{color:var(--soft);font-size:.8rem;margin-top:22px;text-align:center}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;z-index:20;box-shadow:var(--sh)}
+dialog{border:0;border-radius:18px;padding:22px;width:min(92vw,380px);background:var(--panel);color:var(--ink)}
+dialog::backdrop{background:rgba(2,6,23,.5)}
+dialog h3{margin:0 0 6px}
+@media (max-width:560px){ .top input{max-width:none;order:5;flex-basis:100%} .liga .btn .t{display:none} }
+</style>
+</head>
+<body>
+
+<!-- Candado: escribir PIN -->
+<section class="candado" id="vCandado" hidden>
+  <div class="caja">
+    <span class="escudo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+    <h1>Panel general</h1>
+    <p>Escribe tu PIN para ver tus ligas</p>
+    <div class="puntos" id="puntos" aria-live="polite"></div>
+    <div class="teclas" id="teclas"></div>
+    <label class="recordar"><input type="checkbox" id="recordar"> Recordar este dispositivo 30 días</label>
+    <div id="msgCandado"></div>
+  </div>
+</section>
+
+<!-- Crear / reponer PIN (se abre con la liga ?k=llave de administrador) -->
+<section class="candado" id="vCrear" hidden>
+  <form class="caja" id="fCrear" autocomplete="off">
+    <span class="escudo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+    <h1>Pon tu PIN</h1>
+    <p>De 4 a 8 números. Si ya tenías uno, este lo reemplaza y cierra las sesiones abiertas.</p>
+    <div class="campos">
+      <label for="pin1">PIN nuevo</label><input id="pin1" type="password" inputmode="numeric" pattern="\d{4,8}" maxlength="8" required>
+      <label for="pin2">Repite el PIN</label><input id="pin2" type="password" inputmode="numeric" pattern="\d{4,8}" maxlength="8" required>
+      <button class="btn pri" type="submit">Guardar PIN y entrar</button>
+    </div>
+    <div id="msgCrear"></div>
+  </form>
+</section>
+
+<!-- Panel -->
+<div id="vPanel" hidden>
+  <div class="top"><div class="fila">
+    <div><b>Mis ligas</b><small id="sub">Panel general</small></div>
+    <div class="esp"></div>
+    <input type="search" id="buscar" placeholder="Buscar página o persona…" aria-label="Buscar">
+    <button class="btn mini" id="bPin" type="button">Cambiar PIN</button>
+    <button class="btn mini" id="bSalir" type="button">Salir</button>
+  </div></div>
+  <main>
+    <div class="grid" id="grid"></div>
+    <p class="pie" id="pie"></p>
+  </main>
+</div>
+
+<dialog id="dPin">
+  <form id="fPin" autocomplete="off">
+    <h3>Cambiar PIN</h3>
+    <p style="margin:0 0 12px;color:var(--soft);font-size:.88rem">Se cierran las sesiones en otros dispositivos.</p>
+    <div class="campos" style="margin-top:0">
+      <label for="pa">PIN actual</label><input id="pa" type="password" inputmode="numeric" maxlength="8" required>
+      <label for="pn">PIN nuevo</label><input id="pn" type="password" inputmode="numeric" maxlength="8" required>
+      <label for="pn2">Repite el PIN nuevo</label><input id="pn2" type="password" inputmode="numeric" maxlength="8" required>
+    </div>
+    <div id="msgPin"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" type="button" id="pCancel">Cancelar</button>
+      <button class="btn pri" type="submit">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+'use strict';
+const API = location.origin + location.pathname.replace(/\/[^\/]*$/, '/') + 'panel-api';
+const BASE = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');   // .../webhook/
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const leer = k => { try { return localStorage.getItem(k) || sessionStorage.getItem(k); } catch (e) { return null; } };
+const guardarS = (v, largo) => { try { localStorage.removeItem('panel_s'); sessionStorage.removeItem('panel_s'); if (v) (largo ? localStorage : sessionStorage).setItem('panel_s', v); } catch (e) {} };
+let SES = leer('panel_s'), DATOS = null;
+
+async function api(body) {
+  try {
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });
+    const t = await r.text();
+    try { return JSON.parse(t); } catch (e) { return { ok: false, msg: 'Respuesta inesperada del servidor (' + r.status + ').' }; }
+  } catch (e) { return { ok: false, msg: 'Sin conexión. Revisa tu internet.' }; }
+}
+function toast(t) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 1800); }
+function aviso(id, txt, bien) { $(id).innerHTML = txt ? '<div class="msg ' + (bien ? 'bien' : 'mal') + '">' + esc(txt) + '</div>' : ''; }
+function ver(v) { ['vCandado', 'vCrear', 'vPanel'].forEach(x => $(x).hidden = x !== v); }
+
+/* ---------------- candado ---------------- */
+let pin = '';
+function pintarPuntos() {
+  const n = Math.max(4, pin.length);
+  $('puntos').innerHTML = Array.from({ length: n }, (_, i) => '<i class="' + (i < pin.length ? 'on' : '') + '"></i>').join('');
+}
+function teclado() {
+  const t = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', 'Entrar'];
+  $('teclas').innerHTML = t.map(x => '<button type="button" data-t="' + x + '" class="' + (x === 'Entrar' ? 'ok' : '') + '" aria-label="' + (x === '⌫' ? 'Borrar' : x) + '">' + x + '</button>').join('');
+  $('teclas').onclick = e => { const b = e.target.closest('button'); if (b) tecla(b.dataset.t); };
+}
+function tecla(t) {
+  if (ocupado) return;
+  if (t === '⌫') pin = pin.slice(0, -1);
+  else if (t === 'Entrar') return entrar();
+  else if (pin.length < 8) pin += t;
+  aviso('msgCandado', '');
+  pintarPuntos();
+}
+document.addEventListener('keydown', e => {
+  if ($('vCandado').hidden) return;
+  if (/^\d$/.test(e.key)) tecla(e.key);
+  else if (e.key === 'Backspace') tecla('⌫');
+  else if (e.key === 'Enter') tecla('Entrar');
+});
+let ocupado = false;
+async function entrar() {
+  if (pin.length < 4) { aviso('msgCandado', 'El PIN es de 4 a 8 números.'); return; }
+  ocupado = true;
+  const recordar = $('recordar').checked;
+  const r = await api({ op: 'entrar', pin, recordar });
+  ocupado = false;
+  pin = ''; pintarPuntos();
+  if (r.sesion) { SES = r.sesion; guardarS(SES, recordar); return cargar(); }
+  $('puntos').classList.remove('sacude'); void $('puntos').offsetWidth; $('puntos').classList.add('sacude');
+  if (r.sin_pin) aviso('msgCandado', 'Todavía no tienes PIN. En n8n abre el flujo "Panel general", corre el nodo "Mi liga para poner PIN" y abre la liga que te da.');
+  else if (r.min) aviso('msgCandado', 'Demasiados intentos. Espera ' + r.min + ' min.');
+  else if (r.ok) aviso('msgCandado', 'PIN incorrecto.' + (r.quedan != null ? ' Te quedan ' + r.quedan + ' intento' + (r.quedan === 1 ? '' : 's') + '.' : ''));
+  else aviso('msgCandado', r.msg || 'No se pudo entrar.');
+}
+
+/* ---------------- crear PIN con llave ---------------- */
+let LLAVE = '';
+$('fCrear').onsubmit = async e => {
+  e.preventDefault();
+  const a = $('pin1').value, b = $('pin2').value;
+  if (!/^\d{4,8}$/.test(a)) return aviso('msgCrear', 'El PIN es de 4 a 8 números.');
+  if (a !== b) return aviso('msgCrear', 'Los dos PIN no son iguales.');
+  const r = await api({ op: 'crear_pin', k: LLAVE, nuevo: a });
+  if (!r.ok || !r.sesion) return aviso('msgCrear', r.msg || 'No se pudo guardar.');
+  LLAVE = ''; SES = r.sesion; guardarS(SES, false);
+  toast('PIN guardado'); cargar();
+};
+
+/* ---------------- panel ---------------- */
+const ICONO = { compras: ['🛒', '#DBEAFE'], produccion: ['🏭', '#FEF3C7'], vendedor: ['📊', '#DCFCE7'], rutas: ['🗺️', '#EDE9FE'], choferes: ['🚚', '#FFEDD5'], monedero: ['💳', '#FCE7F3'], extra: ['🔗', '#E2E8F0'] };
+const ROL = { admin: 'Administrador', compras: 'Compras', produccion: 'Producción (captura)', auditor: 'Auditor (solo consulta)', encargado: 'Encargado' };
+const PAGINAS = [
+  { id: 'compras', titulo: 'Planeador de compras', desc: 'Sugerido de compra, OCs y seguimiento', ruta: 'planeador-compras', roles: ['admin', 'compras', 'auditor'],
+    falta: 'Corre "Ver ligas" en el flujo del planeador para crearla.' },
+  { id: 'produccion', titulo: 'Producción de tinacos', desc: 'Captura, gas, auditoría y precios', ruta: 'produccion-tinacos', roles: ['admin', 'produccion', 'auditor'],
+    falta: 'Corre "Ver ligas" en el flujo de producción para crearla.' },
+  { id: 'vendedor', titulo: 'Tablero del vendedor', desc: 'Ventas, clientes y seguimiento', ruta: 'vendedor', roles: ['admin', 'encargado'],
+    falta: 'Se crea desde el flujo "Tablero del vendedor".' },
+  { id: 'rutas', titulo: 'Asistente de rutas', desc: 'Plan de la semana, buscar pedidos y simular', ruta: 'rutas', oficina: true },
+  { id: 'choferes', titulo: 'Choferes – entregas', desc: 'Oficina y la liga de cada chofer', ruta: 'choferes', choferes: true },
+  { id: 'monedero', titulo: 'Monedero', desc: 'App del monedero (pide su propio PIN)', ruta: 'monedero-app', libre: true },
+];
+const corto = t => t ? String(t).slice(0, 4) + '…' + String(t).slice(-4) : '';
+function filaLiga(nombre, url, sub, extra) {
+  const u = esc(url);
+  return '<div class="liga" data-q="' + esc((nombre + ' ' + (sub || '')).toLowerCase()) + '"><div class="q"><b>' + esc(nombre) + (extra || '') + '</b><span>' + esc(sub || url) + '</span></div>' +
+    '<button class="btn mini" type="button" data-copiar="' + u + '" title="Copiar liga"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="t">Copiar</span></button>' +
+    '<a class="btn mini pri" href="' + u + '" target="_blank" rel="noopener noreferrer" title="Abrir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg><span class="t">Abrir</span></a></div>';
+}
+function tarjeta(id, titulo, desc, cuerpo) {
+  const [ic, bg] = ICONO[id] || ICONO.extra;
+  return '<section class="card" data-q="' + esc((titulo + ' ' + desc).toLowerCase()) + '"><header><span class="ico" style="background:' + bg + '">' + ic + '</span><div><h2>' + esc(titulo) + '</h2><p>' + esc(desc) + '</p></div></header>' + cuerpo + '</section>';
+}
+function pintar() {
+  const d = DATOS, porRol = {};
+  (d.tablero || []).forEach(t => (porRol[t.rol] = porRol[t.rol] || []).push(t.token));
+  const oficina = (d.choferes || []).find(c => c.nombre === '*');
+  let html = '';
+  for (const p of PAGINAS) {
+    const url = k => BASE + p.ruta + (k ? '?k=' + encodeURIComponent(k) : '');
+    let cuerpo = '';
+    if (p.roles) {
+      for (const r of p.roles) {
+        const ks = porRol[r] || [];
+        if (!ks.length) { cuerpo += '<div class="liga falta"><div class="q"><b>' + esc(ROL[r] || r) + '</b><span>Sin liga. ' + esc(p.falta) + '</span></div></div>'; continue; }
+        ks.forEach((k, i) => cuerpo += filaLiga((ROL[r] || r) + (ks.length > 1 ? ' #' + (i + 1) : ''), url(k), 'llave ' + corto(k)));
+      }
+    } else if (p.oficina) {
+      cuerpo = oficina ? filaLiga('Oficina', url(oficina.token), 'llave ' + corto(oficina.token))
+        : '<div class="liga falta"><div class="q"><b>Oficina</b><span>Sin liga. Se crea en el flujo de choferes.</span></div></div>';
+    } else if (p.choferes) {
+      const L = d.choferes || [];
+      cuerpo = L.length ? L.map(c => filaLiga(c.nombre === '*' ? 'Oficina' : c.nombre, url(c.token), 'llave ' + corto(c.token), c.nombre === '*' ? '<span class="tag">todos</span>' : '')).join('')
+        : '<div class="vacio">Todavía no hay choferes con liga.</div>';
+    } else if (p.libre) cuerpo = filaLiga('Abrir monedero', url(''), 'entra con el PIN del monedero');
+    html += tarjeta(p.id, p.titulo, p.desc, cuerpo);
+  }
+  // ligas propias, agrupadas
+  const grupos = {};
+  (d.extra || []).forEach(x => (grupos[x.grupo] = grupos[x.grupo] || []).push(x));
+  for (const g of Object.keys(grupos)) {
+    html += tarjeta('extra', g, 'Ligas que agregaste tú', grupos[g].map(x => filaLiga(x.titulo, x.url, x.url).replace('<a class', '<button class="btn mini rojo" type="button" data-borrar="' + x.id + '" title="Quitar">✕</button><a class')).join(''));
+  }
+  html += tarjeta('extra', 'Agregar otra liga', 'Kommo, hojas de Google, Microsip web…',
+    '<form class="alta" id="fAlta"><input type="text" id="aTitulo" placeholder="Nombre" maxlength="80" required><input type="url" id="aUrl" placeholder="https://…" required><input type="text" id="aGrupo" placeholder="Grupo (opcional)" maxlength="40" list="grupos"><button class="btn pri" type="submit">Agregar</button><datalist id="grupos">' +
+    Object.keys(grupos).map(g => '<option value="' + esc(g) + '">').join('') + '</datalist></form>');
+  $('grid').innerHTML = html;
+  $('sub').textContent = (d.tablero || []).length + (d.choferes || []).length + (d.extra || []).length + ' ligas';
+  $('pie').textContent = 'Sesiones abiertas: ' + (d.sesiones || 1) + (d.pin_cambiado ? ' · PIN puesto el ' + new Date(d.pin_cambiado).toLocaleDateString('es-MX') : '') + ' · No compartas este panel: aquí están todas las llaves.';
+  $('fAlta').onsubmit = agregar;
+  filtrar();
+}
+function filtrar() {
+  const q = $('buscar').value.trim().toLowerCase();
+  document.querySelectorAll('#grid .card').forEach(c => {
+    const enCard = !q || c.dataset.q.includes(q);
+    let alguna = false;
+    c.querySelectorAll('.liga[data-q]').forEach(l => { const v = !q || enCard || l.dataset.q.includes(q); l.hidden = !v; alguna = alguna || v; });
+    c.hidden = !(enCard || alguna);
+  });
+}
+$('buscar').oninput = filtrar;
+$('grid').onclick = async e => {
+  const c = e.target.closest('[data-copiar]');
+  if (c) {
+    const t = c.dataset.copiar;
+    try { await navigator.clipboard.writeText(t); toast('Liga copiada'); }
+    catch (x) { const i = document.createElement('textarea'); i.value = t; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); toast('Liga copiada'); } catch (y) { prompt('Copia la liga:', t); } i.remove(); }
+    return;
+  }
+  const b = e.target.closest('[data-borrar]');
+  if (b && confirm('¿Quitar esta liga del panel?')) {
+    const r = await api({ op: 'liga_borrar', s: SES, id: b.dataset.borrar });
+    if (sesionTerminada(r)) return;
+    if (!r.ok) return toast(r.msg || 'No se pudo quitar');
+    cargar();
+  }
+};
+async function agregar(e) {
+  e.preventDefault();
+  const r = await api({ op: 'liga_guardar', s: SES, titulo: $('aTitulo').value, url: $('aUrl').value.trim(), grupo: $('aGrupo').value });
+  if (sesionTerminada(r)) return;
+  if (!r.ok) return toast(r.msg || 'No se pudo guardar');
+  toast('Liga agregada'); cargar();
+}
+function sesionTerminada(r) {
+  if (!r || !r.salir) return false;
+  SES = null; guardarS(null); ver('vCandado'); aviso('msgCandado', r.msg || ''); return true;
+}
+async function cargar() {
+  if (!SES) { ver('vCandado'); return; }
+  const r = await api({ op: 'ligas', s: SES });
+  if (sesionTerminada(r)) return;
+  if (!r.ok) { ver('vCandado'); aviso('msgCandado', r.msg || 'No se pudieron leer las ligas.'); return; }
+  DATOS = r; ver('vPanel'); pintar();
+}
+$('bSalir').onclick = async () => {
+  await api({ op: 'salir', s: SES });
+  SES = null; guardarS(null); DATOS = null; $('grid').innerHTML = ''; ver('vCandado'); aviso('msgCandado', 'Sesión cerrada.', true);
+};
+$('bPin').onclick = () => { $('fPin').reset(); aviso('msgPin', ''); $('dPin').showModal(); };
+$('pCancel').onclick = () => $('dPin').close();
+$('fPin').onsubmit = async e => {
+  e.preventDefault();
+  const a = $('pa').value, n = $('pn').value;
+  if (!/^\d{4,8}$/.test(n)) return aviso('msgPin', 'El PIN nuevo es de 4 a 8 números.');
+  if (n !== $('pn2').value) return aviso('msgPin', 'Los dos PIN nuevos no son iguales.');
+  const r = await api({ op: 'pin', s: SES, actual: a, nuevo: n });
+  if (sesionTerminada(r)) { $('dPin').close(); return; }
+  if (!r.ok) return aviso('msgPin', r.msg || 'No se pudo cambiar.');
+  $('dPin').close(); toast('PIN cambiado'); cargar();
+};
+
+/* ---------------- inicio ---------------- */
+teclado(); pintarPuntos();
+const qs = new URLSearchParams(location.search);
+if (qs.get('k')) {
+  LLAVE = qs.get('k');
+  history.replaceState(null, '', location.pathname);   // que la llave no se quede en la barra ni en el historial
+  ver('vCrear'); $('pin1').focus();
+} else cargar();
+})();
+</script>
+</body>
+</html>

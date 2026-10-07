@@ -1,0 +1,372 @@
+{
+  "name": "Panel general (ligas con PIN)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "panel",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5c1ee967-cb4e-511e-a155-5c275cd833eb",
+      "name": "Página",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -300
+      ],
+      "webhookId": "2901c2af-7c4c-5867-9ba8-794288677e21"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n<meta name=\"robots\" content=\"noindex, nofollow\">\n<meta name=\"referrer\" content=\"no-referrer\">\n<title>Panel general</title>\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap\" rel=\"stylesheet\">\n<style>\n:root{\n  --bg:#F3F5F9; --panel:#FFFFFF; --panel2:#F8FAFC; --ink:#0F172A; --soft:#64748B; --line:#E5E9F0;\n  --side:#0E2A47; --sideink:#C9D6E5; --blue:#2563EB; --blue2:#DBEAFE; --red:#DC2626; --redbg:#FEE2E2; --green:#15803D; --greenbg:#DCFCE7;\n  --sh:0 1px 2px rgba(15,23,42,.05),0 4px 14px rgba(15,23,42,.05);\n}\n@media (prefers-color-scheme:dark){ :root:not([data-theme=\"light\"]){\n  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A;\n  --side:#08111F; --blue:#60A5FA; --blue2:#1E3A5F; --red:#F87171; --redbg:#3B1416; --green:#4ADE80; --greenbg:#0E2E1B;\n}}\n:root[data-theme=\"dark\"]{\n  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A;\n  --side:#08111F; --blue:#60A5FA; --blue2:#1E3A5F; --red:#F87171; --redbg:#3B1416; --green:#4ADE80; --greenbg:#0E2E1B;\n}\n*,*::before,*::after{box-sizing:border-box}\nbody{margin:0;background:var(--bg);color:var(--ink);font-family:\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,sans-serif;font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased}\nbutton,input,select{font:inherit;color:inherit}\n:focus-visible{outline:3px solid var(--blue);outline-offset:2px}\n[hidden]{display:none!important}\n.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 13px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--ink);font-size:.88rem;white-space:nowrap}\n.btn:hover{border-color:var(--blue)}\n.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}\n.btn.mini{padding:5px 10px;font-size:.82rem;border-radius:8px}\n.btn.rojo{color:var(--red)}\n.btn svg{width:16px;height:16px}\ninput[type=text],input[type=url],input[type=password],input[type=search]{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 12px;width:100%;min-width:0}\n.msg{border-radius:10px;padding:9px 12px;font-size:.9rem;margin-top:12px}\n.msg.mal{background:var(--redbg);color:var(--red)} .msg.bien{background:var(--greenbg);color:var(--green)}\n\n/* ---------- candado ---------- */\n.candado{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(160deg,var(--side) 0%,#1d4f86 100%)}\n.caja{background:var(--panel);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:28px 24px;width:100%;max-width:360px;text-align:center}\n.caja h1{margin:10px 0 2px;font-size:1.3rem}\n.caja p{margin:0;color:var(--soft);font-size:.9rem}\n.escudo{width:52px;height:52px;border-radius:16px;background:var(--blue2);color:var(--blue);display:inline-flex;align-items:center;justify-content:center}\n.escudo svg{width:28px;height:28px}\n.puntos{display:flex;justify-content:center;gap:12px;margin:22px 0 18px;min-height:16px}\n.puntos i{width:14px;height:14px;border-radius:50%;border:2px solid var(--soft)}\n.puntos i.on{background:var(--ink);border-color:var(--ink)}\n.puntos.sacude{animation:sac .35s}\n@keyframes sac{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}\n.teclas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}\n.teclas button{border:1px solid var(--line);background:var(--panel2);border-radius:14px;height:58px;font-size:1.35rem;font-weight:600;cursor:pointer}\n.teclas button:active{background:var(--blue2)}\n.teclas .ok{background:var(--blue);border-color:var(--blue);color:#fff;font-size:1rem}\n.recordar{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;color:var(--soft);font-size:.86rem}\n.campos{display:grid;gap:10px;margin-top:18px;text-align:left}\n.campos label{font-size:.82rem;font-weight:600;color:var(--soft)}\n\n/* ---------- panel ---------- */\n.top{position:sticky;top:0;z-index:5;background:var(--side);color:#fff;padding:12px 16px}\n.top .fila{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}\n.top b{font-size:1.08rem}\n.top small{display:block;color:var(--sideink);font-weight:500;font-size:.75rem}\n.top .esp{flex:1}\n.top .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.25)}\n.top input{max-width:280px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff}\n.top input::placeholder{color:var(--sideink)}\nmain{max-width:1180px;margin:0 auto;padding:18px 16px 60px}\n.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:14px;align-items:start}\n.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);overflow:hidden;min-width:0}\n.card header{display:flex;gap:12px;align-items:center;padding:14px 16px 10px}\n.ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;font-size:1.2rem}\n.card h2{margin:0;font-size:1rem}\n.card header p{margin:0;color:var(--soft);font-size:.8rem}\n.liga{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--line);min-width:0}\n.liga .q{flex:1;min-width:0}\n.liga .q b{display:block;font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.liga .q span{display:block;font-size:.74rem;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:ui-monospace,Menlo,monospace}\n.liga .q .tag{display:inline;font-family:inherit}\n.liga.falta{opacity:.6}\n.liga.falta .q span{font-family:inherit}\n.tag{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--blue2);color:var(--blue);margin-left:6px;vertical-align:1px}\n.vacio{padding:14px 16px;color:var(--soft);font-size:.88rem;border-top:1px solid var(--line)}\n.alta{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel2)}\n.alta input:nth-child(2){grid-column:1/-1}\n.pie{color:var(--soft);font-size:.8rem;margin-top:22px;text-align:center}\n.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;z-index:20;box-shadow:var(--sh)}\ndialog{border:0;border-radius:18px;padding:22px;width:min(92vw,380px);background:var(--panel);color:var(--ink)}\ndialog::backdrop{background:rgba(2,6,23,.5)}\ndialog h3{margin:0 0 6px}\n@media (max-width:560px){ .top input{max-width:none;order:5;flex-basis:100%} .liga .btn .t{display:none} }\n</style>\n</head>\n<body>\n\n<!-- Candado: escribir PIN -->\n<section class=\"candado\" id=\"vCandado\" hidden>\n  <div class=\"caja\">\n    <span class=\"escudo\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"11\" width=\"16\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/></svg></span>\n    <h1>Panel general</h1>\n    <p>Escribe tu PIN para ver tus ligas</p>\n    <div class=\"puntos\" id=\"puntos\" aria-live=\"polite\"></div>\n    <div class=\"teclas\" id=\"teclas\"></div>\n    <label class=\"recordar\"><input type=\"checkbox\" id=\"recordar\"> Recordar este dispositivo 30 días</label>\n    <div id=\"msgCandado\"></div>\n  </div>\n</section>\n\n<!-- Crear / reponer PIN (se abre con la liga ?k=llave de administrador) -->\n<section class=\"candado\" id=\"vCrear\" hidden>\n  <form class=\"caja\" id=\"fCrear\" autocomplete=\"off\">\n    <span class=\"escudo\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z\"/><path d=\"M9 12l2 2 4-4\"/></svg></span>\n    <h1>Pon tu PIN</h1>\n    <p>De 4 a 8 números. Si ya tenías uno, este lo reemplaza y cierra las sesiones abiertas.</p>\n    <div class=\"campos\">\n      <label for=\"pin1\">PIN nuevo</label><input id=\"pin1\" type=\"password\" inputmode=\"numeric\" pattern=\"\\d{4,8}\" maxlength=\"8\" required>\n      <label for=\"pin2\">Repite el PIN</label><input id=\"pin2\" type=\"password\" inputmode=\"numeric\" pattern=\"\\d{4,8}\" maxlength=\"8\" required>\n      <button class=\"btn pri\" type=\"submit\">Guardar PIN y entrar</button>\n    </div>\n    <div id=\"msgCrear\"></div>\n  </form>\n</section>\n\n<!-- Panel -->\n<div id=\"vPanel\" hidden>\n  <div class=\"top\"><div class=\"fila\">\n    <div><b>Mis ligas</b><small id=\"sub\">Panel general</small></div>\n    <div class=\"esp\"></div>\n    <input type=\"search\" id=\"buscar\" placeholder=\"Buscar página o persona…\" aria-label=\"Buscar\">\n    <button class=\"btn mini\" id=\"bPin\" type=\"button\">Cambiar PIN</button>\n    <button class=\"btn mini\" id=\"bSalir\" type=\"button\">Salir</button>\n  </div></div>\n  <main>\n    <div class=\"grid\" id=\"grid\"></div>\n    <p class=\"pie\" id=\"pie\"></p>\n  </main>\n</div>\n\n<dialog id=\"dPin\">\n  <form id=\"fPin\" autocomplete=\"off\">\n    <h3>Cambiar PIN</h3>\n    <p style=\"margin:0 0 12px;color:var(--soft);font-size:.88rem\">Se cierran las sesiones en otros dispositivos.</p>\n    <div class=\"campos\" style=\"margin-top:0\">\n      <label for=\"pa\">PIN actual</label><input id=\"pa\" type=\"password\" inputmode=\"numeric\" maxlength=\"8\" required>\n      <label for=\"pn\">PIN nuevo</label><input id=\"pn\" type=\"password\" inputmode=\"numeric\" maxlength=\"8\" required>\n      <label for=\"pn2\">Repite el PIN nuevo</label><input id=\"pn2\" type=\"password\" inputmode=\"numeric\" maxlength=\"8\" required>\n    </div>\n    <div id=\"msgPin\"></div>\n    <div style=\"display:flex;gap:8px;justify-content:flex-end;margin-top:16px\">\n      <button class=\"btn\" type=\"button\" id=\"pCancel\">Cancelar</button>\n      <button class=\"btn pri\" type=\"submit\">Guardar</button>\n    </div>\n  </form>\n</dialog>\n\n<div class=\"toast\" id=\"toast\" hidden></div>\n\n<script>\n(function () {\n'use strict';\nconst API = location.origin + location.pathname.replace(/\\/[^\\/]*$/, '/') + 'panel-api';\nconst BASE = location.origin + location.pathname.replace(/\\/[^\\/]*$/, '/');   // .../webhook/\nconst $ = id => document.getElementById(id);\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\nconst leer = k => { try { return localStorage.getItem(k) || sessionStorage.getItem(k); } catch (e) { return null; } };\nconst guardarS = (v, largo) => { try { localStorage.removeItem('panel_s'); sessionStorage.removeItem('panel_s'); if (v) (largo ? localStorage : sessionStorage).setItem('panel_s', v); } catch (e) {} };\nlet SES = leer('panel_s'), DATOS = null;\n\nasync function api(body) {\n  try {\n    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });\n    const t = await r.text();\n    try { return JSON.parse(t); } catch (e) { return { ok: false, msg: 'Respuesta inesperada del servidor (' + r.status + ').' }; }\n  } catch (e) { return { ok: false, msg: 'Sin conexión. Revisa tu internet.' }; }\n}\nfunction toast(t) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 1800); }\nfunction aviso(id, txt, bien) { $(id).innerHTML = txt ? '<div class=\"msg ' + (bien ? 'bien' : 'mal') + '\">' + esc(txt) + '</div>' : ''; }\nfunction ver(v) { ['vCandado', 'vCrear', 'vPanel'].forEach(x => $(x).hidden = x !== v); }\n\n/* ---------------- candado ---------------- */\nlet pin = '';\nfunction pintarPuntos() {\n  const n = Math.max(4, pin.length);\n  $('puntos').innerHTML = Array.from({ length: n }, (_, i) => '<i class=\"' + (i < pin.length ? 'on' : '') + '\"></i>').join('');\n}\nfunction teclado() {\n  const t = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', 'Entrar'];\n  $('teclas').innerHTML = t.map(x => '<button type=\"button\" data-t=\"' + x + '\" class=\"' + (x === 'Entrar' ? 'ok' : '') + '\" aria-label=\"' + (x === '⌫' ? 'Borrar' : x) + '\">' + x + '</button>').join('');\n  $('teclas').onclick = e => { const b = e.target.closest('button'); if (b) tecla(b.dataset.t); };\n}\nfunction tecla(t) {\n  if (ocupado) return;\n  if (t === '⌫') pin = pin.slice(0, -1);\n  else if (t === 'Entrar') return entrar();\n  else if (pin.length < 8) pin += t;\n  aviso('msgCandado', '');\n  pintarPuntos();\n}\ndocument.addEventListener('keydown', e => {\n  if ($('vCandado').hidden) return;\n  if (/^\\d$/.test(e.key)) tecla(e.key);\n  else if (e.key === 'Backspace') tecla('⌫');\n  else if (e.key === 'Enter') tecla('Entrar');\n});\nlet ocupado = false;\nasync function entrar() {\n  if (pin.length < 4) { aviso('msgCandado', 'El PIN es de 4 a 8 números.'); return; }\n  ocupado = true;\n  const recordar = $('recordar').checked;\n  const r = await api({ op: 'entrar', pin, recordar });\n  ocupado = false;\n  pin = ''; pintarPuntos();\n  if (r.sesion) { SES = r.sesion; guardarS(SES, recordar); return cargar(); }\n  $('puntos').classList.remove('sacude'); void $('puntos').offsetWidth; $('puntos').classList.add('sacude');\n  if (r.sin_pin) aviso('msgCandado', 'Todavía no tienes PIN. En n8n abre el flujo \"Panel general\", corre el nodo \"Mi liga para poner PIN\" y abre la liga que te da.');\n  else if (r.min) aviso('msgCandado', 'Demasiados intentos. Espera ' + r.min + ' min.');\n  else if (r.ok) aviso('msgCandado', 'PIN incorrecto.' + (r.quedan != null ? ' Te quedan ' + r.quedan + ' intento' + (r.quedan === 1 ? '' : 's') + '.' : ''));\n  else aviso('msgCandado', r.msg || 'No se pudo entrar.');\n}\n\n/* ---------------- crear PIN con llave ---------------- */\nlet LLAVE = '';\n$('fCrear').onsubmit = async e => {\n  e.preventDefault();\n  const a = $('pin1').value, b = $('pin2').value;\n  if (!/^\\d{4,8}$/.test(a)) return aviso('msgCrear', 'El PIN es de 4 a 8 números.');\n  if (a !== b) return aviso('msgCrear', 'Los dos PIN no son iguales.');\n  const r = await api({ op: 'crear_pin', k: LLAVE, nuevo: a });\n  if (!r.ok || !r.sesion) return aviso('msgCrear', r.msg || 'No se pudo guardar.');\n  LLAVE = ''; SES = r.sesion; guardarS(SES, false);\n  toast('PIN guardado'); cargar();\n};\n\n/* ---------------- panel ---------------- */\nconst ICONO = { compras: ['🛒', '#DBEAFE'], produccion: ['🏭', '#FEF3C7'], vendedor: ['📊', '#DCFCE7'], rutas: ['🗺️', '#EDE9FE'], choferes: ['🚚', '#FFEDD5'], monedero: ['💳', '#FCE7F3'], extra: ['🔗', '#E2E8F0'] };\nconst ROL = { admin: 'Administrador', compras: 'Compras', produccion: 'Producción (captura)', auditor: 'Auditor (solo consulta)', encargado: 'Encargado' };\nconst PAGINAS = [\n  { id: 'compras', titulo: 'Planeador de compras', desc: 'Sugerido de compra, OCs y seguimiento', ruta: 'planeador-compras', roles: ['admin', 'compras', 'auditor'],\n    falta: 'Corre \"Ver ligas\" en el flujo del planeador para crearla.' },\n  { id: 'produccion', titulo: 'Producción de tinacos', desc: 'Captura, gas, auditoría y precios', ruta: 'produccion-tinacos', roles: ['admin', 'produccion', 'auditor'],\n    falta: 'Corre \"Ver ligas\" en el flujo de producción para crearla.' },\n  { id: 'vendedor', titulo: 'Tablero del vendedor', desc: 'Ventas, clientes y seguimiento', ruta: 'vendedor', roles: ['admin', 'encargado'],\n    falta: 'Se crea desde el flujo \"Tablero del vendedor\".' },\n  { id: 'rutas', titulo: 'Asistente de rutas', desc: 'Plan de la semana, buscar pedidos y simular', ruta: 'rutas', oficina: true },\n  { id: 'choferes', titulo: 'Choferes – entregas', desc: 'Oficina y la liga de cada chofer', ruta: 'choferes', choferes: true },\n  { id: 'monedero', titulo: 'Monedero', desc: 'App del monedero (pide su propio PIN)', ruta: 'monedero-app', libre: true },\n];\nconst corto = t => t ? String(t).slice(0, 4) + '…' + String(t).slice(-4) : '';\nfunction filaLiga(nombre, url, sub, extra) {\n  const u = esc(url);\n  return '<div class=\"liga\" data-q=\"' + esc((nombre + ' ' + (sub || '')).toLowerCase()) + '\"><div class=\"q\"><b>' + esc(nombre) + (extra || '') + '</b><span>' + esc(sub || url) + '</span></div>' +\n    '<button class=\"btn mini\" type=\"button\" data-copiar=\"' + u + '\" title=\"Copiar liga\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"9\" y=\"9\" width=\"12\" height=\"12\" rx=\"2\"/><path d=\"M5 15V5a2 2 0 0 1 2-2h10\"/></svg><span class=\"t\">Copiar</span></button>' +\n    '<a class=\"btn mini pri\" href=\"' + u + '\" target=\"_blank\" rel=\"noopener noreferrer\" title=\"Abrir\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M14 3h7v7\"/><path d=\"M10 14L21 3\"/><path d=\"M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5\"/></svg><span class=\"t\">Abrir</span></a></div>';\n}\nfunction tarjeta(id, titulo, desc, cuerpo) {\n  const [ic, bg] = ICONO[id] || ICONO.extra;\n  return '<section class=\"card\" data-q=\"' + esc((titulo + ' ' + desc).toLowerCase()) + '\"><header><span class=\"ico\" style=\"background:' + bg + '\">' + ic + '</span><div><h2>' + esc(titulo) + '</h2><p>' + esc(desc) + '</p></div></header>' + cuerpo + '</section>';\n}\nfunction pintar() {\n  const d = DATOS, porRol = {};\n  (d.tablero || []).forEach(t => (porRol[t.rol] = porRol[t.rol] || []).push(t.token));\n  const oficina = (d.choferes || []).find(c => c.nombre === '*');\n  let html = '';\n  for (const p of PAGINAS) {\n    const url = k => BASE + p.ruta + (k ? '?k=' + encodeURIComponent(k) : '');\n    let cuerpo = '';\n    if (p.roles) {\n      for (const r of p.roles) {\n        const ks = porRol[r] || [];\n        if (!ks.length) { cuerpo += '<div class=\"liga falta\"><div class=\"q\"><b>' + esc(ROL[r] || r) + '</b><span>Sin liga. ' + esc(p.falta) + '</span></div></div>'; continue; }\n        ks.forEach((k, i) => cuerpo += filaLiga((ROL[r] || r) + (ks.length > 1 ? ' #' + (i + 1) : ''), url(k), 'llave ' + corto(k)));\n      }\n    } else if (p.oficina) {\n      cuerpo = oficina ? filaLiga('Oficina', url(oficina.token), 'llave ' + corto(oficina.token))\n        : '<div class=\"liga falta\"><div class=\"q\"><b>Oficina</b><span>Sin liga. Se crea en el flujo de choferes.</span></div></div>';\n    } else if (p.choferes) {\n      const L = d.choferes || [];\n      cuerpo = L.length ? L.map(c => filaLiga(c.nombre === '*' ? 'Oficina' : c.nombre, url(c.token), 'llave ' + corto(c.token), c.nombre === '*' ? '<span class=\"tag\">todos</span>' : '')).join('')\n        : '<div class=\"vacio\">Todavía no hay choferes con liga.</div>';\n    } else if (p.libre) cuerpo = filaLiga('Abrir monedero', url(''), 'entra con el PIN del monedero');\n    html += tarjeta(p.id, p.titulo, p.desc, cuerpo);\n  }\n  // ligas propias, agrupadas\n  const grupos = {};\n  (d.extra || []).forEach(x => (grupos[x.grupo] = grupos[x.grupo] || []).push(x));\n  for (const g of Object.keys(grupos)) {\n    html += tarjeta('extra', g, 'Ligas que agregaste tú', grupos[g].map(x => filaLiga(x.titulo, x.url, x.url).replace('<a class', '<button class=\"btn mini rojo\" type=\"button\" data-borrar=\"' + x.id + '\" title=\"Quitar\">✕</button><a class')).join(''));\n  }\n  html += tarjeta('extra', 'Agregar otra liga', 'Kommo, hojas de Google, Microsip web…',\n    '<form class=\"alta\" id=\"fAlta\"><input type=\"text\" id=\"aTitulo\" placeholder=\"Nombre\" maxlength=\"80\" required><input type=\"url\" id=\"aUrl\" placeholder=\"https://…\" required><input type=\"text\" id=\"aGrupo\" placeholder=\"Grupo (opcional)\" maxlength=\"40\" list=\"grupos\"><button class=\"btn pri\" type=\"submit\">Agregar</button><datalist id=\"grupos\">' +\n    Object.keys(grupos).map(g => '<option value=\"' + esc(g) + '\">').join('') + '</datalist></form>');\n  $('grid').innerHTML = html;\n  $('sub').textContent = (d.tablero || []).length + (d.choferes || []).length + (d.extra || []).length + ' ligas';\n  $('pie').textContent = 'Sesiones abiertas: ' + (d.sesiones || 1) + (d.pin_cambiado ? ' · PIN puesto el ' + new Date(d.pin_cambiado).toLocaleDateString('es-MX') : '') + ' · No compartas este panel: aquí están todas las llaves.';\n  $('fAlta').onsubmit = agregar;\n  filtrar();\n}\nfunction filtrar() {\n  const q = $('buscar').value.trim().toLowerCase();\n  document.querySelectorAll('#grid .card').forEach(c => {\n    const enCard = !q || c.dataset.q.includes(q);\n    let alguna = false;\n    c.querySelectorAll('.liga[data-q]').forEach(l => { const v = !q || enCard || l.dataset.q.includes(q); l.hidden = !v; alguna = alguna || v; });\n    c.hidden = !(enCard || alguna);\n  });\n}\n$('buscar').oninput = filtrar;\n$('grid').onclick = async e => {\n  const c = e.target.closest('[data-copiar]');\n  if (c) {\n    const t = c.dataset.copiar;\n    try { await navigator.clipboard.writeText(t); toast('Liga copiada'); }\n    catch (x) { const i = document.createElement('textarea'); i.value = t; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); toast('Liga copiada'); } catch (y) { prompt('Copia la liga:', t); } i.remove(); }\n    return;\n  }\n  const b = e.target.closest('[data-borrar]');\n  if (b && confirm('¿Quitar esta liga del panel?')) {\n    const r = await api({ op: 'liga_borrar', s: SES, id: b.dataset.borrar });\n    if (sesionTerminada(r)) return;\n    if (!r.ok) return toast(r.msg || 'No se pudo quitar');\n    cargar();\n  }\n};\nasync function agregar(e) {\n  e.preventDefault();\n  const r = await api({ op: 'liga_guardar', s: SES, titulo: $('aTitulo').value, url: $('aUrl').value.trim(), grupo: $('aGrupo').value });\n  if (sesionTerminada(r)) return;\n  if (!r.ok) return toast(r.msg || 'No se pudo guardar');\n  toast('Liga agregada'); cargar();\n}\nfunction sesionTerminada(r) {\n  if (!r || !r.salir) return false;\n  SES = null; guardarS(null); ver('vCandado'); aviso('msgCandado', r.msg || ''); return true;\n}\nasync function cargar() {\n  if (!SES) { ver('vCandado'); return; }\n  const r = await api({ op: 'ligas', s: SES });\n  if (sesionTerminada(r)) return;\n  if (!r.ok) { ver('vCandado'); aviso('msgCandado', r.msg || 'No se pudieron leer las ligas.'); return; }\n  DATOS = r; ver('vPanel'); pintar();\n}\n$('bSalir').onclick = async () => {\n  await api({ op: 'salir', s: SES });\n  SES = null; guardarS(null); DATOS = null; $('grid').innerHTML = ''; ver('vCandado'); aviso('msgCandado', 'Sesión cerrada.', true);\n};\n$('bPin').onclick = () => { $('fPin').reset(); aviso('msgPin', ''); $('dPin').showModal(); };\n$('pCancel').onclick = () => $('dPin').close();\n$('fPin').onsubmit = async e => {\n  e.preventDefault();\n  const a = $('pa').value, n = $('pn').value;\n  if (!/^\\d{4,8}$/.test(n)) return aviso('msgPin', 'El PIN nuevo es de 4 a 8 números.');\n  if (n !== $('pn2').value) return aviso('msgPin', 'Los dos PIN nuevos no son iguales.');\n  const r = await api({ op: 'pin', s: SES, actual: a, nuevo: n });\n  if (sesionTerminada(r)) { $('dPin').close(); return; }\n  if (!r.ok) return aviso('msgPin', r.msg || 'No se pudo cambiar.');\n  $('dPin').close(); toast('PIN cambiado'); cargar();\n};\n\n/* ---------------- inicio ---------------- */\nteclado(); pintarPuntos();\nconst qs = new URLSearchParams(location.search);\nif (qs.get('k')) {\n  LLAVE = qs.get('k');\n  history.replaceState(null, '', location.pathname);   // que la llave no se quede en la barra ni en el historial\n  ver('vCrear'); $('pin1').focus();\n} else cargar();\n})();\n</script>\n</body>\n</html>\n",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Robots-Tag",
+                "value": "noindex"
+              },
+              {
+                "name": "Referrer-Policy",
+                "value": "no-referrer"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3c6114a7-d2bc-512e-bb04-a7dbaa39c833",
+      "name": "Mostrar página",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "panel-api",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "85e77415-e201-5d1c-82d5-ede55580db73",
+      "name": "API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -60
+      ],
+      "webhookId": "91c4f94a-1fae-55e4-8ab6-5e0e615c7283"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Panel general: revisa lo que pide la página y arma la consulta. Toda operación (menos entrar / crear PIN) exige una sesión vigente.\nconst ESQUEMA = \"-- Panel general: PIN (uno solo, con sal) + sesiones + ligas propias. Las tablas de llaves son las mismas de los otros flujos.\\nCREATE TABLE IF NOT EXISTS tablero_acceso (token TEXT PRIMARY KEY, rol TEXT NOT NULL, activo BOOLEAN NOT NULL DEFAULT true, creado TIMESTAMPTZ NOT NULL DEFAULT now());\\nCREATE TABLE IF NOT EXISTS choferes_web (token TEXT PRIMARY KEY, nombre TEXT NOT NULL, activo BOOLEAN NOT NULL DEFAULT true, creado TIMESTAMPTZ NOT NULL DEFAULT now());\\nCREATE TABLE IF NOT EXISTS panel_pin (id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1), pin_sal TEXT NOT NULL, pin_hash TEXT NOT NULL,\\n  intentos INT NOT NULL DEFAULT 0, bloqueado_hasta TIMESTAMPTZ, cambiado TIMESTAMPTZ NOT NULL DEFAULT now());\\nCREATE TABLE IF NOT EXISTS panel_sesion (token TEXT PRIMARY KEY, vence TIMESTAMPTZ NOT NULL, creado TIMESTAMPTZ NOT NULL DEFAULT now());\\nCREATE TABLE IF NOT EXISTS panel_liga (id SERIAL PRIMARY KEY, titulo TEXT NOT NULL, url TEXT NOT NULL, grupo TEXT NOT NULL DEFAULT 'Otras ligas',\\n  creado TIMESTAMPTZ NOT NULL DEFAULT now());\\nDELETE FROM panel_sesion WHERE vence < now();\\n\";\nconst SES = \"EXISTS (SELECT 1 FROM panel_sesion WHERE token = $1 AND vence > now())\";\nconst HASH = (sal, pin) => \"encode(sha256(convert_to(\" + sal + \" || ':' || \" + pin + \", 'UTF8')), 'hex')\";\nconst NUEVA = \"replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')\";\nconst SQL = {\n  // $1 = PIN, $2 = 'si' para recordar 30 días. 5 intentos fallidos = 15 min bloqueado.\n  entrar: `WITH p AS (SELECT * FROM panel_pin WHERE id = 1 FOR UPDATE),\nv AS (SELECT (p.bloqueado_hasta IS NOT NULL AND p.bloqueado_hasta > now()) AS trabado, p.pin_hash = ${HASH('p.pin_sal', '$1')} AS bien,\n             CASE WHEN p.bloqueado_hasta IS NOT NULL THEN 0 ELSE p.intentos END AS base FROM p),\nu AS (UPDATE panel_pin t SET\n        intentos = CASE WHEN v.trabado THEN t.intentos WHEN v.bien THEN 0 ELSE v.base + 1 END,\n        bloqueado_hasta = CASE WHEN v.trabado THEN t.bloqueado_hasta WHEN v.bien THEN NULL WHEN v.base + 1 >= 5 THEN now() + interval '15 minutes' ELSE NULL END\n      FROM v WHERE t.id = 1 RETURNING t.intentos, t.bloqueado_hasta),\ns AS (INSERT INTO panel_sesion (token, vence) SELECT ${NUEVA}, now() + CASE WHEN $2 = 'si' THEN interval '30 days' ELSE interval '12 hours' END\n      FROM v WHERE v.bien AND NOT v.trabado RETURNING token)\nSELECT json_build_object('ok', true, 'sin_pin', NOT EXISTS (SELECT 1 FROM v), 'sesion', (SELECT token FROM s),\n  'quedan', (SELECT greatest(0, 5 - intentos) FROM u WHERE bloqueado_hasta IS NULL),\n  'min', (SELECT ceil(extract(epoch FROM bloqueado_hasta - now()) / 60)::int FROM u WHERE bloqueado_hasta > now())) AS r;`,\n  // $1 = llave de administrador del tablero, $2 = PIN nuevo. Sirve para crear el PIN o para reponerlo si se olvidó.\n  crear_pin: `WITH a AS (SELECT 1 FROM tablero_acceso WHERE token = $1 AND rol = 'admin' AND activo LIMIT 1),\nn AS (SELECT replace(gen_random_uuid()::text, '-', '') AS sal FROM a),\ng AS (INSERT INTO panel_pin (id, pin_sal, pin_hash) SELECT 1, n.sal, ${HASH('n.sal', '$2')} FROM n\n      ON CONFLICT (id) DO UPDATE SET pin_sal = EXCLUDED.pin_sal, pin_hash = EXCLUDED.pin_hash, intentos = 0, bloqueado_hasta = NULL, cambiado = now() RETURNING 1),\nd AS (DELETE FROM panel_sesion WHERE EXISTS (SELECT 1 FROM g) RETURNING 1),\ns AS (INSERT INTO panel_sesion (token, vence) SELECT ${NUEVA}, now() + interval '12 hours' FROM g RETURNING token)\nSELECT CASE WHEN EXISTS (SELECT 1 FROM a) THEN json_build_object('ok', true, 'sesion', (SELECT token FROM s), 'cerradas', (SELECT count(*) FROM d))\n  ELSE json_build_object('ok', false, 'msg', 'Esa llave no es de administrador. Usa la liga del nodo \"Mi liga para poner PIN\".') END AS r;`,\n  ligas: `SELECT CASE WHEN ${SES} THEN json_build_object('ok', true,\n  'tablero', COALESCE((SELECT json_agg(json_build_object('rol', rol, 'token', token) ORDER BY rol, creado) FROM tablero_acceso WHERE activo), '[]'),\n  'choferes', COALESCE((SELECT json_agg(json_build_object('nombre', nombre, 'token', token) ORDER BY nombre <> '*', nombre) FROM choferes_web WHERE activo), '[]'),\n  'extra', COALESCE((SELECT json_agg(json_build_object('id', id, 'titulo', titulo, 'url', url, 'grupo', grupo) ORDER BY grupo, titulo) FROM panel_liga), '[]'),\n  'pin_cambiado', (SELECT cambiado FROM panel_pin WHERE id = 1),\n  'sesiones', (SELECT count(*) FROM panel_sesion WHERE vence > now()))\n  ELSE json_build_object('ok', false, 'salir', true, 'msg', 'Tu sesión terminó. Escribe tu PIN otra vez.') END AS r;`,\n  salir: `WITH d AS (DELETE FROM panel_sesion WHERE token = $1 OR ($2 = 'todas' AND ${SES}) RETURNING 1)\nSELECT json_build_object('ok', true, 'cerradas', (SELECT count(*) FROM d)) AS r;`,\n  // $1 sesión, $2 PIN actual, $3 PIN nuevo. Cierra las demás sesiones.\n  pin: `WITH v AS (SELECT p.pin_hash = ${HASH('p.pin_sal', '$2')} AS bien FROM panel_pin p WHERE p.id = 1 AND ${SES}),\nn AS (SELECT replace(gen_random_uuid()::text, '-', '') AS sal FROM v WHERE v.bien),\nu AS (UPDATE panel_pin t SET pin_sal = n.sal, pin_hash = ${HASH('n.sal', '$3')}, intentos = 0, bloqueado_hasta = NULL, cambiado = now() FROM n WHERE t.id = 1 RETURNING 1),\nd AS (DELETE FROM panel_sesion WHERE token <> $1 AND EXISTS (SELECT 1 FROM u) RETURNING 1)\nSELECT CASE WHEN NOT EXISTS (SELECT 1 FROM v) THEN json_build_object('ok', false, 'salir', true, 'msg', 'Tu sesión terminó. Escribe tu PIN otra vez.')\n  WHEN EXISTS (SELECT 1 FROM u) THEN json_build_object('ok', true, 'cerradas', (SELECT count(*) FROM d))\n  ELSE json_build_object('ok', false, 'msg', 'El PIN actual no es correcto.') END AS r;`,\n  // $1 sesión, $2 título, $3 url, $4 grupo, $5 id (para editar)\n  liga_guardar: `WITH i AS (INSERT INTO panel_liga (titulo, url, grupo) SELECT $2, $3, $4 WHERE ${SES} AND $5 = '' RETURNING id),\nu AS (UPDATE panel_liga SET titulo = $2, url = $3, grupo = $4 WHERE $5 <> '' AND id::text = $5 AND ${SES} RETURNING id)\nSELECT CASE WHEN ${SES} THEN json_build_object('ok', EXISTS (SELECT 1 FROM i UNION ALL SELECT 1 FROM u), 'msg', 'No encontré esa liga.')\n  ELSE json_build_object('ok', false, 'salir', true, 'msg', 'Tu sesión terminó. Escribe tu PIN otra vez.') END AS r;`,\n  liga_borrar: `WITH d AS (DELETE FROM panel_liga WHERE id::text = $2 AND ${SES} RETURNING 1)\nSELECT CASE WHEN ${SES} THEN json_build_object('ok', true, 'borradas', (SELECT count(*) FROM d))\n  ELSE json_build_object('ok', false, 'salir', true, 'msg', 'Tu sesión terminó. Escribe tu PIN otra vez.') END AS r;`,\n};\nconst fail = msg => [{ json: { ok: false, respuesta: { ok: false, msg } } }];\nconst b = $('API').first().json.body || {};\nconst op = String(b.op || '');\nif (!SQL[op]) return fail('Operación desconocida.');\nconst txt = (v, n) => String(v ?? '').replace(/\\s+/g, ' ').trim().slice(0, n);\nconst pinOk = v => /^\\d{4,8}$/.test(String(v || ''));\nconst s = String(b.s || '').replace(/[^0-9a-f]/g, '').slice(0, 80);\nlet params;\nswitch (op) {\n  case 'entrar': if (!pinOk(b.pin)) return fail('El PIN es de 4 a 8 números.'); params = [String(b.pin), b.recordar ? 'si' : 'no']; break;\n  case 'crear_pin': {\n    const k = String(b.k || '').trim().slice(0, 64);\n    if (!k) return fail('Falta la llave de administrador.');\n    if (!pinOk(b.nuevo)) return fail('El PIN nuevo debe ser de 4 a 8 números.');\n    if (/^(\\d)\\1+$/.test(b.nuevo) || '0123456789'.includes(b.nuevo) || '9876543210'.includes(b.nuevo)) return fail('Ese PIN es muy fácil de adivinar; usa otro.');\n    params = [k, String(b.nuevo)]; break; }\n  case 'pin':\n    if (!pinOk(b.actual) || !pinOk(b.nuevo)) return fail('El PIN es de 4 a 8 números.');\n    if (/^(\\d)\\1+$/.test(b.nuevo) || '0123456789'.includes(b.nuevo) || '9876543210'.includes(b.nuevo)) return fail('Ese PIN es muy fácil de adivinar; usa otro.');\n    params = [s, String(b.actual), String(b.nuevo)]; break;\n  case 'ligas': params = [s]; break;\n  case 'salir': params = [s, b.todas ? 'todas' : '']; break;\n  case 'liga_guardar': {\n    const titulo = txt(b.titulo, 80), url = String(b.url || '').trim().slice(0, 1000), grupo = txt(b.grupo, 40) || 'Otras ligas';\n    if (!titulo) return fail('Ponle nombre a la liga.');\n    if (!/^https?:\\/\\/[^\\s]+$/i.test(url)) return fail('La liga debe empezar con https://');\n    const id = b.id ? String(b.id) : '';\n    if (id && !/^\\d{1,9}$/.test(id)) return fail('Liga inválida.');\n    params = [s, titulo, url, grupo, id]; break; }\n  case 'liga_borrar': if (!/^\\d{1,9}$/.test(String(b.id || ''))) return fail('Liga inválida.'); params = [s, String(b.id)]; break;\n}\nif (op !== 'entrar' && op !== 'crear_pin' && !s) return [{ json: { ok: false, respuesta: { ok: false, salir: true, msg: 'Escribe tu PIN.' } } }];\nconst sql = 'SET LOCAL statement_timeout = 15000;\\n' + ESQUEMA + '\\n' + SQL[op];\nreturn [{ json: { ok: true, op, sql, params } }];\n"
+      },
+      "id": "07ec4632-5052-5c6d-bc45-050e7be241da",
+      "name": "Preparar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f51c071f-621e-532e-bd28-3a2ce31573d0",
+              "leftValue": "={{ $json.ok === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "214fabe3-db94-59c3-a04f-ec955a2096b9",
+      "name": "¿Válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "id": "83df2b3f-fbb6-5a12-b85d-caa4a56e4399",
+      "name": "Consultar",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        672,
+        -140
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "nkJBZ7x5YYLa9MRx",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Toma el resultado de Postgres y arma la respuesta para la página. Si algo falló, explica qué.\nconst prep = $('Preparar').first().json;\nlet r = null, err = null;\nfor (const it of $input.all()) { const j = it.json || {}; if (j.r) r = j.r; else if (j.error || j.message) err = j; }\nif (typeof r === 'string') { try { r = JSON.parse(r); } catch (e) { r = null; } }\nlet respuesta = r;\nif (!r) {\n  const e = err && (err.error || err);\n  const m = [err && err.message, e && e.message, typeof e === 'string' ? e : ''].filter(Boolean).join(' · ').slice(0, 300);\n  respuesta = { ok: false, msg: 'No se pudo completar (' + prep.op + '): ' + (m || 'la consulta no regresó datos.') };\n}\nreturn [{ json: { respuesta } }];\n"
+      },
+      "id": "9f8d503f-5288-56db-b312-3ce75e6022eb",
+      "name": "Armar respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ JSON.stringify($json.respuesta) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "dec137f1-18ae-56e8-bb0f-7eabf78f3c7e",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        -60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "c6c7ce9b-5381-5fdd-bf26-256ba0c7d102",
+      "name": "Mi liga para poner PIN",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "82efc32f-bfda-57bc-ba41-2ddee808ac3e",
+              "name": "url_n8n",
+              "value": "https://ai.adhesipro.com.mx",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1b088f38-1180-5858-a3bb-b0ca9ae72406",
+      "name": "Configuración (liga)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Panel general: PIN (uno solo, con sal) + sesiones + ligas propias. Las tablas de llaves son las mismas de los otros flujos.\nCREATE TABLE IF NOT EXISTS tablero_acceso (token TEXT PRIMARY KEY, rol TEXT NOT NULL, activo BOOLEAN NOT NULL DEFAULT true, creado TIMESTAMPTZ NOT NULL DEFAULT now());\nCREATE TABLE IF NOT EXISTS choferes_web (token TEXT PRIMARY KEY, nombre TEXT NOT NULL, activo BOOLEAN NOT NULL DEFAULT true, creado TIMESTAMPTZ NOT NULL DEFAULT now());\nCREATE TABLE IF NOT EXISTS panel_pin (id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1), pin_sal TEXT NOT NULL, pin_hash TEXT NOT NULL,\n  intentos INT NOT NULL DEFAULT 0, bloqueado_hasta TIMESTAMPTZ, cambiado TIMESTAMPTZ NOT NULL DEFAULT now());\nCREATE TABLE IF NOT EXISTS panel_sesion (token TEXT PRIMARY KEY, vence TIMESTAMPTZ NOT NULL, creado TIMESTAMPTZ NOT NULL DEFAULT now());\nCREATE TABLE IF NOT EXISTS panel_liga (id SERIAL PRIMARY KEY, titulo TEXT NOT NULL, url TEXT NOT NULL, grupo TEXT NOT NULL DEFAULT 'Otras ligas',\n  creado TIMESTAMPTZ NOT NULL DEFAULT now());\nDELETE FROM panel_sesion WHERE vence < now();\n\nINSERT INTO tablero_acceso (token, rol) SELECT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''), 'admin'\nWHERE NOT EXISTS (SELECT 1 FROM tablero_acceso WHERE rol = 'admin' AND activo);\nSELECT (SELECT token FROM tablero_acceso WHERE rol = 'admin' AND activo ORDER BY creado LIMIT 1) AS t_admin,\n       EXISTS (SELECT 1 FROM panel_pin) AS hay_pin;",
+        "options": {}
+      },
+      "id": "282e58d6-5508-5c77-ac99-88fc352ce7b0",
+      "name": "Llave de administrador",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        448,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "nkJBZ7x5YYLa9MRx",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Liga del panel y liga para poner (o reponer) el PIN. La segunda trae la llave de administrador: no la compartas.\nconst cfg = $('Configuración (liga)').first().json, a = $('Llave de administrador').first().json;\nconst url = String(cfg.url_n8n || '').replace(/\\/+$/, '') + '/webhook/panel';\nreturn [{ json: { panel: url, poner_pin: url + '?k=' + a.t_admin,\n  nota: a.hay_pin ? 'Ya tienes PIN. Abre poner_pin solo si lo olvidaste: lo reemplaza y cierra las sesiones.' : 'Abre poner_pin una vez para crear tu PIN; luego entra siempre con la liga panel.' } }];"
+      },
+      "id": "71d02734-4daa-534a-b986-6187d957dcd3",
+      "name": "Ligas para abrir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Página": {
+      "main": [
+        [
+          {
+            "node": "Mostrar página",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API": {
+      "main": [
+        [
+          {
+            "node": "Preparar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar": {
+      "main": [
+        [
+          {
+            "node": "¿Válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Válido?": {
+      "main": [
+        [
+          {
+            "node": "Consultar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar": {
+      "main": [
+        [
+          {
+            "node": "Armar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar respuesta": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mi liga para poner PIN": {
+      "main": [
+        [
+          {
+            "node": "Configuración (liga)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración (liga)": {
+      "main": [
+        [
+          {
+            "node": "Llave de administrador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llave de administrador": {
+      "main": [
+        [
+          {
+            "node": "Ligas para abrir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": true,
+    "executionTimeout": 60
+  }
+}
