@@ -1,7 +1,7 @@
 -- Seguimiento: órdenes de compra abiertas, parciales y atrasadas (con lo que falta por renglón) y planes guardados que no son OC.
 SET LOCAL statement_timeout = '30s';
 WITH /*CTX*/, /*OC*/,
-ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 180), /*OCD*/, /*EQV*/, /*LT*/, /*EXI*/,
+ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 400), /*OCD*/, /*EQV*/, /*LT*/, /*EXI*/,
 segx AS (SELECT s.* FROM compras_oc_seguimiento s, cfg WHERE s.base = cfg.base),
 abiertas AS (
   SELECT l.id, max(l.folio) AS folio, max(l.fecha) AS fecha, max(l.prov) AS prov, max(l.lt) AS lt,

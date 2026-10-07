@@ -66,11 +66,11 @@ cmh AS (  -- documentos de compra (orden, recepción, compra) para saber el prov
     AND coalesce(r.fecha, left(r.datos->>'FECHA', 10)::date) < (m.mes + interval '1 month')::date),
 up AS (   -- proveedor de la última compra del artículo
   SELECT DISTINCT ON (z.articulo_id) z.articulo_id, z.prov FROM (
-    SELECT coalesce(q.base_id, (d.datos->>'ARTICULO_ID')::bigint) AS articulo_id, cmh.prov, cmh.fecha
+    SELECT coalesce(q.base_id, (d.datos->>'ARTICULO_ID')::bigint) AS articulo_id, cmh.prov, cmh.fecha, cmh.id
     FROM cmh JOIN ms_raw d ON d.base = (SELECT base FROM cfg) AND d.tabla = 'DOCTOS_CM_DET' AND d.datos->>'DOCTO_CM_ID' = cmh.id
     LEFT JOIN eqv q ON q.articulo_id = (CASE WHEN (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}\Z' THEN (d.datos->>'ARTICULO_ID')::bigint END)
     WHERE (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}\Z') z
-  ORDER BY z.articulo_id, z.fecha DESC),
+  ORDER BY z.articulo_id, z.fecha DESC, length(z.id) DESC, z.id DESC),
 hcov AS (  -- historial diario de existencias dentro del periodo (para distinguir "vende poco" de "no había")
   SELECT count(DISTINCT h.fecha) AS n FROM ms_existencias_hist h, cfg, per WHERE h.base = cfg.base AND h.fecha >= per.ini AND h.fecha < per.fin),
 hag AS (

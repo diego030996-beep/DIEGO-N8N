@@ -128,9 +128,14 @@ Direcciones del flujo: página `/webhook/planeador-compras` y API `/webhook/plan
 - **Máximos/mínimos**: los del mes de la OC, calculados con los 6 meses anteriores a ese mes.
 
 **Por recibir hoy** = lo que falta de cada OC (pedido − recibido por `DOCTOS_CM_LIGAS`) mientras no pase de (días de entrega + 5) días,
-o si confirmaste que sigue en camino. Si la copia de Microsip trae `UNIDADES_A_REC` / `UNIDADES_REC_DEV` en el renglón de la OC, manda lo que
-dice Microsip. Las recepciones capturadas **sin ligar** a la OC (mismo proveedor y artículo, después de la fecha de la OC) también cuentan como
-recibido, a la OC más vieja primero; en Seguimiento salen como «sin ligar».
+o si confirmaste que sigue en camino. Se revisan las OCs del último año (Microsip cuenta todas las pendientes). Si la copia de Microsip trae
+`UNIDADES_REC_DEV` en el renglón de la OC, manda lo que dice Microsip. Solo para OCs que **nunca** se ligaron (y sin ese dato), una recepción
+capturada sin ligar del mismo proveedor y artículo cuenta como recibido; en Seguimiento sale como «sin ligar».
+En «Ver cálculo» → **Órdenes de compra de este producto** se ve cada OC con el estatus de Microsip, lo pedido, lo recibido (ligado / Microsip /
+sin ligar) y lo que falta, para comparar con «Por recibir» de Microsip.
+
+En el planeador, los contadores de cada proveedor (Críticos, Por pedir, Próximos, Bien, Revisar) son filtros, y en «Ver cálculo» se cambia el
+proveedor del producto (cuenta de inmediato).
 
 ## Tablas que crea
 

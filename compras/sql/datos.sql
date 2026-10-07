@@ -6,7 +6,7 @@ SET LOCAL lock_timeout = '5s';
 WITH /*CTX*/, /*OC*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
 mm AS (SELECT x.* FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes),
-ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*EQV*/, /*LT*/, /*EXI*/, /*EXCLSOLO*/,
+ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 400), /*OCD*/, /*EQV*/, /*LT*/, /*EXI*/, /*EXCLSOLO*/,
 solo_excl AS (  -- OCs cuyos renglones son todos de artículos excluidos (ej. tinacos): no cuentan
   SELECT ocd.id FROM ocd GROUP BY ocd.id
   HAVING bool_and(EXISTS (SELECT 1 FROM excl WHERE excl.articulo_id = ocd.articulo_id))),

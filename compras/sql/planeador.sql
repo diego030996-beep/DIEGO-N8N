@@ -4,10 +4,15 @@ SET LOCAL statement_timeout = '30s';
 WITH /*CTX*/, /*OC*/,
 ms AS (SELECT max(mes) AS mes FROM compras_maxmin, cfg WHERE compras_maxmin.base = cfg.base AND mes <= cfg.hoy),
 mm0 AS (SELECT x.articulo_id, x.clave, x.articulo, x.unidad, x.clase, x.venta_diaria, x.minimo, x.maximo, x.alerta, x.empaque,
-               coalesce(x.punto_reorden, x.minimo) AS punto_reorden, x.rotacion, x.tickets, x.proveedor_id, x.proveedor,
+               coalesce(x.punto_reorden, x.minimo) AS punto_reorden, x.rotacion, x.tickets,
+               coalesce(nullif(ov.proveedor_id, ''), x.proveedor_id) AS proveedor_id,
+               CASE WHEN nullif(ov.proveedor_id, '') IS NULL OR ov.proveedor_id = x.proveedor_id THEN x.proveedor
+                    ELSE coalesce((SELECT prv.nombre FROM prv WHERE prv.proveedor_id = ov.proveedor_id), ov.proveedor_id) END AS proveedor,
                x.ultima_venta, x.semanas_venta, x.semanas, x.unidades, x.dias_periodo, x.presentaciones, x.dias_revision
-        FROM compras_maxmin x, cfg, ms WHERE x.base = cfg.base AND x.mes = ms.mes
-         AND (cfg.p->>'todos' = 'si' OR coalesce(x.proveedor_id, '') = coalesce(cfg.p->>'proveedor_id', ''))),
+        FROM compras_maxmin x CROSS JOIN cfg JOIN ms ON x.mes = ms.mes
+        LEFT JOIN compras_articulos ov ON ov.base = cfg.base AND ov.articulo_id = x.articulo_id
+        WHERE x.base = cfg.base
+         AND (cfg.p->>'todos' = 'si' OR coalesce(nullif(ov.proveedor_id, ''), x.proveedor_id, '') = coalesce(cfg.p->>'proveedor_id', ''))),
 /*EXCL*/,
 nv AS (   -- vendidos desde que se calculó el mes y que no estaban en la lista (productos nuevos): entran como C provisional
   SELECT d.articulo_id, sum(CASE WHEN upper(v.tipo) = 'D' THEN -1 ELSE 1 END * abs(d.unidades)) AS u
@@ -44,7 +49,7 @@ mm AS (SELECT * FROM mm0
               'nuevo: se vendió este mes y aún no tiene clase (entra como C hasta el próximo cálculo)', nv3.empaque,
               nv3.mn, 'nuevo', NULL::int, nv3.prov, nv3.prov_nom, NULL::date, NULL::int, NULL::int, NULL::numeric, NULL::int, NULL::text, NULL::numeric
        FROM nv3, cfg),
-ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 120), /*OCD*/, /*LT*/, /*EXI*/,
+ids AS (SELECT id FROM oc, cfg WHERE oc.fecha >= cfg.hoy - 400), /*OCD*/, /*LT*/, /*EXI*/,
 pl AS (SELECT pl.* FROM compras_planes pl, cfg WHERE pl.base = cfg.base AND pl.fecha = cfg.hoy AND pl.origen = 'planeador'
          AND (cfg.p->>'todos' = 'si' OR pl.proveedor_id = cfg.p->>'proveedor_id')),
 dec AS (SELECT d.*, pl.proveedor_id AS dprov FROM compras_decisiones d JOIN pl ON pl.id = d.plan_id),

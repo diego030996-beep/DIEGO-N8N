@@ -166,5 +166,15 @@ sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 
 sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5093-0', "
            f"{q(json.dumps({'DOCTO_CM_ID': 5093, 'ARTICULO_ID': 9, 'UNIDADES': 4, 'UNIDADES_REC_DEV': 4, 'UNIDADES_A_REC': 0, 'PRECIO_UNITARIO': 10}))});")
 
+# Recepción SIN ligar de CLAVO25 después de la OC parcial O90 (ya ligada): Microsip la sigue dando como pendiente, no debe descontarse.
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '7094', '2026-10-03', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 7094, 'TIPO_DOCTO': 'R', 'FOLIO': 'R0000094', 'FECHA': '2026-10-03', 'PROVEEDOR_ID': 15, 'ESTATUS': 'N'}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '7094-0', {q(json.dumps({'DOCTO_CM_ID': 7094, 'ARTICULO_ID': 11, 'UNIDADES': 30}))});")
+# OC O95 con UNIDADES_REC_DEV de Microsip (5 de 20 recibidos) y sin ligas: por recibir = 15.
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, fecha, datos) VALUES ({q(B)}, 'DOCTOS_CM', '5095', '2026-10-04', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 5095, 'TIPO_DOCTO': 'O', 'FOLIO': 'O0000095', 'FECHA': '2026-10-04', 'PROVEEDOR_ID': 13, 'ESTATUS': 'P', 'IMPORTE_NETO': 200}))});")
+sql.append(f"INSERT INTO ms_raw (base, tabla, pk, datos) VALUES ({q(B)}, 'DOCTOS_CM_DET', '5095-0', "
+           f"{q(json.dumps({'DOCTO_CM_ID': 5095, 'ARTICULO_ID': 14, 'UNIDADES': 20, 'UNIDADES_REC_DEV': 5, 'PRECIO_UNITARIO': 10}))});")
+
 subprocess.run(PSQL, input='\n'.join(sql), text=True, check=True)
 print('ok', len(sql), 'sentencias')

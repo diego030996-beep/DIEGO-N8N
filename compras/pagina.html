@@ -127,6 +127,9 @@ textarea{width:100%;min-height:200px;resize:vertical}
 .cn span{font-size:.68rem}
 .cn.r{background:var(--c-redbg);color:var(--c-red)} .cn.o{background:var(--c-orbg);color:var(--c-or)} .cn.y{background:var(--c-yebg);color:var(--c-ye)}
 .cn.g{background:var(--c-grbg);color:var(--c-gr)} .cn.p{background:var(--c-pubg);color:var(--c-pu)}
+button.cn{border:2px solid transparent;cursor:pointer;font:inherit} button.cn:hover{border-color:currentColor} button.cn[aria-pressed=true]{border-color:currentColor;box-shadow:0 0 0 2px var(--panel) inset}
+.filtro-prov{padding:8px 18px;font-size:.85rem;color:var(--soft)}
+.ocs-art{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:6px} .ocs-art th,.ocs-art td{padding:4px 6px;border-bottom:1px solid var(--line2);text-align:left} .ocs-art .n{text-align:right}
 .tog{border:0;background:transparent;cursor:pointer;padding:6px;border-radius:8px;color:var(--soft)}
 .tog svg{width:20px;height:20px;transition:transform .2s}
 .prov.cerrado .tog svg{transform:rotate(180deg)}
@@ -525,7 +528,7 @@ const ROT = {alta: "rota mucho", media: "rota medio", baja: "rota poco", nuevo: 
 const EST = {critico: "Crítico", pedir: "Pedir", proximo: "Próximo", bien: "Bien", bajo_pedido: "Bajo pedido"};
 const EST_ORD = {critico: 0, pedir: 1, proximo: 2, bien: 3, bajo_pedido: 4};
 const POL = {minimo: "Mantener un mínimo", bajo_pedido: "Solo bajo pedido", pausar: "Pausar resurtido"};
-let PROVFULL = {}, fEst = "necesita", abiertos = new Set(), cerrados = new Set(), SEG = null, PRES = null;
+let PROVFULL = {}, estProv = {}, OCART = {}, fEst = "necesita", abiertos = new Set(), cerrados = new Set(), SEG = null, PRES = null;
 let presu = null; try { presu = num(localStorage.getItem("compras_presu")); } catch(e) {}
 if(presu) $("#presu").value = presu;
 const ivaF = () => 1 + (num(D && D.cfg.iva) ?? 16) / 100;
@@ -538,7 +541,7 @@ async function cargarPlan(){
   if(!D.mes){ $("#kp").innerHTML = ""; $("#provs").innerHTML = `<div class="card muted">Todavía no hay máximos y mínimos calculados. Ve a <b>A/B/C y máximos-mínimos</b> y pulsa <b>Recalcular este mes</b>.</div>`; return; }
   $("#provs").innerHTML = `<div class="card muted">Cargando…</div>`;
   try { P = await api("planeador", {todos: "si"}); } catch(e) { toast(e.message); $("#provs").innerHTML = ""; return; }
-  PROVFULL = {}; prep(P.filas);
+  PROVFULL = {}; estProv = {}; OCART = {}; prep(P.filas);
   const sel = $("#fProv"), v = sel.value;
   sel.innerHTML = `<option value="*">Todos los proveedores</option>` + (P.resumen.proveedores || []).map(p => `<option value="${esc(p.proveedor_id)}">${esc(p.proveedor || "Sin proveedor")}</option>`).join("");
   if([...sel.options].some(o => o.value === v)) sel.value = v;
@@ -555,6 +558,8 @@ function pasa(f){
   if(q && !(f.articulo + " " + f.clave + " " + (f.proveedor || "")).toLowerCase().includes(q)) return false;
   if(pv !== "*" && (f.proveedor_id || "") !== pv) return false;
   if(clase && f.clase !== clase) return false;
+  const ep = estProv[f.proveedor_id || ""];
+  if(ep) return ep === "revisar" ? revisa(f) : f.estado === ep;
   if(fEst === "todos") return true;
   if(fEst === "necesita") return ["critico", "pedir"].includes(f.estado) || (f._c || 0) > 0 || (f.comprado !== null && f.comprado !== undefined);
   if(fEst === "revisar") return revisa(f);
@@ -635,11 +640,12 @@ function tarjeta(k, F, r){
       <div class="av" style="background:${k ? colorDe(nombre) : "#94A3B8"}">${k ? esc(iniciales(nombre)) : "?"}</div>
       <div class="pn"><b>${esc(nombre)}</b><span>${porComprar} producto${porComprar === 1 ? "" : "s"} por comprar${k ? "" : " · asigna proveedor en Configuración → Ajustes por artículo"}</span></div>
       <div class="oe"><span>Orden estimada</span><b>${money(total)}</b><small>${money(total * ivaF())} con IVA</small></div>
-      <div class="cnt"><div class="cn r"><b>${r.critico || 0}</b><span>Críticos</span></div><div class="cn o"><b>${r.pedir || 0}</b><span>Por pedir</span></div>
-        <div class="cn y"><b>${r.proximo || 0}</b><span>Próximos</span></div><div class="cn g"><b>${r.bien || 0}</b><span>Bien</span></div>${r.revisar ? `<div class="cn p"><b>${r.revisar}</b><span>Revisar</span></div>` : ""}</div>
+      <div class="cnt">${[["critico", "r", "Críticos"], ["pedir", "o", "Por pedir"], ["proximo", "y", "Próximos"], ["bien", "g", "Bien"], ["revisar", "p", "Revisar"]]
+        .filter(([e]) => e !== "revisar" || r.revisar).map(([e, c, t]) => `<button class="cn ${c}" data-ce="${e}" aria-pressed="${estProv[k] === e}" title="Ver solo ${t.toLowerCase()} de este proveedor"><b>${r[e] || 0}</b><span>${t}</span></button>`).join("")}</div>
       <button class="tog" aria-label="Abrir o cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 15 6-6 6 6"/></svg></button>
     </div>
     <div class="pb">
+      ${estProv[k] ? `<div class="filtro-prov">Mostrando solo <b>${esc(EST[estProv[k]] || "Revisar datos")}</b> de este proveedor <button class="mas-link" data-ce="">Quitar filtro ✕</button></div>` : ""}
       ${F.length ? `<div class="scroll"><table class="tbl cards"><thead><tr><th>Artículo</th><th class="n">Existencia</th><th class="n">Por recibir</th><th class="n">Sugerido</th><th class="n">Compro</th><th class="n">Costo</th><th>Estado</th><th></th></tr></thead><tbody>
         ${F.map(renglon).join("")}</tbody></table></div>` : `<p class="muted" style="padding:0 18px 12px">Nada con estos filtros en este proveedor.</p>`}
       <div class="pf">
@@ -690,6 +696,12 @@ function detalle(f){
       ${f.presentaciones ? `<li>Suma ventas y existencias de: ${esc(f.presentaciones)}</li>` : ""}
     </ul></div>
     ${revisa(f) ? `<div class="box"><h4>Revisar datos</h4><ul>${f.revisar.map(x => `<li>${esc(x)}</li>`).join("")}</ul><p class="muted" style="margin:6px 0 0">La cantidad sugerida es provisional hasta que se corrija. El inventario no se ajusta solo.</p></div>` : ""}
+    <div class="box"><h4>Proveedor</h4>${soloLectura() ? esc(f.proveedor || "Sin proveedor") : `
+      <select class="cprov" aria-label="Proveedor de este producto">${f.proveedor_id ? "" : `<option value="" selected>— sin proveedor —</option>`}
+        ${(D.proveedores || []).filter(p => p.activo !== false || p.proveedor_id === f.proveedor_id).map(p => `<option value="${esc(p.proveedor_id)}" ${p.proveedor_id === f.proveedor_id ? "selected" : ""}>${esc(p.nombre)}</option>`).join("")}
+        <option value="">Regresar al de la última compra</option></select>
+      <p class="muted" style="margin:6px 0 0">Cambia a qué proveedor se le pide. Cuenta de inmediato.</p>`}</div>
+    <div class="box" style="grid-column:1/-1"><h4>Órdenes de compra de este producto (último año)</h4>${ocArt(f)}</div>
     <div class="box"><h4>Política de resurtido</h4>
       <div class="pol">${soloLectura() ? esc(POL[pol] || "Sin definir") : `
         <button class="btn btn-ghost btn-sm" data-pol="minimo" aria-pressed="${pol === "minimo"}">Mantener mínimo</button>
@@ -701,6 +713,17 @@ function detalle(f){
     ${num(f._c) !== num(f.sugerido) && !soloLectura() ? `<div class="box"><h4>Razón de comprar distinto</h4>${selRazon(f._r, 'class="r2"')}<input type="text" class="nota" maxlength="300" placeholder="nota (obligatoria si es Otra)" value="${esc(f._n)}"></div>` : ""}
   </div></td></tr>`;
 }
+const OCEST2 = {abierta: "en tiempo", parcial: "recibida en parte", atrasada: "atrasada", atrasada_confirmada: "atrasada, sigue en camino", completa: "recibida", cerrada: "cerrada"};
+function ocArt(f){
+  const r = OCART[f.articulo_id];
+  if(!r) return `<button class="btn btn-ghost btn-sm" data-ocart="1">Ver las órdenes de este producto</button><p class="muted" style="margin:6px 0 0">Para comparar con «Por recibir» de Microsip.</p>`;
+  if(!r.ocs.length) return `<p class="muted">No hay órdenes de compra de este producto en el último año.</p>`;
+  return `<div class="scroll"><table class="ocs-art"><thead><tr><th>OC</th><th>Estatus MS</th><th class="n">Pedido</th><th class="n">Recibido</th><th class="n">Falta</th><th>Cuenta como</th></tr></thead><tbody>
+    ${r.ocs.map(o => `<tr><td><b>${esc(o.folio)}</b><div class="meta">${fecha(o.fecha)}${o.clave && o.clave !== f.clave ? " · " + esc(o.clave) : ""}</div></td><td>${esc(o.estatus || "—")}</td>
+      <td class="n">${n0(o.pedido)}</td><td class="n">${n0(o.recibido)}<div class="meta">${[o.ligado ? "ligado " + n0(o.ligado) : "", o.microsip !== null && o.microsip !== undefined ? "Microsip " + n0(o.microsip) : "", o.sin_ligar ? "sin ligar " + n0(o.sin_ligar) : ""].filter(Boolean).join(" · ")}</div></td>
+      <td class="n"><b>${n0(o.falta)}</b></td><td>${esc(OCEST2[o.estado] || o.estado)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="muted" style="margin:6px 0 0">Si no cuadra con Microsip, mándame esta tabla. Campos que trae la copia: ${esc(r.campos || "—")}</p>`;
+}
 function filaDe(el){ const k = el.closest("[data-k],[data-d]"); const key = k.dataset.k || k.dataset.d; return todas().find(f => llave(f) === key); }
 function conectar(){
   $$("#provs .tog").forEach(b => b.addEventListener("click", () => { const c = b.closest(".prov"), k = c.dataset.p; c.classList.toggle("cerrado"); c.classList.contains("cerrado") ? cerrados.add(k) : cerrados.delete(k); }));
@@ -708,6 +731,23 @@ function conectar(){
   $$("#provs select.r, #provs select.r2").forEach(s => s.addEventListener("change", e => { filaDe(s)._r = e.target.value; }));
   $$("#provs input.nota").forEach(s => s.addEventListener("input", e => { filaDe(s)._n = e.target.value; }));
   $$("#provs .vc").forEach(b => b.addEventListener("click", () => { const k = b.closest("tr").dataset.k; abiertos.has(k) ? abiertos.delete(k) : abiertos.add(k); pintarPlan(); }));
+  $$("#provs [data-ce]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const k = b.closest(".prov").dataset.p, e = b.dataset.ce;
+    if(!e || estProv[k] === e){ delete estProv[k]; pintarPlan(); return; }
+    if(!PROVFULL[k]){ const r = await api("planeador", {proveedor_id: k}); prep(r.filas); PROVFULL[k] = r.filas; }
+    estProv[k] = e; cerrados.delete(k); pintarPlan();
+  })));
+  $$("#provs select.cprov").forEach(sl => sl.addEventListener("change", async () => {
+    const f = filaDe(sl), nuevo = sl.value, nom = sl.options[sl.selectedIndex].text;
+    sl.disabled = true;
+    try {
+      await api("proveedor_art", {articulo_id: f.articulo_id, proveedor_id: nuevo});
+      toast("Proveedor cambiado ✓ " + f.articulo + " → " + nom); abiertos.delete(llave(f)); await cargarPlan();
+    } catch(e) { toast(e.message); sl.disabled = false; }
+  }));
+  $$("#provs [data-ocart]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    const f = filaDe(b); OCART[f.articulo_id] = await api("oc_articulo", {articulo_id: f.articulo_id}); pintarPlan();
+  })));
   $$("#provs [data-full]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
     const k = b.dataset.full, r = await api("planeador", {proveedor_id: k}); prep(r.filas); PROVFULL[k] = r.filas;
     if(fEst === "necesita"){ fEst = "todos"; $("#fEst").value = "todos"; }

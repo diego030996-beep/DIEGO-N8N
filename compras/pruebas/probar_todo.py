@@ -14,7 +14,7 @@ def ok(c, msg):
         sys.exit(1)
 
 d = correr('datos')
-ok(d['ok'] and d['mes'] is None and d['oc_total'] == 16, 'datos sin cálculo previo')
+ok(d['ok'] and d['mes'] is None and d['oc_total'] == 17, 'datos sin cálculo previo')
 ok(sorted(x['linea'] for x in d['excluidos']) == ['Servicios (no son mercancía)', 'TINACOS Y CISTERNAS', 'Varios (artículo genérico)'],
    'avisa que tinacos, servicios y VARIOS no se toman en cuenta')
 c = correr('calcular', {'mes': '2026-10-01'})
@@ -102,7 +102,14 @@ correr('calcular', {'mes': '2026-10-01'})
 P = lambda pid: {x['clave']: x for x in correr('planeador', {'proveedor_id': pid}, hoy=H)['filas']}
 ok(not any(x['clave'] in ('FLETE', 'VARIOS') for x in correr('planeador', {'todos': 'si'}, hoy=H)['filas']), 'servicios y VARIOS no salen en el planeador')
 c15 = P('15')['CLAVO25']
-ok(c15['pendiente'] == 30, 'OC parcial: se cuenta lo que falta (50 pedidas − 20 recibidas)')
+ok(c15['pendiente'] == 30, 'OC parcial: se cuenta lo que falta (50 pedidas − 20 recibidas), aunque haya otra recepción sin ligar')
+ok(P('13')['DISCO']['pendiente'] == 15, 'manda lo recibido que dice Microsip en la OC (UNIDADES_REC_DEV)')
+oa = correr('oc_articulo', {'articulo_id': 11}, hoy=H)
+ok(any(o['folio'] == 'O0000090' and o['ligado'] == 20 and o['falta'] == 30 for o in oa['ocs']) and 'UNIDADES' in oa['campos'] and {o['clave'] for o in oa['ocs']} == {'CLAVO25'}, 'órdenes del artículo con lo de Microsip')
+correr('proveedor_art', {'articulo_id': 11, 'proveedor_id': '13'})
+ok('CLAVO25' in P('13') and 'CLAVO25' not in P('15'), 'cambiar de proveedor desde el planeador cuenta de inmediato')
+correr('proveedor_art', {'articulo_id': 11, 'proveedor_id': ''})
+ok('CLAVO25' in P('15'), 'regresar al proveedor del cálculo')
 l16 = P('16')['LLAVE38']
 ok(l16['atr_u'] == 5 and l16['pendiente'] == 0 and any('atrasada' in r for r in l16['revisar']), 'OC atrasada: no cuenta como por recibir y pide revisarla')
 sg = correr('seguimiento', {}, hoy=H)
