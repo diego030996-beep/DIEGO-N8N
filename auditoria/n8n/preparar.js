@@ -9,12 +9,16 @@ const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op] || op === 'avisos') return fail('Operación desconocida.');
 const PERMISO = {
-  empleado: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar', 'corte'],
-  auditora: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar', 'corte', 'tablero', 'revisar', 'vincular', 'ignorar', 'firmar', 'retiros_mes', 'pedidos'],
+  // el encargado solo carga lo de auditoría: no ve el corte de caja
+  empleado: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar'],
+  // la auditora firma el corte solo si el administrador la autoriza (se revisa en la consulta)
+  auditora: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar', 'corte', 'tablero', 'revisar', 'vincular', 'ignorar', 'firmar', 'retiros_mes', 'pedidos', 'retiros_dueno'],
+  // la directora solo consulta
+  directora: ['datos', 'tablero', 'corte', 'detalle', 'buscar', 'pedidos', 'retiros_mes', 'retiros_dueno'],
   admin: Object.keys(SQL),
 };
 if (!(PERMISO[rol] || []).includes(op)) return fail('Tu liga no tiene permiso para esto.');
-const por = rol === 'empleado' ? nombre : rol === 'auditora' ? 'Auditora' : 'Administrador';
+const por = rol === 'empleado' ? nombre : { auditora: 'Auditora', directora: 'Directora' }[rol] || 'Administrador';
 const txt = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 const fechaOk = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) && String(v) >= '2020-01-01';
 const idOk = v => /^\d{1,15}$/.test(String(v ?? ''));
@@ -91,13 +95,14 @@ switch (op) {
     else { p = { nombre: txt(b.nombre, 40).toUpperCase() }; if (p.nombre.length < 2) return fail('Escribe el nombre.'); }
     break;
   case 'config': {
-    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, retiros_gasto: 300, formas_comprobante: 200, formas_sin_comprobante: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10 }, general = {};
+    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, retiros_gasto: 300, formas_comprobante: 200, formas_sin_comprobante: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10, auditora_firma: 2 }, general = {};
     for (const [k, v] of Object.entries(g)) { if (!(k in OK)) return fail('Ajuste desconocido: ' + k); general[k] = txt(v, OK[k]); }
     if (general.hora_cierre && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(general.hora_cierre)) return fail('Hora de cierre inválida (ej. 20:00).');
     if (general.tolerancia && !(Number(general.tolerancia) >= 0 && Number(general.tolerancia) <= 1000)) return fail('Tolerancia inválida.');
     if (general.dias_compra && !(Number.isInteger(Number(general.dias_compra)) && Number(general.dias_compra) >= 0 && Number(general.dias_compra) <= 30)) return fail('Días inválidos.');
     if (general.margen_compra && !(Number(general.margen_compra) >= 0 && Number(general.margen_compra) <= 50)) return fail('Margen inválido (0 a 50%).');
     if (general.desde && !fechaOk(general.desde)) return fail('Fecha de inicio inválida.');
+    if (general.auditora_firma && !['si', 'no'].includes(general.auditora_firma)) return fail('Opción inválida.');
     if (general.compras_sin_comprobante && !['contado', 'mostrador', 'todas', 'no'].includes(general.compras_sin_comprobante)) return fail('Opción inválida.');
     if (general.tipos_compra && !general.tipos_compra.split(',').every(t => TIPOS.includes(t))) return fail('Tipos inválidos.');
     for (const k of ['retiros_excluir', 'retiros_gasto', 'proveedores_mostrador', 'formas_comprobante', 'formas_sin_comprobante']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
@@ -107,10 +112,25 @@ switch (op) {
     if (!fechaOk(b.fecha)) return fail('Fecha inválida.');
     const num = v => v !== '' && v != null && isFinite(Number(v)) && Math.abs(Number(v)) <= 1e8;
     if (!num(b.entregado)) return fail('Escribe el efectivo que te entregaron.');
-    if (!num(b.esperado)) return fail('Falta el efectivo esperado.');
-    p = { fecha: b.fecha, entregado: String(Number(b.entregado)), esperado: String(Number(b.esperado)), nota: txt(b.nota, 300),
-          pendientes: String(Number.isInteger(Number(b.pendientes)) ? Number(b.pendientes) : 0), pendiente_monto: String(Number(b.pendiente_monto) || 0) };
+    // lo esperado y lo pendiente se calculan en la base, no se toman de la página
+    p = { fecha: b.fecha, entregado: String(Number(b.entregado)), nota: txt(b.nota, 300) };
     break; }
+  case 'retiro_dueno':
+    if (b.accion === 'anular') {
+      if (!idOk(b.id)) return fail('Retiro inválido.');
+      if (txt(b.nota, 200).length < 3) return fail('Escribe por qué se anula.');
+      p = { accion: 'anular', id: String(b.id), nota: txt(b.nota, 200) };
+    } else {
+      const rid = b.retiro_id ? String(b.retiro_id) : '';
+      if (rid && !refOk(rid)) return fail('Retiro inválido.');
+      if (!rid && !montoOk(b.importe)) return fail('Escribe el importe.');
+      if (b.fecha && !fechaOk(b.fecha)) return fail('Fecha inválida.');
+      p = { accion: 'nuevo', retiro_id: rid, importe: rid ? '' : String(Math.round(Number(b.importe) * 100) / 100), fecha: b.fecha || '', nota: txt(b.nota, 200) };
+    }
+    break;
+  case 'retiros_dueno':
+    if ((b.desde && !fechaOk(b.desde)) || (b.hasta && !fechaOk(b.hasta))) return fail('Fechas inválidas.');
+    p = { desde: b.desde || '', hasta: b.hasta || '' }; break;
   case 'retiros_mes': if (b.mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(b.mes))) return fail('Mes inválido.'); p = { mes: b.mes || '' }; break;
   case 'pedidos': p = { dias: Number.isInteger(Number(b.dias)) && Number(b.dias) > 0 && Number(b.dias) <= 400 ? String(Number(b.dias)) : '' }; break;
   case 'borrar': if (!idOk(b.id)) return fail('Movimiento inválido.'); p = { id: String(b.id), nota: txt(b.nota, 200) }; break;

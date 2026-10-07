@@ -6,7 +6,7 @@ SELECT json_build_object('ok', true, 'lista', (SELECT coalesce(json_agg(json_bui
     'empleado', empleado, 'concepto', concepto, 'importe', importe, 'comprobado', comprobado, 'estado', estado, 'motivo', motivo, 'pedido', pedido, 'compra', cm_folio)
     ORDER BY fecha DESC, hora DESC), '[]') FROM (
   SELECT mov.* FROM mov, q, cfg
-  WHERE (cfg.p->>'_rol' IN ('admin', 'auditora') OR (mov.clase = 'registro' AND mov.empleado = cfg.por))
+  WHERE (cfg.p->>'_rol' IN ('admin', 'auditora', 'directora') OR (mov.clase = 'registro' AND mov.empleado = cfg.por))
     AND (lower(concat_ws(' ', folio, empleado, concepto, pedido, cm_folio, cm_proveedor)) LIKE q.t
          OR (length(q.num) >= 3 AND (ltrim(regexp_replace(coalesce(folio, ''), '[^0-9]', '', 'g'), '0') = ltrim(q.num, '0')
                                     OR ltrim(regexp_replace(coalesce(pedido, ''), '[^0-9]', '', 'g'), '0') = ltrim(q.num, '0')

@@ -15,7 +15,11 @@ El empleado reporta y sube la foto, el sistema cruza todo y la auditora solo rev
 |---|---|
 | **Empleado** (una liga por persona, `mov_empleado`) | Reportar movimientos con fotos, completar los suyos (más comprobantes, pedido), ver y buscar solo lo suyo |
 | **Auditora** (`tablero_acceso` rol `auditora`) | Todo lo anterior + tablero, expediente de cualquier movimiento, aprobar, marcar inconsistencia, reabrir, vincular la compra de Microsip a mano, marcar "no requiere comprobación" |
-| **Administrador** (rol `admin`) | Todo + alta y baja de empleados, ajustes, borrar un movimiento mal capturado (queda en bitácora) |
+| **Directora** (rol `directora`) | Solo consulta: tablero, corte de caja, retiros del dueño, pedidos, retiros del mes e historial. Sin acciones |
+| **Administrador** (rol `admin`) | Todo + firmar el corte, registrar sus retiros, alta y baja de empleados, ajustes, borrar un movimiento mal capturado (queda en bitácora) |
+
+**El encargado (empleado) no ve el corte de caja**: él cuadra su corte en Microsip; aquí solo carga lo de auditoría.
+**La auditora ve el corte, pero no lo firma** salvo que el administrador la autorice en Ajustes ("¿La auditora puede firmar el corte?").
 
 Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
 
@@ -24,12 +28,20 @@ Reporte del día listo para imprimir:
 - **Totales**: cobrado en caja, cobrado en efectivo, retiros (y cuántos no piden comprobante) y efectivo neto (efectivo − retiros; sin fondo de caja).
 - **Cobros por forma de pago**: tickets, importe y cuántos tienen comprobante o faltan, con el monto que falta.
 - **Retiros**: estado de cada uno. Préstamo y nómina salen como "no pide". Se ve la recepción ligada a cada compra.
-- **Firma**, en lugar de la libreta. La auditora o el administrador escriben el efectivo entregado y queda guardado:
-  - lo esperado, lo entregado y la diferencia;
-  - lo que seguía pendiente al firmar;
-  - quién firmó y cuándo (`mov_corte` y bitácora).
+- **Firma**, en lugar de la libreta. El administrador (o la auditora, si la autoriza) escribe el efectivo entregado.
+  - Lo esperado y lo pendiente **los calcula la base**, no la página.
+  - Queda guardado: esperado, entregado, diferencia, pendientes, quién firmó, cuándo y una **huella** (`mov_corte` y bitácora).
+- **Comprobante**: botón "Descargar comprobante" (listo para guardar como PDF, con renglones para firmar).
+  Además se manda una **copia a Telegram** como respaldo, por si algo le pasa al flujo.
 
-  Se puede volver a firmar. El encargado ve el corte, pero no lo firma.
+## Retiros del dueño (pestaña "Retiros del dueño")
+- El administrador registra lo que saca de caja, en lugar de la libreta. Puede ser:
+  - un retiro de Microsip: el importe, la hora y el folio salen de Microsip;
+  - uno que no se capturó en Microsip: se escribe el importe y se descuenta del efectivo esperado del corte.
+- Cada retiro lleva folio `RD-n`, huella y comprobante descargable, y **llega un comprobante aparte a Telegram**.
+- Se puede anular con motivo: queda visible, ya no suma y también se avisa.
+- El **reporte** (por fechas y por mes) lo ven el administrador, la auditora y la directora.
+- Un retiro de Microsip marcado como del dueño ya no pide comprobante y en el corte sale como "💵 dueño".
 
 ## Recepción de compra y pedidos
 - Una compra de mercancía debe tener su **recepción de compra** en Microsip y el importe tiene que cuadrar.

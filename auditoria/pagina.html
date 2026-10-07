@@ -113,6 +113,7 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
 .num{text-align:right;white-space:nowrap}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}.tw .tabla{min-width:520px}
 .c-exento{background:var(--pendbg);color:var(--soft)}
+.c-dueno{background:#EDE9FE;color:#6D28D9}
 @media print{ .top, .noimp, #error{display:none!important} body{background:#fff} .card{box-shadow:none;break-inside:avoid} main{padding:0} }
 @media (max-width:720px){
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .g2,.g3{grid-template-columns:1fr} .cadena{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -188,6 +189,25 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
     <div id="corte"></div>
   </section>
 
+  <!-- RETIROS DEL DUEÑO -->
+  <section id="v-dueno" hidden>
+    <form class="card noimp" id="fDueno" hidden autocomplete="off">
+      <h2>Registrar retiro del dueño</h2>
+      <p class="sub">Lo que sacas de caja queda registrado aquí (en lugar de la libreta), con huella, y llega un comprobante a Telegram.</p>
+      <div class="g2">
+        <div><label class="l" for="dRet">Retiro en Microsip</label><select id="dRet"></select></div>
+        <div id="dImpBox"><label class="l" for="dImp">Importe</label><input id="dImp" type="number" step="0.01" min="0" inputmode="decimal"></div>
+        <div><label class="l" for="dFecha">Fecha (si no está en Microsip)</label><input id="dFecha" type="date"></div>
+        <div><label class="l" for="dNota">Nota</label><input id="dNota" type="text" maxlength="200" placeholder="para el banco, pago a proveedor…"></div>
+      </div>
+      <div id="msgD"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn pri" type="submit">💵 Registrar retiro</button></div>
+    </form>
+    <div class="card"><h2>Reporte de retiros del dueño</h2><p class="sub">Lo ven el administrador, la auditora y la directora.</p>
+      <div class="noimp" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><input type="date" id="dDesde" style="max-width:170px"><input type="date" id="dHasta" style="max-width:170px"><button class="btn" type="button" id="dVer">Ver</button></div>
+      <div id="lDueno"></div></div>
+  </section>
+
   <!-- PEDIDOS -->
   <section id="v-ped" hidden>
     <div class="card"><h2>Pedidos con compras</h2><p class="sub">Lo pedido contra lo que ha llegado en las recepciones (cuando se compra por partes). Últimos 60 días.</p><div id="lPed"></div></div>
@@ -233,6 +253,7 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
         <div><label class="l" for="c_retiros_excluir">Retiros que NO piden comprobante (texto en la descripción)</label><input id="c_retiros_excluir" type="text" placeholder="PRÉSTAMO|NÓMINA"></div>
         <div><label class="l" for="c_formas_sin_comprobante">Formas de cobro que NO piden comprobante</label><input id="c_formas_sin_comprobante" type="text" placeholder="EFECTIVO"></div>
         <div><label class="l" for="c_formas_comprobante">Solo estas formas piden comprobante (vacío = todas las demás)</label><input id="c_formas_comprobante" type="text" placeholder="(todas)"></div>
+        <div><label class="l" for="c_auditora_firma">¿La auditora puede firmar el corte?</label><select id="c_auditora_firma"><option value="no">No, solo yo</option><option value="si">Sí, la autorizo</option></select></div>
         <div><label class="l" for="c_retiros_gasto">Retiros que son gasto (no llevan recepción de compra)</label><input id="c_retiros_gasto" type="text" placeholder="GASOLINA|COMIDA|FLETE"></div>
       </div>
       <div id="msgCfg"></div>
@@ -279,9 +300,11 @@ async function iniciar() {
   const r = await api({ op: 'datos' });
   if (!r.ok) { $('error').hidden = false; $('error').textContent = r.msg || 'No se pudo abrir.'; $('quien').textContent = ''; return; }
   D = r; ROL = r.rol;
-  $('quien').textContent = (ROL === 'empleado' ? r.yo : ROL === 'auditora' ? 'Auditora' : 'Administrador') + ' · cierre de comprobación ' + r.cierre + ' h';
-  const T = ROL === 'empleado' ? [['rep', 'Comprobar'], ['corte', 'Corte de caja'], ['mis', 'Mis movimientos'], ['bus', 'Buscar']]
-    : [['hoy', 'Auditoría'], ['corte', 'Corte de caja'], ['rep', 'Comprobar'], ['ped', 'Pedidos'], ['rmes', 'Retiros del mes'], ['bus', 'Historial']].concat(ROL === 'admin' ? [['emp', 'Empleados'], ['cfg', 'Ajustes']] : []);
+  $('quien').textContent = (ROL === 'empleado' ? r.yo : { auditora: 'Auditora', directora: 'Directora' }[ROL] || 'Administrador') + ' · cierre de comprobación ' + r.cierre + ' h';
+  // el encargado solo carga lo de auditoría; la directora solo consulta
+  const T = ROL === 'empleado' ? [['rep', 'Comprobar'], ['mis', 'Mis movimientos'], ['bus', 'Buscar']]
+    : ROL === 'directora' ? [['hoy', 'Auditoría'], ['corte', 'Corte de caja'], ['dueno', 'Retiros del dueño'], ['ped', 'Pedidos'], ['rmes', 'Retiros del mes'], ['bus', 'Historial']]
+    : [['hoy', 'Auditoría'], ['corte', 'Corte de caja'], ['dueno', 'Retiros del dueño'], ['rep', 'Comprobar'], ['ped', 'Pedidos'], ['rmes', 'Retiros del mes'], ['bus', 'Historial']].concat(ROL === 'admin' ? [['emp', 'Empleados'], ['cfg', 'Ajustes']] : []);
   $('tabs').innerHTML = T.map(([v, t]) => '<button type="button" role="tab" data-v="' + v + '">' + t + '</button>').join('');
   $('tabs').onclick = e => { const b = e.target.closest('button'); if (b) ir(b.dataset.v); };
   pintarRetiros(); $('rFecha').value = hoyMX();
@@ -296,6 +319,7 @@ function ir(v) {
   if (v === 'mis') cargarMis();
   if (v === 'corte') { if (!$('cFecha').value) $('cFecha').value = hoyMX(); cargarCorte(); }
   if (v === 'ped') cargarPedidos();
+  if (v === 'dueno') { if (!$('dDesde').value) { $('dDesde').value = hoyMX().slice(0, 8) + '01'; $('dHasta').value = hoyMX(); $('dFecha').value = hoyMX(); } cargarDueno(); }
   if (v === 'rmes') { if (!$('mMes').value) $('mMes').value = masDias(hoyMX().slice(0, 8) + '01', -1).slice(0, 7); cargarMes(); }
 }
 
@@ -353,7 +377,7 @@ function eslabon(k, ok, titulo, sub) {
   return '<div class="esl ' + (ok === true ? 'ok' : ok === false ? 'no' : 'na') + '"><div class="k">' + k + '</div><b>' + titulo + '</b><span>' + sub + '</span></div>';
 }
 function pintarDetalle() {
-  const r = DET, m = r.mov, g = r.registro, aud = ROL !== 'empleado';
+  const r = DET, m = r.mov, g = r.registro, aud = ROL === 'admin' || ROL === 'auditora';
   $('dTit').textContent = m.folio + ' — ' + $$(m.importe) + (m.clase === 'registro' ? ' ' + (m.metodo || '') : '');
   $('dSub').textContent = (m.clase === 'cobro' ? 'Cobro en caja · cajero ' + m.empleado : m.clase === 'retiro' ? 'Retiro de caja · cajero ' + m.empleado : m.clase === 'compra' ? 'Compra en Microsip · ' + m.empleado : 'Responsable: ' + m.empleado) + ' · ' + fCorta(m.fecha) + ' ' + (m.hora || '');
   let h = '<div class="estado e-' + m.estado + '">' + EMO[m.estado] + ' ' + esc(m.motivo) + (m.estado === 'pendiente' && m.vence ? ' · tiene hasta ' + m.vence.slice(11) + ' h' : '') + '</div>';
@@ -364,7 +388,7 @@ function pintarDetalle() {
       eslabon('Comprobantes', m.comprobado > 0 ? Math.abs(m.falta) <= 1 : false, $$(m.comprobado), r.comprobantes.length + ' foto' + (r.comprobantes.length === 1 ? '' : 's') + (Math.abs(m.falta) > 1 ? ' · dif. ' + $$(m.falta) : '')) + '</div>';
     h += '<div class="sec"><h4>Evidencia</h4>' + (r.comprobantes.length ? '<div class="miniaturas">' + r.comprobantes.map(k =>
       '<a href="' + FOTO(k.id) + '" target="_blank" rel="noopener"><img src="' + FOTO(k.id) + '" alt="comprobante" loading="lazy">' + $$(k.importe) + ' · ' + esc(k.tipo) + '</a>').join('') + '</div>' : '<div class="vacio" style="padding:8px">Sin comprobantes.</div>') + '</div>';
-    if (m.revision !== 'aprobado') h += '<div class="sec"><h4>Completar</h4><label class="subir" style="padding:9px"><input type="file" id="xFotos" accept="image/*" capture="environment" multiple hidden>📷 Agregar foto</label><input id="xPed" type="hidden" value="' + esc(m.pedido || '') + '"><div class="fotos" id="xLista"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri mini" type="button" id="xGuardar">Guardar cambios</button></div><div id="msgX"></div></div>';
+    if (m.revision !== 'aprobado' && ROL !== 'directora') h += '<div class="sec"><h4>Completar</h4><label class="subir" style="padding:9px"><input type="file" id="xFotos" accept="image/*" capture="environment" multiple hidden>📷 Agregar foto</label><input id="xPed" type="hidden" value="' + esc(m.pedido || '') + '"><div class="fotos" id="xLista"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri mini" type="button" id="xGuardar">Guardar cambios</button></div><div id="msgX"></div></div>';
     if (g.revision) h += '<div class="sec"><h4>Revisión</h4><div>' + (g.revision === 'aprobado' ? '🟢 Aprobado' : '🔴 Inconsistencia') + ' por ' + esc(g.revisado_por) + (g.revisado_en ? ' · ' + new Date(g.revisado_en).toLocaleString('es-MX') : '') + (g.revision_nota ? '<br><i>' + esc(g.revision_nota) + '</i>' : '') + '</div></div>';
   } else if (m.clase === 'cobro') {
     h += '<div><b>' + esc(kb.forma) + ' · ticket ' + esc(kb.folio) + ' · ' + $$(kb.importe) + '</b><div style="color:var(--soft);font-size:.84rem">' + fCorta(kb.fecha) + ' ' + esc(kb.hora) + ' · cajero ' + esc(kb.usuario) + (kb.cliente ? ' · ' + esc(kb.cliente) : '') + (kb.referencia ? ' · ref ' + esc(kb.referencia) : '') +
@@ -381,7 +405,7 @@ function pintarDetalle() {
       (ret ? '<div><div class="k" style="font-size:.78rem;color:var(--soft)">En caja dice</div><b>' + esc(ret.descripcion || '—') + '</b><div style="color:var(--soft);font-size:.84rem">cajero ' + esc(ret.usuario) + '</div></div>' : '') + '</div>';
     h += '<div class="sec"><h4>Evidencia</h4>' + (r.comprobantes.length ? '<div class="miniaturas">' + r.comprobantes.map(k =>
       '<a href="' + FOTO(k.id) + '" target="_blank" rel="noopener"><img src="' + FOTO(k.id) + '" alt="comprobante" loading="lazy">' + $$(k.importe) + ' · ' + esc(k.tipo) + '</a>').join('') + '</div>' : '<div class="vacio" style="padding:8px">Sin comprobantes.</div>') + '</div>';
-    if (m.revision !== 'aprobado') h += '<div class="sec"><h4>Completar</h4><div class="g2"><div><label class="l" for="xPed">Pedido</label><input id="xPed" type="text" maxlength="30" value="' + esc(m.pedido || '') + '"></div><div><label class="l">Agregar comprobante</label><label class="subir" style="padding:9px"><input type="file" id="xFotos" accept="image/*" capture="environment" multiple hidden>📷 Agregar foto</label></div></div><div class="fotos" id="xLista"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri mini" type="button" id="xGuardar">Guardar cambios</button></div><div id="msgX"></div></div>';
+    if (m.revision !== 'aprobado' && ROL !== 'directora') h += '<div class="sec"><h4>Completar</h4><div class="g2"><div><label class="l" for="xPed">Pedido</label><input id="xPed" type="text" maxlength="30" value="' + esc(m.pedido || '') + '"></div><div><label class="l">Agregar comprobante</label><label class="subir" style="padding:9px"><input type="file" id="xFotos" accept="image/*" capture="environment" multiple hidden>📷 Agregar foto</label></div></div><div class="fotos" id="xLista"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri mini" type="button" id="xGuardar">Guardar cambios</button></div><div id="msgX"></div></div>';
     if (aud && r.cand && (g.req_compra || r.cand.length)) {
       h += '<div class="sec"><h4>Recepciones de Microsip cercanas</h4>' + (r.cand.length ? '<table class="tabla"><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Total</th><th></th></tr>' + r.cand.map(c =>
         '<tr><td>' + esc(c.folio) + '</td><td>' + fCorta(c.fecha) + '</td><td>' + esc(c.proveedor) + '</td><td>' + $$(c.total) + (c.dif > 1 ? ' <span class="chip c-naranja">dif ' + $$(c.dif) + '</span>' : '') + '</td><td>' +
@@ -550,7 +574,7 @@ async function cargarCorte() {
 }
 function pintarCorte() {
   const r = CORTE, t = r.totales, F = r.formas, R = r.retiros;
-  const est = e => e === 'exento' ? '<span class="chip c-exento">no pide</span>' : '<span class="chip c-' + e + '">' + EMO[e] + ' ' + NOM[e] + '</span>';
+  const est = e => e === 'exento' ? '<span class="chip c-exento">no pide</span>' : e === 'dueno' ? '<span class="chip c-dueno">💵 dueño</span>' : '<span class="chip c-' + e + '">' + EMO[e] + ' ' + NOM[e] + '</span>';
   let h = '<div class="card"><h2>Corte de caja · ' + new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</h2>' +
     '<p class="sub">Todo lo que entró y salió de caja ese día según Microsip, con sus comprobantes.</p>' +
     '<div class="kpis" style="margin:0"><div class="kpi"><b>' + $$(t.vendido) + '</b><span>cobrado en caja</span></div>' +
@@ -566,26 +590,121 @@ function pintarCorte() {
       (x.recepcion ? '<div class="bit">recepción ' + esc(x.recepcion) + '</div>' : '') + '</td><td class="num">' + $$(x.importe) + '</td><td>' + est(x.estado) +
       (x.estado !== 'verde' && x.estado !== 'exento' ? '<div class="bit">' + esc(x.motivo || '') + '</div>' : '') + '</td></tr>').join('') +
     (R.length ? '' : '<tr><td colspan="5" class="vacio">Sin retiros.</td></tr>') + '</table></div></div>';
+  const DD = r.dueno || [];
+  if (DD.length) h += '<div class="card"><h2>💵 Retiros del dueño</h2><div class="tw"><table class="tabla"><tr><th>Folio</th><th>Hora</th><th>Nota</th><th class="num">Importe</th><th>Microsip</th></tr>' +
+    DD.map(x => '<tr><td>RD-' + x.id + '</td><td>' + esc(x.hora || '') + '</td><td>' + esc(x.nota || '') + '</td><td class="num">' + $$(x.importe) + '</td><td>' + (x.retiro_folio ? esc(x.retiro_folio) : '<span class="chip c-naranja">no capturado · se descuenta</span>') + '</td></tr>').join('') + '</table></div></div>';
   const fi = r.firma, pend = r.pendientes;
   h += '<div class="card">' + (pend.n ? '<div class="aviso">⚠️ Quedan ' + pend.n + ' movimiento' + (pend.n > 1 ? 's' : '') + ' de este día sin comprobar · ' + $$(pend.monto) + '</div>' : '<div class="msg bien" style="margin:0 0 10px">✅ Todo lo de este día está comprobado.</div>');
   if (fi) h += '<div class="firma ok"><b>✍️ Corte firmado por ' + esc(fi.por) + '</b> · ' + new Date(fi.en).toLocaleString('es-MX') + '<br>Efectivo esperado ' + $$(fi.esperado) + ' · entregado <b>' + $$(fi.entregado) + '</b> · diferencia <b style="color:var(--' + (Math.abs(fi.diferencia) < 1 ? 'verde' : 'rojo') + ')">' + $$(fi.diferencia) + '</b>' +
-    (fi.pendientes ? '<br>Al firmar quedaban ' + fi.pendientes + ' sin comprobar (' + $$(fi.pendiente_monto) + ')' : '') + (fi.nota ? '<br><i>' + esc(fi.nota) + '</i>' : '') + '</div>';
-  if (ROL !== 'empleado') h += '<div class="firma noimp"><b>' + (fi ? 'Volver a firmar' : 'Firmar el corte') + '</b><p class="bit" style="margin:4px 0 10px">En lugar de la libreta: escribe el efectivo que te entregaron. Queda guardado con fecha, hora y quién firmó.</p>' +
+    (fi.pendientes ? '<br>Al firmar quedaban ' + fi.pendientes + ' sin comprobar (' + $$(fi.pendiente_monto) + ')' : '') + (fi.nota ? '<br><i>' + esc(fi.nota) + '</i>' : '') +
+    (fi.huella ? '<br><span class="bit">Huella ' + esc(fi.huella) + ' · copia enviada a Telegram</span>' : '') +
+    '<div class="noimp" style="margin-top:8px"><button class="btn mini" type="button" id="fComp">⬇️ Descargar comprobante</button></div></div>';
+  if (ROL !== 'empleado' && !r.puede_firmar) h += '<p class="bit noimp" style="margin-top:10px">Solo el administrador firma el corte' + (ROL === 'auditora' ? ' (o tú, si él te autoriza en Ajustes).' : '.') + '</p>';
+  if (r.puede_firmar) h += '<div class="firma noimp"><b>' + (fi ? 'Volver a firmar' : 'Firmar el corte') + '</b><p class="bit" style="margin:4px 0 10px">En lugar de la libreta: escribe el efectivo que te entregaron. Queda guardado con fecha, hora, quién firmó y una huella; se manda una copia a Telegram.</p>' +
     '<div class="g3"><div><label class="l" for="fEnt">Efectivo entregado</label><input id="fEnt" type="number" step="0.01" inputmode="decimal" placeholder="' + Number(t.efectivo_neto).toFixed(2) + '"></div>' +
     '<div style="grid-column:span 2"><label class="l" for="fNota">Nota (opcional)</label><input id="fNota" type="text" maxlength="300"></div></div>' +
     '<div id="fDif" class="bit" style="margin-top:8px"></div><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn pri" type="button" id="fFirmar">✍️ Firmar corte</button></div><div id="msgF"></div></div>';
   h += '</div>';
   $('corte').innerHTML = h;
+  if ($('fComp')) $('fComp').onclick = () => comprobanteCorte(r);
   if ($('fFirmar')) {
     $('fEnt').oninput = () => { const v = $('fEnt').value; $('fDif').textContent = v === '' ? '' : 'Diferencia: ' + $$(Number(v) - Number(t.efectivo_neto)); };
     $('fFirmar').onclick = async () => {
       if ($('fEnt').value === '') return aviso('msgF', 'Escribe el efectivo que te entregaron.');
-      const r2 = await api({ op: 'firmar', fecha: r.fecha, esperado: t.efectivo_neto, entregado: $('fEnt').value, nota: $('fNota').value, pendientes: pend.n, pendiente_monto: pend.monto });
+      if (!confirm('¿Firmar el corte del ' + fCorta(r.fecha) + ' con ' + $$($('fEnt').value) + ' entregados?')) return;
+      $('fFirmar').disabled = true;
+      const r2 = await api({ op: 'firmar', fecha: r.fecha, entregado: $('fEnt').value, nota: $('fNota').value });
+      $('fFirmar').disabled = false;
       if (!r2.ok) return aviso('msgF', r2.msg);
-      toast('Corte firmado'); cargarCorte();
+      toast('Corte firmado · copia a Telegram'); cargarCorte();
     };
   }
 }
+/* comprobantes para descargar (se abren listos para guardar como PDF o imprimir) */
+function documento(titulo, cuerpo) {
+  const w = window.open('', '_blank');
+  if (!w) { toast('Permite las ventanas emergentes para descargar el comprobante'); return; }
+  w.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(titulo) + '</title>' +
+    '<style>body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0f172a;max-width:720px;margin:24px auto;padding:0 16px;font-size:14px}' +
+    'h1{font-size:20px;margin:0 0 4px}p{margin:4px 0}table{width:100%;border-collapse:collapse;margin:10px 0}td,th{border-bottom:1px solid #e2e8f0;padding:6px 4px;text-align:left}' +
+    '.n{text-align:right}.caja{border:2px solid #0f172a;border-radius:10px;padding:12px;margin-top:14px}.s{color:#64748b;font-size:12px}' +
+    '.firmas{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:50px}.firmas div{border-top:1px solid #0f172a;padding-top:4px;text-align:center;font-size:12px}' +
+    '@media print{button{display:none}}</style></head><body>' + cuerpo +
+    '<p style="margin-top:20px"><button onclick="window.print()">🖨️ Guardar como PDF / imprimir</button></p></body></html>');
+  w.document.close();
+}
+function comprobanteCorte(r) {
+  const t = r.totales, fi = r.firma;
+  documento('Corte de caja ' + r.fecha,
+    '<h1>Comprobante de corte de caja</h1><p class="s">' + new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</p>' +
+    '<table><tr><th>Forma de pago</th><th class="n">Tickets</th><th class="n">Importe</th><th>Comprobantes</th></tr>' +
+    r.formas.map(f => '<tr><td>' + esc(f.forma) + '</td><td class="n">' + f.tickets + '</td><td class="n">' + $$(f.importe) + '</td><td>' + (f.sin_comprobante ? 'efectivo' : f.faltan ? 'faltan ' + f.faltan : 'completos') + '</td></tr>').join('') + '</table>' +
+    '<table><tr><th>Retiro</th><th>Descripción</th><th class="n">Importe</th><th>Estado</th></tr>' +
+    r.retiros.map(x => '<tr><td>' + esc(x.folio) + ' ' + esc(x.hora) + '</td><td>' + esc(x.descripcion) + '</td><td class="n">' + $$(x.importe) + '</td><td>' + esc(x.estado === 'dueno' ? 'retiro del dueño' : x.estado === 'exento' ? 'no pide' : x.estado === 'verde' ? 'comprobado' : x.motivo || NOM[x.estado] || x.estado) + '</td></tr>').join('') +
+    (r.dueno || []).filter(x => !x.retiro_folio).map(x => '<tr><td>RD-' + x.id + '</td><td>Retiro del dueño (no capturado en Microsip)' + (x.nota ? ' · ' + esc(x.nota) : '') + '</td><td class="n">' + $$(x.importe) + '</td><td>dueño</td></tr>').join('') + '</table>' +
+    '<div class="caja"><p>Efectivo cobrado: <b>' + $$(t.efectivo_ventas) + '</b> · Retiros: <b>' + $$(t.retiros) + '</b>' + (Number(t.dueno_fuera) ? ' · Retiros del dueño fuera de Microsip: <b>' + $$(t.dueno_fuera) + '</b>' : '') + '</p>' +
+    '<p>Efectivo esperado: <b>' + $$(fi.esperado) + '</b></p><p>Efectivo entregado: <b>' + $$(fi.entregado) + '</b></p><p>Diferencia: <b>' + $$(fi.diferencia) + '</b></p>' +
+    (fi.pendientes ? '<p>Al firmar quedaban ' + fi.pendientes + ' movimientos sin comprobar (' + $$(fi.pendiente_monto) + ')</p>' : '<p>Todo comprobado al firmar.</p>') +
+    (fi.nota ? '<p>Nota: ' + esc(fi.nota) + '</p>' : '') +
+    '<p class="s">Firmado en la app por ' + esc(fi.por) + ' el ' + new Date(fi.en).toLocaleString('es-MX') + ' · huella ' + esc(fi.huella || '') + '</p></div>' +
+    '<div class="firmas"><div>Entregó (encargado de caja)</div><div>Recibió</div></div>');
+}
+function comprobanteDueno(x) {
+  documento('Retiro del dueño RD-' + x.id,
+    '<h1>Comprobante de retiro del dueño</h1><p class="s">Folio RD-' + x.id + '</p>' +
+    '<div class="caja"><p>Importe: <b>' + $$(x.importe) + '</b></p><p>Fecha: ' + fCorta(x.fecha) + ' ' + esc(x.hora || '') + '</p>' +
+    '<p>' + (x.retiro_folio ? 'Retiro en Microsip: ' + esc(x.retiro_folio) : 'No capturado en Microsip (se descuenta del corte)') + '</p>' +
+    (x.nota ? '<p>Nota: ' + esc(x.nota) + '</p>' : '') + (x.anulado ? '<p><b>ANULADO</b>' + (x.anulado_nota ? ': ' + esc(x.anulado_nota) : '') + '</p>' : '') +
+    '<p class="s">Registrado en la app por ' + esc(x.por) + ' el ' + new Date(x.creado).toLocaleString('es-MX') + ' · huella ' + esc(x.huella || '') + '</p></div>' +
+    '<div class="firmas"><div>Entregó (encargado de caja)</div><div>Recibió (dueño)</div></div>');
+}
+
+/* ---------------- retiros del dueño ---------------- */
+let RD = null;
+async function cargarDueno() {
+  $('lDueno').innerHTML = '<div class="vacio">Cargando…</div>';
+  const r = await api({ op: 'retiros_dueno', desde: $('dDesde').value, hasta: $('dHasta').value });
+  if (!r.ok) { $('lDueno').innerHTML = '<div class="msg mal">' + esc(r.msg) + '</div>'; return; }
+  RD = r;
+  if (ROL === 'admin') {
+    $('fDueno').hidden = false;
+    $('dRet').innerHTML = '<option value="">No está capturado en Microsip (escribo el importe)</option>' +
+      (r.candidatos || []).map(c => '<option value="' + esc(c.id) + '">' + esc(c.folio) + ' · ' + $$(c.importe) + ' · ' + fCorta(c.fecha) + ' ' + esc(c.hora) + ' · ' + esc(c.descripcion || '') + '</option>').join('');
+    $('dImpBox').hidden = !!$('dRet').value;
+  }
+  $('lDueno').innerHTML = '<div class="kpis"><div class="kpi dinero"><b>' + $$(r.total) + '</b><span>' + r.n + ' retiro' + (r.n === 1 ? '' : 's') + ' del ' + fCorta(r.desde) + ' al ' + fCorta(r.hasta) + '</span></div>' +
+    r.meses.slice(0, 3).map(m => '<div class="kpi"><b>' + $$(m.total) + '</b><span>' + esc(m.mes) + ' · ' + m.n + '</span></div>').join('') + '</div>' +
+    '<div class="tw"><table class="tabla"><tr><th>Folio</th><th>Fecha</th><th class="num">Importe</th><th>Microsip</th><th>Nota</th><th></th></tr>' +
+    (r.lista.length ? r.lista.map(x => '<tr' + (x.anulado ? ' style="opacity:.55;text-decoration:line-through"' : '') + '><td>RD-' + x.id + '</td><td>' + fCorta(x.fecha) + ' ' + esc(x.hora || '') + '</td><td class="num">' + $$(x.importe) + '</td><td>' +
+      esc(x.retiro_folio || 'no capturado') + '</td><td>' + esc(x.nota || '') + (x.anulado ? ' · ANULADO ' + esc(x.anulado_nota || '') : '') + '</td><td style="white-space:nowrap"><button class="btn mini" data-rdc="' + x.id + '">⬇️</button>' +
+      (ROL === 'admin' && !x.anulado ? ' <button class="btn mini" data-rda="' + x.id + '">Anular</button>' : '') + '</td></tr>').join('') : '<tr><td colspan="6" class="vacio">Sin retiros del dueño en estas fechas.</td></tr>') + '</table></div>';
+}
+$('lDueno').addEventListener('click', async e => {
+  const c = e.target.closest('[data-rdc]');
+  if (c) return comprobanteDueno(RD.lista.find(x => String(x.id) === c.dataset.rdc));
+  const a = e.target.closest('[data-rda]');
+  if (a) {
+    const nota = prompt('¿Por qué se anula? (queda registrado y se avisa por Telegram)');
+    if (!nota) return;
+    const r = await api({ op: 'retiro_dueno', accion: 'anular', id: a.dataset.rda, nota });
+    if (!r.ok) return toast(r.msg);
+    toast('Retiro anulado'); cargarDueno();
+  }
+});
+$('dRet').onchange = () => { $('dImpBox').hidden = !!$('dRet').value; };
+$('dVer').onclick = cargarDueno;
+$('fDueno').onsubmit = async e => {
+  e.preventDefault();
+  const rid = $('dRet').value;
+  if (!rid && !(Number($('dImp').value) > 0)) return aviso('msgD', 'Escribe el importe.');
+  const txtImp = rid ? $('dRet').selectedOptions[0].textContent.split(' · ')[1] : $$($('dImp').value);
+  if (!confirm('¿Registrar retiro del dueño por ' + txtImp + '? Se manda comprobante a Telegram.')) return;
+  const r = await api({ op: 'retiro_dueno', accion: 'nuevo', retiro_id: rid, importe: $('dImp').value, fecha: $('dFecha').value, nota: $('dNota').value });
+  if (!r.ok) return aviso('msgD', r.msg);
+  aviso('msgD', ''); $('fDueno').reset(); $('dFecha').value = hoyMX();
+  toast('Retiro RD-' + r.retiro.id + ' registrado · copia a Telegram');
+  comprobanteDueno(r.retiro); cargarDueno();
+};
 $('corte').addEventListener('click', e => { const tr = e.target.closest('tr.mov-t'); if (tr) abrir(tr.dataset.c, tr.dataset.r); });
 
 /* ---------------- pedidos / retiros del mes ---------------- */
@@ -644,7 +763,7 @@ $('tEmpleados').onclick = async e => {
   if (b) { if (!b.dataset.act && !confirm('¿Desactivar? Su liga deja de funcionar.')) return; const r = await api({ op: 'empleado', token: b.dataset.emp, activo: !!b.dataset.act }); if (!r.ok) return toast(r.msg); recargarDatos(); }
 };
 async function recargarDatos() { const d = await api({ op: 'datos' }); if (d.ok) { D = Object.assign(D, d); pintarEmpleados(); pintarConfig(); pintarRetiros(); } }
-const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir', 'formas_comprobante', 'formas_sin_comprobante', 'retiros_gasto'];
+const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir', 'formas_comprobante', 'formas_sin_comprobante', 'retiros_gasto', 'auditora_firma'];
 function pintarConfig() { const c = D.config || {}; CFG.forEach(k => { if ($('c_' + k)) $('c_' + k).value = c[k] ?? ''; }); }
 $('fCfg').onsubmit = async e => {
   e.preventDefault();

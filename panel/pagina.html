@@ -269,7 +269,7 @@ $('fCrear').onsubmit = async e => {
 
 /* ---------------- panel ---------------- */
 const ICONO = { compras: ['🛒', '#DBEAFE'], produccion: ['🏭', '#FEF3C7'], vendedor: ['📊', '#DCFCE7'], rutas: ['🗺️', '#EDE9FE'], auditoria: ['🧾', '#FEE2E2'], choferes: ['🚚', '#FFEDD5'], monedero: ['💳', '#FCE7F3'], extra: ['🔗', '#E2E8F0'] };
-const ROL = { admin: 'Administrador', compras: 'Compras', produccion: 'Producción (captura)', auditor: 'Auditor (solo consulta)', encargado: 'Encargado', auditora: 'Auditora' };
+const ROL = { admin: 'Administrador', compras: 'Compras', produccion: 'Producción (captura)', auditor: 'Auditor (solo consulta)', encargado: 'Encargado', auditora: 'Auditora', directora: 'Directora (consulta)' };
 const PAGINAS = [
   { id: 'compras', titulo: 'Planeador de compras', desc: 'Sugerido de compra, OCs y seguimiento', ruta: 'planeador-compras', roles: ['admin', 'compras', 'auditor'],
     falta: 'Corre "Ver ligas" en el flujo del planeador para crearla.' },
@@ -277,7 +277,7 @@ const PAGINAS = [
     falta: 'Corre "Ver ligas" en el flujo de producción para crearla.' },
   { id: 'vendedor', titulo: 'Tablero del vendedor', desc: 'Ventas, clientes y seguimiento', ruta: 'vendedor', roles: ['admin', 'encargado'],
     falta: 'Se crea desde el flujo "Tablero del vendedor".' },
-  { id: 'auditoria', titulo: 'Auditoría de movimientos', desc: 'Retiros, comprobantes y compras vs Microsip', ruta: 'auditoria-mov', roles: ['admin', 'auditora'], empleados: true,
+  { id: 'auditoria', titulo: 'Auditoría de movimientos', desc: 'Corte de caja, comprobantes y retiros', ruta: 'auditoria-mov', roles: ['admin', 'auditora', 'directora'], empleados: true,
     falta: 'Corre "Ver ligas" en el flujo de auditoría para crearla.' },
   { id: 'rutas', titulo: 'Asistente de rutas', desc: 'Plan de la semana, buscar pedidos y simular', ruta: 'rutas', oficina: true },
   { id: 'choferes', titulo: 'Choferes – entregas', desc: 'Oficina y la liga de cada chofer', ruta: 'choferes', choferes: true },

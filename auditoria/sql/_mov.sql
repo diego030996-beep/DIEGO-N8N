@@ -139,7 +139,8 @@ est AS (   -- semáforo de cada registro (la primera regla que aplica)
 rsr AS (   -- retiros de caja que nadie ha reportado
   SELECT r.*, (CASE WHEN r.hora ~ '^[0-9]{1,2}:[0-9]{2}' AND r.hora::time > cfg.cierre THEN r.fecha + 1 ELSE r.fecha END) + cfg.cierre AS vence
   FROM ret r, cfg
-  WHERE NOT EXISTS (SELECT 1 FROM reg0 g WHERE g.retiro_id = r.id) AND NOT EXISTS (SELECT 1 FROM ign WHERE ign.tipo = 'retiro' AND ign.ref = r.id)),
+  WHERE NOT EXISTS (SELECT 1 FROM reg0 g WHERE g.retiro_id = r.id) AND NOT EXISTS (SELECT 1 FROM ign WHERE ign.tipo = 'retiro' AND ign.ref = r.id)
+    AND NOT EXISTS (SELECT 1 FROM mov_retiro_dueno d WHERE d.base = cfg.base AND d.retiro_id = r.id AND NOT d.anulado)),
 csr AS (   -- compras de contado / de mostrador en Microsip sin comprobante (cuando se configura)
   SELECT c.*, (c.fecha + 1) + cfg.cierre AS vence
   FROM cmp c, cfg

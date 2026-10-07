@@ -63,9 +63,35 @@ const rr = JSON.parse(or.slice(or.lastIndexOf('{"ok"')).trim());
 const ms = new Function('$', '$input', code('Armar resumen'))(n => ORG, { first: () => ({ json: { r: rr } }) });
 ok(ms.length === 2 && /AUDITORÍA — /.test(ms[0].json.text) && /movimientos cuadrados/.test(ms[0].json.text) && /sin comprobar/.test(ms[0].json.text), 'resumen del día', ms[0].json.text);
 ok(!flujo().nodes.some(n => /webhook/.test(n.type) && /tg/.test(n.parameters.path || '')), 'el bot no se conecta (no hay webhook de Telegram)');
+// ---------- permisos: el encargado no ve el corte; la directora solo consulta ----------
+pg("INSERT INTO tablero_acceso (token, rol) VALUES ('kdir', 'directora') ON CONFLICT DO NOTHING;", []);
+ok(/permiso/.test(pedir({ k: 'kjuan', op: 'corte' }).msg), 'el encargado no ve el corte de caja');
+ok(/permiso/.test(pedir({ k: 'kjuan', op: 'retiros_dueno' }).msg), 'el encargado no ve los retiros del dueño');
+ok(pedir({ k: 'kdir', op: 'corte', fecha: '2026-10-07' }).ok && pedir({ k: 'kdir', op: 'retiros_dueno' }).ok && pedir({ k: 'kdir', op: 'tablero' }).ok, 'la directora ve corte, retiros del dueño y tablero');
+ok(/permiso/.test(pedir({ k: 'kdir', op: 'firmar', fecha: '2026-10-07', entregado: 1 }).msg) && /permiso/.test(pedir({ k: 'kdir', op: 'revisar', id: 1, accion: 'aprobar' }).msg), 'la directora no firma ni aprueba');
+ok(/permiso/.test(pedir({ k: 'kaud', op: 'retiro_dueno', importe: 10 }).msg), 'solo el administrador registra retiros del dueño');
+ok(!foto('kdir', cid).json.falta, 'la directora ve las fotos');
+// ---------- comprobantes a Telegram ----------
+const armar = (op, r) => new Function('$', '$input', code('Armar respuesta'))(n => ({ first: () => ({ json: n === 'Preparar' ? { op, rol: 'admin' } : { nombre: '' } }) }), { all: () => [{ json: { r } }] })[0].json;
+let a1 = armar('firmar', { ok: true, fecha: '2026-10-07', esperado: 1500, entregado: 1450, diferencia: -50, pendientes: 2, pendiente_monto: 300, nota: 'faltó <cambio>', por: 'Administrador',
+  en: '2026-10-08T02:10:00Z', huella: 'ABC123DEF456', totales: { retiros: 700, retiros_dueno: 150 }, formas: [{ forma: 'EFECTIVO', importe: 2000, sin_comprobante: true }, { forma: 'TARJETA', importe: 900, faltan: 1 }] });
+ok(/CORTE DE CAJA FIRMADO<\/b> — 07\/10\/2026/.test(a1.telegram) && /Diferencia: <b>-\$50\.00/.test(a1.telegram) && /Huella: <code>ABC123DEF456/.test(a1.telegram) && /faltó &lt;cambio&gt;/.test(a1.telegram), 'comprobante del corte', a1.telegram);
+ok(/TARJETA: \$900\.00 \(faltan 1 comprobantes\)/.test(a1.telegram) && /Retiros del dueño: \$150\.00/.test(a1.telegram), 'el comprobante trae formas y retiros del dueño');
+a1 = armar('retiro_dueno', { ok: true, retiro: { id: 7, fecha: '2026-10-07', hora: '13:00', importe: 150, retiro_folio: 'R-01846', nota: 'banco', por: 'Administrador', creado: '2026-10-07T19:00:00Z', huella: 'H1', anulado: false } });
+ok(/RETIRO DEL DUEÑO<\/b> — RD-7/.test(a1.telegram) && /Retiro en Microsip: R-01846/.test(a1.telegram) && /Huella: <code>H1/.test(a1.telegram), 'comprobante del retiro del dueño', a1.telegram);
+a1 = armar('retiro_dueno', { ok: true, retiro: { id: 7, fecha: '2026-10-07', importe: 150, anulado: true, anulado_nota: 'error', huella: 'H1' } });
+ok(/ANULADO/.test(a1.telegram), 'aviso de anulación');
+ok(armar('corte', { ok: true }).telegram === '' && armar('firmar', { ok: false, msg: 'x' }).telegram === '', 'solo manda comprobante cuando sí se firmó');
+const og = new Function('$', '$input', code('Origen'));
+ok(og(x => ({ get isExecuted() { return x === 'API'; } }), { first: () => ({ json: { telegram_token: 'PEGA', chat_ids: '' } }) }).length === 0, 'sin bot configurado la página no falla (solo no manda copia)');
+const oo = og(x => ({ get isExecuted() { return x === 'API'; } }), { first: () => ({ json: CFG }) })[0].json;
+const cp = new Function('$', '$input', code('Comprobante a Telegram'))(n => ({ first: () => ({ json: { telegram: 'hola' } }) }), { first: () => ({ json: oo }) });
+ok(oo.origen === 'pagina' && cp.length === 2 && cp[0].json.text === 'hola', 'el comprobante va a cada chat');
+const cn = flujo().connections;
+ok(cn['Armar respuesta'].main[0].map(x => x.node).join() === 'Responder,¿Mandar comprobante?', 'primero contesta a la página y luego manda la copia');
 // ver ligas
 const lg = pg(nodo('Ligas').parameters.query, []).trim().split('\n').pop().split('\t');
-const ligas = new Function('$', nodo('Ligas para abrir').parameters.jsCode)(n => ({ first: () => ({ json: n === 'Ligas' ? { t_aud: lg[0], t_admin: lg[1], empleados: lg[2] } : { url_n8n: 'https://ai.adhesipro.com.mx' } }) }))[0].json;
-ok(ligas.auditora.endsWith('?k=kaud') && ligas['empleado JUAN'].endsWith('?k=kjuan'), 'ver ligas', ligas);
+const ligas = new Function('$', nodo('Ligas para abrir').parameters.jsCode)(n => ({ first: () => ({ json: n === 'Ligas' ? { t_aud: lg[0], t_dir: lg[1], t_admin: lg[2], empleados: lg[3] } : { url_n8n: 'https://ai.adhesipro.com.mx' } }) }))[0].json;
+ok(ligas.auditora.endsWith('?k=kaud') && ligas.directora.endsWith('?k=kdir') && ligas['empleado JUAN'].endsWith('?k=kjuan'), 'ver ligas', ligas);
 console.log(oks + ' OK, ' + fallas + ' fallas');
 process.exit(fallas ? 1 : 0);

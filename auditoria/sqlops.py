@@ -3,7 +3,7 @@ import os
 import re
 
 DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sql')
-OPS = ['datos', 'tablero', 'mis', 'registrar', 'actualizar', 'detalle', 'revisar', 'vincular', 'ignorar', 'buscar', 'empleado', 'config', 'borrar', 'avisos', 'corte', 'firmar', 'retiros_mes', 'pedidos']
+OPS = ['datos', 'tablero', 'mis', 'registrar', 'actualizar', 'detalle', 'revisar', 'vincular', 'ignorar', 'buscar', 'empleado', 'config', 'borrar', 'avisos', 'corte', 'firmar', 'retiros_mes', 'pedidos', 'retiro_dueno', 'retiros_dueno']
 
 
 def leer(nombre):
@@ -12,7 +12,7 @@ def leer(nombre):
 
 
 def expandir(s):
-    for k, f in {'/*CTX*/': '_ctx', '/*MOV*/': '_mov'}.items():
+    for k, f in {'/*CTX*/': '_ctx', '/*MOV*/': '_mov', '/*CORTE*/': '_corte'}.items():
         s = s.replace(k, leer(f))
     return s
 

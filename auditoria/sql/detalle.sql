@@ -3,7 +3,7 @@
 SET LOCAL statement_timeout = '25s';
 WITH /*CTX*/, /*MOV*/,
 x AS (SELECT mov.* FROM mov, cfg WHERE mov.clase = cfg.p->>'clase' AND mov.ref = cfg.p->>'ref'
-        AND (cfg.p->>'_rol' IN ('admin', 'auditora') OR (mov.clase = 'registro' AND mov.empleado = cfg.por))),
+        AND (cfg.p->>'_rol' IN ('admin', 'auditora', 'directora') OR (mov.clase = 'registro' AND mov.empleado = cfg.por))),
 e AS (SELECT est.* FROM est, x WHERE x.clase = 'registro' AND est.id = x.registro_id),
 cand AS (   -- compras de Microsip cercanas para vincular a mano (las ya usadas por otro movimiento no salen)
   SELECT c.id, c.folio, c.tipo, c.fecha, c.total, c.proveedor, abs(c.total - coalesce(nullif(e.comprobado, 0), e.importe)) AS dif

@@ -55,13 +55,13 @@ def armar():
                 .replace('__DEF__', json.dumps(defaults, ensure_ascii=False)))
     esquema = leer_sql('esquema')
     acceso_sql = (esquema + "\n"
-        "SELECT coalesce((SELECT rol FROM tablero_acceso WHERE token = $1 AND activo AND rol IN ('admin', 'auditora') LIMIT 1),\n"
+        "SELECT coalesce((SELECT rol FROM tablero_acceso WHERE token = $1 AND activo AND rol IN ('admin', 'auditora', 'directora') LIMIT 1),\n"
         "                (SELECT 'empleado' FROM mov_empleado WHERE token = $1 AND activo LIMIT 1)) AS rol,\n"
         "       (SELECT nombre FROM mov_empleado WHERE token = $1 AND activo LIMIT 1) AS nombre;")
     foto_sql = (esquema + "\n"
         "SELECT c.foto FROM mov_comprobante c JOIN mov_registro g ON g.id = c.registro_id\n"
         "WHERE c.id = NULLIF(regexp_replace($2, '[^0-9]', '', 'g'), '')::bigint\n"
-        "  AND (EXISTS (SELECT 1 FROM tablero_acceso WHERE token = $1 AND activo AND rol IN ('admin', 'auditora'))\n"
+        "  AND (EXISTS (SELECT 1 FROM tablero_acceso WHERE token = $1 AND activo AND rol IN ('admin', 'auditora', 'directora'))\n"
         "       OR EXISTS (SELECT 1 FROM mov_empleado e WHERE e.token = $1 AND e.activo AND e.nombre = g.empleado));")
     foto_js = ("// Devuelve el comprobante como imagen\n"
                "const f = String(($input.first().json || {}).foto || '');\n"
@@ -79,9 +79,10 @@ def armar():
         'jsonBody': '={{ JSON.stringify({ chat_id: $json.chat_id, text: $json.text, parse_mode: "HTML", disable_web_page_preview: true }) }}',
         'options': {}}, **extra)
     ligas_sql = (esquema + "\n"
-        "INSERT INTO tablero_acceso (token, rol) SELECT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''), v.r FROM (VALUES ('auditora'), ('admin')) AS v(r)\n"
+        "INSERT INTO tablero_acceso (token, rol) SELECT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''), v.r FROM (VALUES ('auditora'), ('directora'), ('admin')) AS v(r)\n"
         "WHERE NOT EXISTS (SELECT 1 FROM tablero_acceso a WHERE a.rol = v.r AND a.activo);\n"
         "SELECT (SELECT token FROM tablero_acceso WHERE rol = 'auditora' AND activo ORDER BY creado LIMIT 1) AS t_aud,\n"
+        "       (SELECT token FROM tablero_acceso WHERE rol = 'directora' AND activo ORDER BY creado LIMIT 1) AS t_dir,\n"
         "       (SELECT token FROM tablero_acceso WHERE rol = 'admin' AND activo ORDER BY creado LIMIT 1) AS t_admin,\n"
         "       (SELECT coalesce(json_agg(json_build_object('nombre', nombre, 'token', token) ORDER BY nombre), '[]') FROM mov_empleado WHERE activo) AS empleados;")
     ligas_js = (
@@ -89,7 +90,7 @@ def armar():
         "const cfg = $('Configuración (ligas)').first().json, a = $('Ligas').first().json;\n"
         "const url = String(cfg.url_n8n || '').replace(/\\/+$/, '') + '/webhook/auditoria-mov?k=';\n"
         "let E = a.empleados; if (typeof E === 'string') E = JSON.parse(E);\n"
-        "const out = { administrador: url + a.t_admin, auditora: url + a.t_aud };\n"
+        "const out = { administrador: url + a.t_admin, auditora: url + a.t_aud, directora: url + a.t_dir };\n"
         "for (const e of E || []) out['empleado ' + e.nombre] = url + e.token;\n"
         "return [{ json: out }];")
     nodes = [
@@ -131,7 +132,16 @@ def armar():
             {'id': uid('tg'), 'name': 'telegram_token', 'value': BOT['token'], 'type': 'string'},
             {'id': uid('chat'), 'name': 'chat_ids', 'value': BOT['chat'], 'type': 'string'}]}, 'options': {}}),
         nodo('Origen', 'n8n-nodes-base.code', 2, [448, 540], {'jsCode': leer('n8n', 'tg_origen.js')}),
-        si('¿Avisos?', [672, 540], "={{ $json.origen === 'avisos' }}"),
+        si('¿Comprobante de la página?', [672, 360], "={{ $json.origen === 'pagina' }}"),
+        si('¿Avisos?', [896, 540], "={{ $json.origen === 'avisos' }}"),
+        # comprobante del corte firmado / retiro del dueño (respaldo en Telegram)
+        si('¿Mandar comprobante?', [1344, 100], "={{ !!$json.telegram }}"),
+        nodo('Comprobante a Telegram', 'n8n-nodes-base.code', 2, [896, 300], {'jsCode':
+            "// Copia del comprobante (corte firmado o retiro del dueño) a cada chat configurado\n"
+            "const text = String($('Armar respuesta').first().json.telegram || '');\n"
+            "if (!text) return [];\n"
+            "return $input.first().json.chats.map(chat_id => ({ json: { chat_id, text: text.slice(0, 4000) } }));"}),
+        tg_send('Mandar comprobante', [1120, 300], onError='continueRegularOutput'),
         # avisos de cada hora
         pg('Pendientes de avisar', [896, 440], avisos_sql, avisos_params),
         nodo('Armar avisos', 'n8n-nodes-base.code', 2, [1120, 440], {'jsCode': leer('n8n', 'tg_avisos.js')}),
@@ -151,10 +161,11 @@ def armar():
     c = lambda *dest: {'main': [[{'node': d, 'type': 'main', 'index': 0} for d in rama] for rama in dest]}
     connections = {
         'Página': c(['Mostrar página']), 'API': c(['Acceso']), 'Acceso': c(['Preparar']), 'Preparar': c(['¿Válido?']),
-        '¿Válido?': c(['Consultar'], ['Responder']), 'Consultar': c(['Armar respuesta']), 'Armar respuesta': c(['Responder']),
+        '¿Válido?': c(['Consultar'], ['Responder']), 'Consultar': c(['Armar respuesta']), 'Armar respuesta': c(['Responder', '¿Mandar comprobante?']),
+        '¿Mandar comprobante?': c(['Configuración del bot']), 'Comprobante a Telegram': c(['Mandar comprobante']),
         'Foto': c(['Buscar foto']), 'Buscar foto': c(['Foto a imagen']), 'Foto a imagen': c(['¿Hay foto?']), '¿Hay foto?': c(['Mostrar foto'], ['Sin foto']),
         'Cada hora': c(['Configuración del bot']), 'Resumen del día': c(['Configuración del bot']), 'Configuración del bot': c(['Origen']),
-        'Origen': c(['¿Avisos?']), '¿Avisos?': c(['Pendientes de avisar'], ['Leer resumen']),
+        'Origen': c(['¿Comprobante de la página?']), '¿Comprobante de la página?': c(['Comprobante a Telegram'], ['¿Avisos?']), '¿Avisos?': c(['Pendientes de avisar'], ['Leer resumen']),
         'Pendientes de avisar': c(['Armar avisos']), 'Armar avisos': c(['Mandar aviso']), 'Mandar aviso': c(['Marcar avisados']),
         'Leer resumen': c(['Armar resumen']), 'Armar resumen': c(['Mandar resumen']),
         'Ver ligas': c(['Configuración (ligas)']), 'Configuración (ligas)': c(['Ligas']), 'Ligas': c(['Ligas para abrir']),

@@ -27,7 +27,17 @@ CREATE TABLE IF NOT EXISTS mov_bitacora (id BIGSERIAL PRIMARY KEY, registro_id B
 CREATE INDEX IF NOT EXISTS mov_bitacora_reg ON mov_bitacora (registro_id);
 -- corte de caja firmado (en lugar de la libreta): lo que había que entregar, lo que se entregó y quién firmó
 CREATE TABLE IF NOT EXISTS mov_corte (base TEXT NOT NULL DEFAULT '', fecha DATE NOT NULL, esperado NUMERIC, entregado NUMERIC, diferencia NUMERIC,
-  pendientes INT, pendiente_monto NUMERIC, nota TEXT, firmado_por TEXT, firmado_en TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (base, fecha));
+  pendientes INT, pendiente_monto NUMERIC, nota TEXT, firmado_por TEXT, firmado_en TIMESTAMPTZ NOT NULL DEFAULT now(), huella TEXT, PRIMARY KEY (base, fecha));
+DO 'BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = ''mov_corte'' AND column_name = ''huella'') THEN
+    ALTER TABLE mov_corte ADD COLUMN huella TEXT;
+  END IF;
+END';
+-- retiros que hace el dueño de la caja: quedan registrados y firmados en la app (en lugar de la libreta)
+CREATE TABLE IF NOT EXISTS mov_retiro_dueno (id BIGSERIAL PRIMARY KEY, base TEXT NOT NULL DEFAULT '', fecha DATE NOT NULL, hora TEXT, importe NUMERIC NOT NULL,
+  nota TEXT, retiro_id TEXT, retiro_folio TEXT, por TEXT NOT NULL, creado TIMESTAMPTZ NOT NULL DEFAULT now(), huella TEXT,
+  anulado BOOLEAN NOT NULL DEFAULT false, anulado_nota TEXT, anulado_en TIMESTAMPTZ);
+CREATE UNIQUE INDEX IF NOT EXISTS mov_retiro_dueno_ms ON mov_retiro_dueno (base, retiro_id) WHERE retiro_id IS NOT NULL AND NOT anulado;
 CREATE TABLE IF NOT EXISTS mov_aviso (clave TEXT PRIMARY KEY, enviado TIMESTAMPTZ NOT NULL DEFAULT now());
 -- la auditoría empieza el día que se instala (no revisa todo el pasado de Microsip)
 INSERT INTO mov_config (clave, valor, por) SELECT 'desde', to_char((now() AT TIME ZONE 'America/Mexico_City')::date, 'YYYY-MM-DD'), 'instalación'
