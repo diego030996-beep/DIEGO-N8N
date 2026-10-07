@@ -11,6 +11,7 @@ cfg AS (SELECT b.*, b.ahora::date AS hoy,
                string_to_array(coalesce(nullif(c->>'tipos_compra', ''), 'compra'), ',') AS tipos_compra,
                coalesce(c->>'retiros_excluir', '') AS excl,
                coalesce(c->>'formas_comprobante', '') AS formas,
+               coalesce(c->>'formas_sin_comprobante', '') AS formas_sin,
                coalesce(nullif(c->>'compras_sin_comprobante', ''), 'no') AS csc,
                coalesce(c->>'proveedores_mostrador', '') AS prov_most,
                coalesce(nullif(c->>'desde', '')::date, b.ahora::date) AS desde

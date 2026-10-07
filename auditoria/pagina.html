@@ -106,6 +106,14 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
 .bit{font-size:.82rem;color:var(--soft)} .bit li{margin:2px 0}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;z-index:30}
 .cargando{opacity:.5;pointer-events:none}
+.barra{height:8px;border-radius:5px;background:var(--line);overflow:hidden;min-width:80px}.barra i{display:block;height:100%;background:var(--verde)}
+.firma{border:2px dashed var(--line);border-radius:14px;padding:14px;margin-top:14px}
+.firma.ok{border-style:solid;border-color:var(--verde);background:var(--verdebg)}
+.chipw{display:inline-flex;gap:6px;flex-wrap:wrap}.chipw span{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.8rem}
+.num{text-align:right;white-space:nowrap}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}.tw .tabla{min-width:520px}
+.c-exento{background:var(--pendbg);color:var(--soft)}
+@media print{ .top, .noimp, #error{display:none!important} body{background:#fff} .card{box-shadow:none;break-inside:avoid} main{padding:0} }
 @media (max-width:720px){
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .g2,.g3{grid-template-columns:1fr} .cadena{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mov .r .m{display:none}
@@ -170,6 +178,28 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
   <!-- MIS MOVIMIENTOS (empleado) -->
   <section id="v-mis" hidden><div class="card"><h2>Mis movimientos</h2><p class="sub">Lo que reportaste. Toca uno para completarlo.</p><div id="lMis"></div></div></section>
 
+  <!-- CORTE DE CAJA -->
+  <section id="v-corte" hidden>
+    <div class="noimp" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+      <input type="date" id="cFecha" style="max-width:180px">
+      <button class="btn" type="button" id="cAyer">◀ Día anterior</button><button class="btn" type="button" id="cHoy">Hoy</button>
+      <button class="btn" type="button" onclick="window.print()" style="margin-left:auto">🖨️ Imprimir</button>
+    </div>
+    <div id="corte"></div>
+  </section>
+
+  <!-- PEDIDOS -->
+  <section id="v-ped" hidden>
+    <div class="card"><h2>Pedidos con compras</h2><p class="sub">Lo pedido contra lo que ha llegado en las recepciones (cuando se compra por partes). Últimos 60 días.</p><div id="lPed"></div></div>
+  </section>
+
+  <!-- RETIROS DEL MES -->
+  <section id="v-rmes" hidden>
+    <div class="card"><h2>Retiros del mes</h2><p class="sub">Todos los retiros de caja del mes, aunque sean de antes de empezar la auditoría. Sirve para ver en qué se va el efectivo y ajustar qué pide comprobante.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px"><input type="month" id="mMes" style="max-width:200px"><button class="btn pri" type="button" id="mVer">Ver</button></div>
+      <div id="lMes"></div></div>
+  </section>
+
   <!-- BUSCAR -->
   <section id="v-bus" hidden>
     <div class="card"><h2>Buscar en el historial</h2><p class="sub">Folio del retiro (R-01842), pedido (P4509), compra de Microsip, empleado o concepto.</p>
@@ -201,7 +231,9 @@ dialog::backdrop{background:rgba(2,6,23,.55)}
         <div><label class="l" for="c_tipos_compra">Tipos que deben tener compra en Microsip</label><input id="c_tipos_compra" type="text" placeholder="compra"></div>
         <div><label class="l" for="c_proveedores_mostrador">Proveedores de mostrador (texto o regex)</label><input id="c_proveedores_mostrador" type="text" placeholder="BLOCKERA|ARENERA"></div>
         <div><label class="l" for="c_retiros_excluir">Retiros que NO piden comprobante (texto en la descripción)</label><input id="c_retiros_excluir" type="text" placeholder="PRÉSTAMO|NÓMINA"></div>
-        <div><label class="l" for="c_formas_comprobante">Formas de cobro que piden comprobante</label><input id="c_formas_comprobante" type="text" placeholder="TARJETA|TRANSFER|MERCADO PAGO"></div>
+        <div><label class="l" for="c_formas_sin_comprobante">Formas de cobro que NO piden comprobante</label><input id="c_formas_sin_comprobante" type="text" placeholder="EFECTIVO"></div>
+        <div><label class="l" for="c_formas_comprobante">Solo estas formas piden comprobante (vacío = todas las demás)</label><input id="c_formas_comprobante" type="text" placeholder="(todas)"></div>
+        <div><label class="l" for="c_retiros_gasto">Retiros que son gasto (no llevan recepción de compra)</label><input id="c_retiros_gasto" type="text" placeholder="GASOLINA|COMIDA|FLETE"></div>
       </div>
       <div id="msgCfg"></div>
       <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" type="submit">Guardar</button></div>
@@ -248,8 +280,8 @@ async function iniciar() {
   if (!r.ok) { $('error').hidden = false; $('error').textContent = r.msg || 'No se pudo abrir.'; $('quien').textContent = ''; return; }
   D = r; ROL = r.rol;
   $('quien').textContent = (ROL === 'empleado' ? r.yo : ROL === 'auditora' ? 'Auditora' : 'Administrador') + ' · cierre de comprobación ' + r.cierre + ' h';
-  const T = ROL === 'empleado' ? [['rep', 'Comprobar'], ['mis', 'Mis movimientos'], ['bus', 'Buscar']]
-    : [['hoy', 'Auditoría'], ['rep', 'Comprobar'], ['bus', 'Historial']].concat(ROL === 'admin' ? [['emp', 'Empleados'], ['cfg', 'Ajustes']] : []);
+  const T = ROL === 'empleado' ? [['rep', 'Comprobar'], ['corte', 'Corte de caja'], ['mis', 'Mis movimientos'], ['bus', 'Buscar']]
+    : [['hoy', 'Auditoría'], ['corte', 'Corte de caja'], ['rep', 'Comprobar'], ['ped', 'Pedidos'], ['rmes', 'Retiros del mes'], ['bus', 'Historial']].concat(ROL === 'admin' ? [['emp', 'Empleados'], ['cfg', 'Ajustes']] : []);
   $('tabs').innerHTML = T.map(([v, t]) => '<button type="button" role="tab" data-v="' + v + '">' + t + '</button>').join('');
   $('tabs').onclick = e => { const b = e.target.closest('button'); if (b) ir(b.dataset.v); };
   pintarRetiros(); $('rFecha').value = hoyMX();
@@ -262,6 +294,9 @@ function ir(v) {
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'v-' + v);
   if (v === 'hoy') cargarTablero();
   if (v === 'mis') cargarMis();
+  if (v === 'corte') { if (!$('cFecha').value) $('cFecha').value = hoyMX(); cargarCorte(); }
+  if (v === 'ped') cargarPedidos();
+  if (v === 'rmes') { if (!$('mMes').value) $('mMes').value = masDias(hoyMX().slice(0, 8) + '01', -1).slice(0, 7); cargarMes(); }
 }
 
 /* ---------------- tablero ---------------- */
@@ -339,8 +374,8 @@ function pintarDetalle() {
     h += '<div class="cadena">' +
       eslabon('Dinero que salió', true, $$(m.importe), ret ? 'retiro ' + esc(ret.folio) + ' · ' + esc(ret.hora) : esc(m.metodo)) +
       eslabon('Comprobantes', m.comprobado > 0 ? Math.abs(m.falta) <= 1 : false, $$(m.comprobado), r.comprobantes.length + ' foto' + (r.comprobantes.length === 1 ? '' : 's') + (Math.abs(m.falta) > 1 ? ' · dif. ' + $$(m.falta) : '')) +
-      (g.req_compra ? eslabon('Compra Microsip', c ? Math.abs(c.total - m.comprobado) <= Math.max(1, m.comprobado * 0.01) : false, c ? esc(c.folio) + ' · ' + $$(c.total) : 'No registrada', c ? esc(c.proveedor || '') + (c.auto ? ' · automática' : ' · a mano') : 'falta capturarla')
-        : eslabon('Compra Microsip', null, 'No aplica', TIPO[m.tipo] || m.tipo)) +
+      (g.req_compra ? eslabon('Recepción de compra', c ? Math.abs(c.total - m.comprobado) <= Math.max(1, m.comprobado * 0.01) : false, c ? esc(c.folio) + ' · ' + $$(c.total) : 'No capturada', c ? esc(c.proveedor || '') + (c.auto ? ' · automática' : ' · a mano') : 'falta capturarla en Microsip')
+        : eslabon('Recepción de compra', null, 'No aplica', TIPO[m.tipo] || m.tipo)) +
       (p ? eslabon('Pedido', p.folio && !p.cancelado, esc(p.folio || p.escrito), p.folio ? (p.cancelado ? 'CANCELADO' : esc(p.cliente || '')) : 'no existe en Microsip') : eslabon('Pedido', null, 'Sin pedido', 'opcional')) + '</div>';
     h += '<div class="g2"><div><div class="k" style="font-size:.78rem;color:var(--soft)">Motivo</div><b>' + esc(m.concepto) + '</b><div style="color:var(--soft);font-size:.84rem">' + esc(TIPO[m.tipo] || m.tipo) + (g.proveedor ? ' · ' + esc(g.proveedor) : '') + '</div></div>' +
       (ret ? '<div><div class="k" style="font-size:.78rem;color:var(--soft)">En caja dice</div><b>' + esc(ret.descripcion || '—') + '</b><div style="color:var(--soft);font-size:.84rem">cajero ' + esc(ret.usuario) + '</div></div>' : '') + '</div>';
@@ -348,11 +383,15 @@ function pintarDetalle() {
       '<a href="' + FOTO(k.id) + '" target="_blank" rel="noopener"><img src="' + FOTO(k.id) + '" alt="comprobante" loading="lazy">' + $$(k.importe) + ' · ' + esc(k.tipo) + '</a>').join('') + '</div>' : '<div class="vacio" style="padding:8px">Sin comprobantes.</div>') + '</div>';
     if (m.revision !== 'aprobado') h += '<div class="sec"><h4>Completar</h4><div class="g2"><div><label class="l" for="xPed">Pedido</label><input id="xPed" type="text" maxlength="30" value="' + esc(m.pedido || '') + '"></div><div><label class="l">Agregar comprobante</label><label class="subir" style="padding:9px"><input type="file" id="xFotos" accept="image/*" capture="environment" multiple hidden>📷 Agregar foto</label></div></div><div class="fotos" id="xLista"></div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri mini" type="button" id="xGuardar">Guardar cambios</button></div><div id="msgX"></div></div>';
     if (aud && r.cand && (g.req_compra || r.cand.length)) {
-      h += '<div class="sec"><h4>Compras de Microsip cercanas</h4>' + (r.cand.length ? '<table class="tabla"><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Total</th><th></th></tr>' + r.cand.map(c =>
+      h += '<div class="sec"><h4>Recepciones de Microsip cercanas</h4>' + (r.cand.length ? '<table class="tabla"><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Total</th><th></th></tr>' + r.cand.map(c =>
         '<tr><td>' + esc(c.folio) + '</td><td>' + fCorta(c.fecha) + '</td><td>' + esc(c.proveedor) + '</td><td>' + $$(c.total) + (c.dif > 1 ? ' <span class="chip c-naranja">dif ' + $$(c.dif) + '</span>' : '') + '</td><td>' +
         (g.compra && g.compra.id === c.id ? '<button class="btn mini" data-vinc="">Quitar</button>' : '<button class="btn mini" data-vinc="' + esc(c.id) + '">Vincular</button>') + '</td></tr>').join('') + '</table>'
-        : '<div class="vacio" style="padding:8px">No hay compras de Microsip en esas fechas.</div>') + '</div>';
+        : '<div class="vacio" style="padding:8px">No hay recepciones en Microsip en esas fechas.</div>') + '</div>';
     }
+    if (r.recepcion && r.recepcion.length) h += '<div class="sec"><h4>Qué llegó en la recepción ' + esc(c ? c.folio : '') + '</h4><table class="tabla"><tr><th>Artículo</th><th class="num">Unidades</th><th class="num">Importe</th></tr>' +
+      r.recepcion.map(x => '<tr><td>' + esc(x.articulo) + '</td><td class="num">' + Number(x.u).toLocaleString('es-MX') + '</td><td class="num">' + $$(x.importe) + '</td></tr>').join('') + '</table></div>';
+    if (r.pedido_cuadre && r.pedido_cuadre.length) h += '<div class="sec"><h4>Pedido ' + esc(p.folio) + ': pedido vs lo que ha llegado</h4>' + tablaCuadre(r.pedido_cuadre) +
+      (r.pedido_movs && r.pedido_movs.length > 1 ? '<div class="bit" style="margin-top:6px">Compras de este pedido: ' + r.pedido_movs.map(x => esc(x.folio) + ' ' + $$(x.importe) + (x.recepcion ? ' (' + esc(x.recepcion) + ')' : ' (sin recepción)')).join(' · ') + '</div>' : '') + '</div>';
     if (g.revision) h += '<div class="sec"><h4>Revisión</h4><div>' + (g.revision === 'aprobado' ? '🟢 Aprobado' : '🔴 Inconsistencia') + ' por ' + esc(g.revisado_por) + (g.revisado_en ? ' · ' + new Date(g.revisado_en).toLocaleString('es-MX') : '') + (g.revision_nota ? '<br><i>' + esc(g.revision_nota) + '</i>' : '') + '</div></div>';
   } else if (m.clase === 'retiro') {
     const ret = r.retiro;
@@ -429,6 +468,7 @@ function pintarRetiros() {
   $('retiros').onchange = () => {
     const k = kindSel();
     $('sinRetiro').hidden = k !== 'otro'; $('camposRet').hidden = k === 'cobro' || !k;
+    if (k === 'retiro' && D.gasto_re) { try { const ds = document.querySelector('input[name=ret]:checked').closest('.ret').textContent; $('rTipo').value = new RegExp(D.gasto_re, 'i').test(ds) ? 'gasto' : 'compra'; } catch (x) {} }
     if (k === 'cobro') { const q = document.querySelector('input[name=ret]:checked').dataset.que; FOTOS.forEach(f => f.tipo = QUE[q] || 'voucher'); if (FOTOS.length === 1) FOTOS[0].importe = impSel(); pintarFotos('lFotos', FOTOS); }
     pintarTotal();
   };
@@ -487,6 +527,93 @@ $('fRep').onsubmit = async e => {
   abrir('registro', String(r.id));
 };
 
+/* ---------------- corte de caja ---------------- */
+function tablaCuadre(L) {
+  return '<table class="tabla"><tr><th>Artículo</th><th class="num">Pedido</th><th class="num">Llegó</th><th></th></tr>' + L.map(x => {
+    const pu = x.pedido == null ? null : Number(x.pedido), ru = Number(x.recibido || 0), pct = pu ? Math.min(100, Math.round(ru / pu * 100)) : 0;
+    return '<tr><td>' + esc(x.articulo) + '</td><td class="num">' + (pu == null ? '<span class="chip c-naranja">no pedido</span>' : pu.toLocaleString('es-MX')) + '</td><td class="num">' + ru.toLocaleString('es-MX') + '</td><td>' +
+      (pu == null ? '' : '<div class="barra" title="' + pct + '%"><i style="width:' + pct + '%"></i></div>') + '</td></tr>';
+  }).join('') + '</table>';
+}
+let CORTE = null;
+$('cAyer').onclick = () => { $('cFecha').value = masDias($('cFecha').value || hoyMX(), -1); cargarCorte(); };
+$('cHoy').onclick = () => { $('cFecha').value = hoyMX(); cargarCorte(); };
+$('cFecha').onchange = cargarCorte;
+let nCorte = 0, nMes = 0;
+async function cargarCorte() {
+  const n = ++nCorte;
+  $('corte').innerHTML = '<div class="vacio">Cargando…</div>';
+  const r = await api({ op: 'corte', fecha: $('cFecha').value });
+  if (n !== nCorte) return;   // ya se pidió otro día
+  if (!r.ok) { $('corte').innerHTML = '<div class="msg mal">' + esc(r.msg) + '</div>'; return; }
+  CORTE = r; pintarCorte();
+}
+function pintarCorte() {
+  const r = CORTE, t = r.totales, F = r.formas, R = r.retiros;
+  const est = e => e === 'exento' ? '<span class="chip c-exento">no pide</span>' : '<span class="chip c-' + e + '">' + EMO[e] + ' ' + NOM[e] + '</span>';
+  let h = '<div class="card"><h2>Corte de caja · ' + new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</h2>' +
+    '<p class="sub">Todo lo que entró y salió de caja ese día según Microsip, con sus comprobantes.</p>' +
+    '<div class="kpis" style="margin:0"><div class="kpi"><b>' + $$(t.vendido) + '</b><span>cobrado en caja</span></div>' +
+    '<div class="kpi"><b>' + $$(t.efectivo_ventas) + '</b><span>💵 cobrado en efectivo</span></div>' +
+    '<div class="kpi"><b>' + $$(t.retiros) + '</b><span>retiros' + (t.retiros_exentos ? ' (' + $$(t.retiros_exentos) + ' sin comprobante)' : '') + '</span></div>' +
+    '<div class="kpi dinero"><b>' + $$(t.efectivo_neto) + '</b><span>efectivo neto (efectivo − retiros)</span></div></div></div>';
+  h += '<div class="card"><h2>Cobros por forma de pago</h2><div class="tw"><table class="tabla"><tr><th>Forma</th><th class="num">Tickets</th><th class="num">Importe</th><th>Comprobantes</th></tr>' +
+    F.map(f => '<tr><td><b>' + esc(f.forma) + '</b></td><td class="num">' + f.tickets + '</td><td class="num">' + $$(f.importe) + '</td><td>' +
+      (f.sin_comprobante ? '<span class="chip c-exento">lo firmas tú</span>' : (f.faltan ? '<span class="chip c-rojo">faltan ' + f.faltan + ' · ' + $$(f.faltan_monto) + '</span> ' : '') + (f.ok ? '<span class="chip c-verde">✓ ' + f.ok + '</span> ' : '') + (f.ignorados ? '<span class="chip c-exento">' + f.ignorados + ' no requiere</span>' : '')) +
+      '</td></tr>').join('') + (F.length ? '' : '<tr><td colspan="4" class="vacio">Sin cobros.</td></tr>') + '</table></div></div>';
+  h += '<div class="card"><h2>Retiros de caja</h2><div class="tw"><table class="tabla"><tr><th>Folio</th><th>Hora</th><th>Descripción</th><th class="num">Importe</th><th>Estado</th></tr>' +
+    R.map(x => '<tr class="' + (x.registro_id || x.estado !== 'exento' ? 'mov-t' : '') + '" data-c="' + (x.registro_id ? 'registro' : 'retiro') + '" data-r="' + esc(x.registro_id || x.ref) + '" style="cursor:' + (x.estado === 'exento' ? 'default' : 'pointer') + '"><td>' + esc(x.folio) + '</td><td>' + esc(x.hora) + '</td><td>' + esc(x.descripcion) +
+      (x.recepcion ? '<div class="bit">recepción ' + esc(x.recepcion) + '</div>' : '') + '</td><td class="num">' + $$(x.importe) + '</td><td>' + est(x.estado) +
+      (x.estado !== 'verde' && x.estado !== 'exento' ? '<div class="bit">' + esc(x.motivo || '') + '</div>' : '') + '</td></tr>').join('') +
+    (R.length ? '' : '<tr><td colspan="5" class="vacio">Sin retiros.</td></tr>') + '</table></div></div>';
+  const fi = r.firma, pend = r.pendientes;
+  h += '<div class="card">' + (pend.n ? '<div class="aviso">⚠️ Quedan ' + pend.n + ' movimiento' + (pend.n > 1 ? 's' : '') + ' de este día sin comprobar · ' + $$(pend.monto) + '</div>' : '<div class="msg bien" style="margin:0 0 10px">✅ Todo lo de este día está comprobado.</div>');
+  if (fi) h += '<div class="firma ok"><b>✍️ Corte firmado por ' + esc(fi.por) + '</b> · ' + new Date(fi.en).toLocaleString('es-MX') + '<br>Efectivo esperado ' + $$(fi.esperado) + ' · entregado <b>' + $$(fi.entregado) + '</b> · diferencia <b style="color:var(--' + (Math.abs(fi.diferencia) < 1 ? 'verde' : 'rojo') + ')">' + $$(fi.diferencia) + '</b>' +
+    (fi.pendientes ? '<br>Al firmar quedaban ' + fi.pendientes + ' sin comprobar (' + $$(fi.pendiente_monto) + ')' : '') + (fi.nota ? '<br><i>' + esc(fi.nota) + '</i>' : '') + '</div>';
+  if (ROL !== 'empleado') h += '<div class="firma noimp"><b>' + (fi ? 'Volver a firmar' : 'Firmar el corte') + '</b><p class="bit" style="margin:4px 0 10px">En lugar de la libreta: escribe el efectivo que te entregaron. Queda guardado con fecha, hora y quién firmó.</p>' +
+    '<div class="g3"><div><label class="l" for="fEnt">Efectivo entregado</label><input id="fEnt" type="number" step="0.01" inputmode="decimal" placeholder="' + Number(t.efectivo_neto).toFixed(2) + '"></div>' +
+    '<div style="grid-column:span 2"><label class="l" for="fNota">Nota (opcional)</label><input id="fNota" type="text" maxlength="300"></div></div>' +
+    '<div id="fDif" class="bit" style="margin-top:8px"></div><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn pri" type="button" id="fFirmar">✍️ Firmar corte</button></div><div id="msgF"></div></div>';
+  h += '</div>';
+  $('corte').innerHTML = h;
+  if ($('fFirmar')) {
+    $('fEnt').oninput = () => { const v = $('fEnt').value; $('fDif').textContent = v === '' ? '' : 'Diferencia: ' + $$(Number(v) - Number(t.efectivo_neto)); };
+    $('fFirmar').onclick = async () => {
+      if ($('fEnt').value === '') return aviso('msgF', 'Escribe el efectivo que te entregaron.');
+      const r2 = await api({ op: 'firmar', fecha: r.fecha, esperado: t.efectivo_neto, entregado: $('fEnt').value, nota: $('fNota').value, pendientes: pend.n, pendiente_monto: pend.monto });
+      if (!r2.ok) return aviso('msgF', r2.msg);
+      toast('Corte firmado'); cargarCorte();
+    };
+  }
+}
+$('corte').addEventListener('click', e => { const tr = e.target.closest('tr.mov-t'); if (tr) abrir(tr.dataset.c, tr.dataset.r); });
+
+/* ---------------- pedidos / retiros del mes ---------------- */
+async function cargarPedidos() {
+  $('lPed').innerHTML = '<div class="vacio">Cargando…</div>';
+  const r = await api({ op: 'pedidos' });
+  if (!r.ok) { $('lPed').innerHTML = '<div class="msg mal">' + esc(r.msg) + '</div>'; return; }
+  $('lPed').innerHTML = r.pedidos.length ? r.pedidos.map(p => '<div class="sec" style="border-top:1px solid var(--line);padding-top:12px"><h4 style="color:var(--ink);text-transform:none;letter-spacing:0;font-size:.98rem">' + esc(p.pedido) + ' · ' + esc(p.cliente || '') +
+    '</h4><div class="bit" style="margin-bottom:6px">' + p.movimientos + ' compra' + (p.movimientos > 1 ? 's' : '') + ' · ' + $$(p.gastado) + ' · ' + p.con_recepcion + ' con recepción · ' +
+    (p.movs || []).map(x => '<a href="#" data-c="registro" data-r="' + x.ref + '" class="vermov">' + esc(x.folio) + '</a>').join(', ') + '</div>' + (p.articulos ? tablaCuadre(p.articulos) : '') + '</div>').join('')
+    : '<div class="vacio">Todavía no hay compras ligadas a pedidos.</div>';
+}
+$('lPed').addEventListener('click', e => { const a = e.target.closest('.vermov'); if (a) { e.preventDefault(); abrir(a.dataset.c, a.dataset.r); } });
+$('mVer').onclick = cargarMes;
+async function cargarMes() {
+  const n = ++nMes;
+  $('lMes').innerHTML = '<div class="vacio">Cargando…</div>';
+  const r = await api({ op: 'retiros_mes', mes: $('mMes').value });
+  if (n !== nMes) return;
+  if (!r.ok) { $('lMes').innerHTML = '<div class="msg mal">' + esc(r.msg) + '</div>'; return; }
+  const CAT = { 'sin comprobante': '🟰 No piden comprobante (préstamo, nómina…)', gasto: '🧾 Gastos (sin recepción de compra)', 'compra / otro': '📦 Compras y otros (llevan recepción)' };
+  $('lMes').innerHTML = '<div class="kpis">' + r.categorias.map(c => '<div class="kpi"><b>' + $$(c.importe) + '</b><span>' + esc(CAT[c.categoria] || c.categoria) + ' · ' + c.n + '</span></div>').join('') +
+    '<div class="kpi dinero"><b>' + $$(r.total) + '</b><span>total · ' + r.n + ' retiros</span></div></div>' +
+    (r.palabras.length ? '<div class="sec"><h4>Palabras que más se repiten</h4><div class="chipw">' + r.palabras.map(p => '<span>' + esc(p.palabra) + ' · ' + p.n + ' · ' + $$(p.importe) + '</span>').join('') + '</div></div>' : '') +
+    '<div class="sec"><h4>Todos</h4><div class="tw"><table class="tabla"><tr><th>Fecha</th><th>Folio</th><th>Descripción</th><th class="num">Importe</th><th>Categoría</th></tr>' +
+    r.lista.map(x => '<tr><td>' + fCorta(x.fecha) + ' ' + esc(x.hora) + '</td><td>' + esc(x.folio) + '</td><td>' + esc(x.descripcion) + '</td><td class="num">' + $$(x.importe) + '</td><td>' + esc(x.categoria) + (x.reportado ? ' ✓' : '') + '</td></tr>').join('') + '</table></div></div>';
+}
+
 /* ---------------- mis movimientos / buscar ---------------- */
 async function cargarMis() {
   const r = await api({ op: 'mis' });
@@ -517,7 +644,7 @@ $('tEmpleados').onclick = async e => {
   if (b) { if (!b.dataset.act && !confirm('¿Desactivar? Su liga deja de funcionar.')) return; const r = await api({ op: 'empleado', token: b.dataset.emp, activo: !!b.dataset.act }); if (!r.ok) return toast(r.msg); recargarDatos(); }
 };
 async function recargarDatos() { const d = await api({ op: 'datos' }); if (d.ok) { D = Object.assign(D, d); pintarEmpleados(); pintarConfig(); pintarRetiros(); } }
-const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir', 'formas_comprobante'];
+const CFG = ['hora_cierre', 'tolerancia', 'desde', 'dias_compra', 'margen_compra', 'compras_sin_comprobante', 'tipos_compra', 'proveedores_mostrador', 'retiros_excluir', 'formas_comprobante', 'formas_sin_comprobante', 'retiros_gasto'];
 function pintarConfig() { const c = D.config || {}; CFG.forEach(k => { if ($('c_' + k)) $('c_' + k).value = c[k] ?? ''; }); }
 $('fCfg').onsubmit = async e => {
   e.preventDefault();

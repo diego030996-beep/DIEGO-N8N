@@ -31,6 +31,20 @@ ELSE json_build_object('ok', true,
              FROM cob k, x LEFT JOIN e ON true WHERE k.id = CASE WHEN x.clase = 'cobro' THEN x.ref ELSE e.cobro_id END),
   'compra', (SELECT json_build_object('folio', c.folio, 'fecha', c.fecha, 'total', c.total, 'proveedor', c.proveedor, 'condicion', c.cond_nombre)
              FROM cmp c, x WHERE x.clase = 'compra' AND c.id = x.ref),
+  'recepcion', (SELECT coalesce(json_agg(json_build_object('articulo', coalesce(a.nombre, 'artículo ' || x.articulo_id), 'clave', a.clave, 'u', x.u, 'importe', x.imp) ORDER BY a.nombre), '[]')
+                FROM e CROSS JOIN cfg JOIN cdet x ON x.id = e.cm_id LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = x.articulo_id),
+  'pedido_cuadre', (SELECT json_agg(json_build_object('articulo', coalesce(a.nombre, z.articulo, 'artículo ' || z.articulo_id), 'pedido', z.pu, 'recibido', z.ru) ORDER BY z.pu IS NULL, a.nombre)
+                    FROM e CROSS JOIN cfg
+                    CROSS JOIN LATERAL (
+                      SELECT coalesce(p.articulo_id, r.articulo_id) AS articulo_id, p.articulo, p.u AS pu, coalesce(r.u, 0) AS ru
+                      FROM (SELECT * FROM pdet WHERE pdet.fn = e.ped_norm) p
+                      FULL JOIN (SELECT x.articulo_id, sum(x.u) AS u FROM reg g2 JOIN cdet x ON x.id = g2.cm_id WHERE g2.ped_norm = e.ped_norm GROUP BY 1) r
+                        ON r.articulo_id = p.articulo_id) z
+                    LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = z.articulo_id
+                    WHERE e.ped_norm <> '' AND e.ped_folio IS NOT NULL),
+  'pedido_movs', (SELECT json_agg(json_build_object('ref', g2.id, 'folio', coalesce(g2.retiro_folio, 'M-' || g2.id), 'fecha', g2.fecha, 'importe', g2.importe,
+                    'recepcion', g2.cm_folio, 'empleado', g2.empleado) ORDER BY g2.fecha, g2.id)
+                  FROM e JOIN reg g2 ON g2.ped_norm = e.ped_norm WHERE e.ped_norm <> ''),
   'cand', CASE WHEN cfg.p->>'_rol' IN ('admin', 'auditora') THEN (SELECT coalesce(json_agg(cand), '[]') FROM cand) END,
   'ignorado', (SELECT json_build_object('motivo', i.motivo, 'por', i.por, 'creado', i.creado) FROM ign i, x WHERE i.tipo = x.clase AND i.ref = x.ref),
   'bitacora', (SELECT coalesce(json_agg(json_build_object('accion', b.accion, 'detalle', b.detalle, 'por', b.por, 'creado', b.creado) ORDER BY b.id), '[]')

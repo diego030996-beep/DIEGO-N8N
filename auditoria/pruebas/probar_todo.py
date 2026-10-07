@@ -44,7 +44,8 @@ ok('R-01848' not in folios, 'retiro de depósito excluido por configuración', f
 ok('R-01860' not in folios and 'R-01849' not in folios, 'sin cancelados ni anteriores al inicio', folios)
 ok('R-01852' not in folios and 'R-01853' not in folios, 'préstamo y nómina no piden comprobante', folios)
 cb = {c['folio'] + ' ' + c['forma']: c for c in d['cobros']}
-ok(set(cb) == {'T-100 TARJETA DE DEBITO', 'T-101 TRANSFERENCIA', 'T-102 MERCADO PAGO', 'T-105 TARJETA DE DEBITO'}, 'cobros que piden comprobante (sin efectivo, crédito ni cancelados)', list(cb))
+ok(set(cb) == {'T-100 TARJETA DE DEBITO', 'T-101 TRANSFERENCIA', 'T-102 MERCADO PAGO', 'T-103 CREDITO', 'T-105 TARJETA DE DEBITO'}, 'todas las formas menos efectivo piden comprobante (sin cancelados)', list(cb))
+ok(cb['T-103 CREDITO']['que'] == 'ticket firmado', 'crédito pide el ticket firmado')
 ok(cb['T-100 TARJETA DE DEBITO']['importe'] == 1160 and cb['T-100 TARJETA DE DEBITO']['que'] == 'voucher' and cb['T-100 TARJETA DE DEBITO']['referencia'] == 'AUT3100', 'cobro con tarjeta: importe de esa forma, voucher y referencia')
 ok(cb['T-102 MERCADO PAGO']['que'] == 'Mercado Pago' and cb['T-101 TRANSFERENCIA']['que'] == 'transferencia', 'qué comprobante pide cada forma')
 ok(next(r for r in d['retiros'] if r['folio'] == 'R-01842')['importe'] == 500, 'importe del retiro desde los cobros')
@@ -75,14 +76,14 @@ ok(all(x['ok'] for x in [r2, r3, r5, r8, r10, r13, r14]), 'registros de prueba',
 
 # antes del cierre (18:00): lo que no está completo es "pendiente", no rojo
 t = tab('2026-10-07 18:00')
-ok(fila(t, 'R-01844')['estado'] == 'pendiente' and 'Falta registrar la compra' in fila(t, 'R-01844')['motivo'], 'antes del cierre: compra pendiente', fila(t, 'R-01844'))
+ok(fila(t, 'R-01844')['estado'] == 'pendiente' and 'Falta capturar la recepción' in fila(t, 'R-01844')['motivo'], 'antes del cierre: recepción pendiente', fila(t, 'R-01844'))
 ok(fila(t, 'R-01846')['estado'] == 'pendiente', 'antes del cierre: retiro sin reportar pendiente')
 ok(fila(t, 'M-' + str(r10['id']))['estado'] == 'pendiente', 'antes del cierre: sin comprobante pendiente')
 
 t = tab()
 f = fila(t, 'R-01842'); ok(f['estado'] == 'verde' and f['motivo'] == 'Cuadrado' and f['compra'] == 'C-8391', '🟢 cuadrado con compra y pedido', f)
 f = fila(t, 'R-01843'); ok(f['estado'] == 'naranja' and 'Faltan comprobar 30.00' in f['motivo'] and f['compra'] == 'C-8392', '🟠 faltan comprobar 30', f)
-f = fila(t, 'R-01844'); ok(f['estado'] == 'rojo' and 'COMPRA NO REGISTRADA' in f['motivo'], '🔴 compra no registrada', f)
+f = fila(t, 'R-01844'); ok(f['estado'] == 'rojo' and 'FALTA RECEPCIÓN' in f['motivo'], '🔴 falta la recepción de compra', f)
 f = fila(t, 'C-8393'); ok(f and f['estado'] == 'rojo' and f['clase'] == 'compra' and 'FALTA COMPROBANTE' in f['motivo'], '🔴 compra de contado sin comprobante', f)
 ok(fila(t, 'R-8394') is None and fila(t, 'C-8395') is not None, 'recepción que pasó a compra no se duplica')
 ok(fila(t, 'C-8398') is None, 'compra a crédito no pide comprobante')
@@ -92,7 +93,7 @@ f = fila(t, 'R-01846'); ok(f['estado'] == 'rojo' and f['motivo'] == 'RETIRO SIN 
 f = fila(t, 'R-01847'); ok(f['estado'] == 'pendiente', 'retiro después del cierre vence mañana', f)
 f = fila(t, 'M-' + str(r8['id'])); ok(f['estado'] == 'verde' and f['compra'] is None, '🟢 gasolina por transferencia (no pide compra)', f)
 f = fila(t, 'M-' + str(r10['id'])); ok(f['estado'] == 'rojo' and f['motivo'] == 'FALTA COMPROBANTE', '🔴 sin comprobante después del cierre', f)
-f = fila(t, 'R-01850'); ok(f['estado'] == 'naranja' and '2 compras posibles' in f['motivo'], '🟠 dos compras posibles', f)
+f = fila(t, 'R-01850'); ok(f['estado'] == 'naranja' and '2 recepciones posibles' in f['motivo'], '🟠 dos recepciones posibles', f)
 res = t['resumen']
 ok(res['verde'] == 2 and res['rojo'] >= 4, 'resumen', res)
 ok(abs(float(res['sin_comprobar']) - (30 + 300 + 250 + 696 + 150 + 120 + 700 + 0)) < 1 or float(res['sin_comprobar']) > 0, 'monto sin comprobar', res)
@@ -105,7 +106,7 @@ ok(t2['atrasados']['n'] >= 4 and any(x['atrasado'] for x in t2['lista']), 'probl
 
 # completar: subir comprobante faltante (R-01843: +30) → cuadra
 ok(correr('actualizar', {'id': str(r2['id']), 'comprobantes': comp(30)}, por='JUAN', rol='empleado')['ok'], 'empleado agrega comprobante')
-f = fila(tab(), 'R-01843'); ok(f['estado'] == 'naranja' and 'La compra en Microsip es de 470.00' in f['motivo'], 'ahora el ticket no coincide con la compra', f)
+f = fila(tab(), 'R-01843'); ok(f['estado'] == 'naranja' and 'La recepción C-8392 es de 470.00' in f['motivo'], 'ahora el ticket no coincide con la recepción', f)
 ok(not correr('actualizar', {'id': str(r2['id']), 'pedido': 'X'}, por='PEDRO', rol='empleado')['ok'], 'otro empleado no puede tocarlo')
 # sin comprobante → sube foto → verde
 ok(correr('actualizar', {'id': str(r10['id']), 'comprobantes': comp(120)}, por='PEDRO', rol='empleado')['ok'], 'subir comprobante después')
@@ -170,7 +171,8 @@ f = fila(t, 'T-100'); ok(f and f['clase'] == 'cobro' and f['estado'] == 'rojo' a
 f = fila(t, 'T-101'); ok(f['motivo'] == 'FALTA COMPROBANTE DE TRANSFERENCIA', '🔴 transferencia sin comprobante', f)
 f = fila(t, 'T-102'); ok(f['motivo'] == 'FALTA COMPROBANTE DE MERCADO PAGO', '🔴 Mercado Pago sin comprobante', f)
 f = fila(t, 'T-105'); ok(f['estado'] == 'pendiente' and 'voucher' in f['motivo'], 'cobro después del cierre vence mañana', f)
-ok(fila(t, 'T-103') is None and fila(t, 'T-106') is None and fila(t, 'T-104') is None, 'crédito, efectivo y cancelado no salen')
+f = fila(t, 'T-103'); ok(f and f['motivo'] == 'FALTA TICKET FIRMADO', '🔴 venta a crédito sin ticket firmado', f)
+ok(fila(t, 'T-106') is None and fila(t, 'T-104') is None, 'efectivo y cancelado no salen')
 kid = cb['T-100 TARJETA DE DEBITO']['id']
 rc = correr('registrar', {'cobro_id': kid, 'comprobantes': comp(1160)}, ahora='2026-10-07 18:00', por='JUAN', rol='empleado')
 ok(rc['ok'], 'subir voucher', rc)
@@ -185,6 +187,43 @@ dc = correr('detalle', {'clase': 'cobro', 'ref': cb['T-102 MERCADO PAGO']['id']}
 ok(dc['ok'] and dc['cobro']['importe'] == 800, 'detalle de cobro sin comprobante', dc)
 ok(correr('ignorar', {'tipo': 'cobro', 'ref': cb['T-102 MERCADO PAGO']['id'], 'motivo': 'cliente frecuente, se revisa en Mercado Pago'})['ok'] and fila(tab(), 'T-102') is None, 'cobro: no requiere comprobante')
 ok(not correr('registrar', {'cobro_id': '1:1'}, por='JUAN', rol='empleado')['ok'], 'cobro inexistente')
+
+# ---------- recepción contra el pedido (compras por partes) ----------
+rp = reg({'retiro_id': '1851', 'tipo': 'compra', 'concepto': 'varilla para la obra', 'pedido': 'P4509', 'comprobantes': comp(700)})
+f = fila(tab(), 'R-01851'); ok(f['estado'] == 'naranja' and 'VARILLA 3/8 y no está en el pedido P0004509' in f['motivo'], '🟠 la recepción trae algo que no está en el pedido', f)
+dp = correr('detalle', {'clase': 'registro', 'ref': str(id1)})
+ok([x['articulo'] for x in dp['recepcion']] == ['BLOCK LIGERO'] and dp['recepcion'][0]['u'] == 100, 'expediente: qué llegó en la recepción', dp['recepcion'])
+pc = {x['articulo']: x for x in dp['pedido_cuadre']}
+ok(pc['BLOCK LIGERO']['pedido'] == 1000 and pc['BLOCK LIGERO']['recibido'] == 100 and pc['CEMENTO GRIS']['recibido'] == 0, 'cuadre del pedido: pedido vs recibido', dp['pedido_cuadre'])
+ok(pc['VARILLA 3/8']['pedido'] is None and pc['VARILLA 3/8']['recibido'] == 20, 'cuadre: lo recibido que no estaba pedido', pc.get('VARILLA 3/8'))
+ok(len(dp['pedido_movs']) >= 3, 'todos los movimientos del pedido', dp['pedido_movs'])
+pe = correr('pedidos', {})
+p1 = next(x for x in pe['pedidos'] if x['pedido'] == 'P0004509')
+ok(p1['movimientos'] >= 3 and {a['articulo'] for a in p1['articulos']} >= {'BLOCK LIGERO', 'CEMENTO GRIS', 'VARILLA 3/8'}, 'lista de pedidos con compras', p1)
+
+# ---------- corte de caja ----------
+co = correr('corte', {'fecha': '2026-10-07'})
+fm = {x['forma']: x for x in co['formas']}
+ok(fm['EFECTIVO']['sin_comprobante'] and fm['EFECTIVO']['importe'] == 500 and not fm['TARJETA DE DEBITO']['sin_comprobante'], 'corte: efectivo no pide comprobante', co['formas'])
+ok(fm['TARJETA DE DEBITO']['importe'] == 1610 and fm['TARJETA DE DEBITO']['ok'] == 1 and fm['TARJETA DE DEBITO']['faltan'] == 1, 'corte: tarjeta con 1 voucher y 1 pendiente', fm['TARJETA DE DEBITO'])
+ok(fm['CREDITO']['faltan'] == 1 and fm['CREDITO']['faltan_monto'] == 5000, 'corte: crédito sin ticket firmado', fm['CREDITO'])
+rr = {x['folio']: x for x in co['retiros']}
+ok(rr['R-01852']['estado'] == 'exento' and rr['R-01853']['estado'] == 'exento' and rr['R-01842']['estado'] == 'verde', 'corte: retiros con préstamo y nómina exentos', [(k, v['estado']) for k, v in rr.items()])
+tot = co['totales']
+ok(tot['efectivo_ventas'] == 500 and tot['retiros_exentos'] == 18000 and tot['efectivo_neto'] == 500 - tot['retiros'], 'corte: efectivo neto', tot)
+ok(co['firma'] is None and co['pendientes']['n'] > 0, 'corte sin firmar con pendientes')
+fi = correr('firmar', {'fecha': '2026-10-07', 'esperado': str(tot['efectivo_neto']), 'entregado': str(tot['efectivo_neto'] - 50), 'nota': 'faltan 50', 'pendientes': '3', 'pendiente_monto': '100'}, rol='admin', por='Administrador')
+ok(fi['ok'] and fi['diferencia'] == -50, 'firmar corte', fi)
+co = correr('corte', {'fecha': '2026-10-07'})
+ok(co['firma']['por'] == 'Administrador' and co['firma']['diferencia'] == -50 and co['firma']['nota'] == 'faltan 50', 'corte firmado', co['firma'])
+ok(correr('firmar', {'fecha': '2026-10-07', 'esperado': '0', 'entregado': '0', 'pendientes': '0', 'pendiente_monto': '0'}, rol='admin')['ok'] and correr('corte', {'fecha': '2026-10-07'})['firma']['diferencia'] == 0, 'volver a firmar reemplaza')
+# ---------- retiros del mes ----------
+rm = correr('retiros_mes', {'mes': '2026-10'})
+cat = {x['categoria']: x for x in rm['categorias']}
+ok(cat['sin comprobante']['n'] == 3 and cat['sin comprobante']['importe'] == 18000, 'retiros del mes: préstamo, nómina y depósito', rm['categorias'])
+ok('gasto' in cat and rm['n'] == 11, 'retiros del mes: todos (aunque estén excluidos)', (rm['n'], list(cat)))
+ok(any(p['palabra'] == 'COMPRA' for p in rm['palabras']), 'palabras más usadas', rm['palabras'][:5])
+ok(correr('retiros_mes', {'mes': '2026-09'})['n'] == 1, 'mes anterior (antes de empezar la auditoría)')
 
 # avisos: incluyen 🟠 que pasaron la hora límite
 psql('DELETE FROM mov_aviso')

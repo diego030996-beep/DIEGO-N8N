@@ -9,8 +9,8 @@ const falta = a => {
   if (a.clase === 'retiro') return 'reportarlo + ticket';
   if (a.clase === 'cobro') return String(a.motivo).replace(/^FALTA /, '').toLowerCase();
   if (a.clase === 'compra') return 'comprobante de la compra';
-  if (/FALTA COMPROBANTE/.test(a.motivo)) return a.tipo === 'compra' ? 'ticket + registro de compra en Microsip' : 'ticket';
-  if (/COMPRA NO REGISTRADA/.test(a.motivo)) return 'registro de compra en Microsip';
+  if (/FALTA COMPROBANTE/.test(a.motivo)) return a.tipo === 'compra' ? 'ticket + recepción de compra en Microsip' : 'ticket';
+  if (/FALTA RECEPCI/.test(a.motivo)) return 'recepción de compra en Microsip';
   return a.motivo;
 };
 const L = A.slice(0, 20).map(a => `${a.estado === 'rojo' ? '🔴' : '🟠'} <b>${esc(a.folio)}</b> · ${$$(a.importe)} · ${esc(a.empleado || '?')}` +

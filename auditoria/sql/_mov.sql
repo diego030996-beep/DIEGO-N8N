@@ -18,11 +18,15 @@ cob0 AS (   -- cobros de caja con formas que piden comprobante (tarjeta → vouc
   JOIN ms_raw c ON c.base = v.base AND c.tabla = 'DOCTOS_PV_COBROS' AND c.datos->>'DOCTO_PV_ID' = v.docto_id::text
   JOIN ms_raw fc ON fc.base = v.base AND fc.tabla = 'FORMAS_COBRO' AND fc.pk = c.datos->>'FORMA_COBRO_ID'
   WHERE v.base = cfg.base AND v.origen = 'PV' AND upper(v.tipo) IN ('V', 'P') AND NOT v.cancelado AND v.fecha >= cfg.desde
-    AND cfg.formas <> '' AND coalesce(fc.datos->>'NOMBRE', '') ~* cfg.formas
+    AND (cfg.formas = '' OR coalesce(fc.datos->>'NOMBRE', '') ~* cfg.formas)
+    AND (cfg.formas_sin = '' OR NOT (coalesce(fc.datos->>'NOMBRE', '') ~* cfg.formas_sin))
   GROUP BY 1, 2, 3, 4, 5, 6, 7, 8),
 cob AS (
   SELECT c.*, c.docto || ':' || c.forma_id AS id,
-         CASE WHEN c.forma ~* 'tarjeta|t\.? ?d\.? ?[cd]|terminal|d[eé]bito|cr[eé]dito' THEN 'voucher' WHEN c.forma ~* 'mercado' THEN 'Mercado Pago' ELSE 'transferencia' END AS que,
+         CASE WHEN c.forma ~* 'tarjeta|t\.? ?d\.? ?[cd]\y|terminal|tpv|d[eé]bito|voucher' THEN 'voucher'
+              WHEN c.forma ~* 'cr[eé]dito' THEN 'ticket firmado'
+              WHEN c.forma ~* 'mercado' THEN 'Mercado Pago'
+              WHEN c.forma ~* 'transfer|spei|dep[oó]sito' THEN 'transferencia' ELSE 'comprobante' END AS que,
          (CASE WHEN c.hora ~ '^[0-9]{1,2}:[0-9]{2}' AND c.hora::time > cfg.cierre THEN c.fecha + 1 ELSE c.fecha END) + cfg.cierre AS vence
   FROM cob0 c, cfg WHERE c.importe > 0),
 cm0 AS (   -- compras (C) y recepciones (R) de Microsip, sin canceladas
@@ -71,11 +75,15 @@ par2 AS (   -- segunda vuelta para los que perdieron su compra contra otro regis
 r2 AS (SELECT reg_id, cm_id, cands FROM (SELECT p.*, row_number() OVER (PARTITION BY cm_id ORDER BY d1, gf, reg_id) AS rc FROM par2 p WHERE rn2 = 1) z WHERE rc = 1),
 auto AS (SELECT * FROM r1 UNION ALL SELECT * FROM r2),
 ped AS (   -- pedidos / remisiones / facturas de Ventas que se mencionan
-  SELECT DISTINCT ON (fn) v.folio, v.tipo, v.fecha, v.cliente, v.total, v.cancelado, x.fn
+  SELECT DISTINCT ON (fn) v.docto_id, v.folio, v.tipo, v.fecha, v.cliente, v.total, v.cancelado, x.fn
   FROM ms_ventas_v v CROSS JOIN cfg
   CROSS JOIN LATERAL (SELECT upper(regexp_replace(v.folio, '[^A-Za-z]', '', 'g')) || coalesce(nullif(ltrim(regexp_replace(v.folio, '[^0-9]', '', 'g'), '0'), ''), '') AS fn) x
   WHERE v.base = cfg.base AND v.origen = 'VE' AND v.tipo IN ('P', 'R', 'F') AND x.fn IN (SELECT ped_norm FROM reg0 WHERE ped_norm <> '')
   ORDER BY fn, v.cancelado, (v.tipo = 'P') DESC, v.fecha DESC),
+pdet AS (   -- artículos de cada pedido mencionado
+  SELECT p.fn, d.articulo_id, max(d.articulo) AS articulo, sum(abs(d.unidades)) AS u
+  FROM ped p CROSS JOIN cfg JOIN ms_ventas_det d ON d.base = cfg.base AND d.origen = 'VE' AND d.docto_id = p.docto_id
+  WHERE d.articulo_id IS NOT NULL GROUP BY 1, 2),
 reg AS (
   SELECT g.*, coalesce(g.compra_id, a.cm_id) AS cm_id, (g.compra_id IS NULL AND a.cm_id IS NOT NULL) AS cm_auto, coalesce(a.cands, 0) AS cands,
          c.folio AS cm_folio, c.total AS cm_total, c.proveedor AS cm_proveedor, c.fecha AS cm_fecha,
@@ -88,6 +96,21 @@ reg AS (
   LEFT JOIN cmp c ON c.id = coalesce(g.compra_id, a.cm_id)
   LEFT JOIN ped pd ON pd.fn = g.ped_norm AND g.ped_norm <> ''
   LEFT JOIN ret r ON r.id = g.retiro_id),
+cdet AS (   -- lo que llegó en cada recepción / compra ligada
+  SELECT d.datos->>'DOCTO_CM_ID' AS id, (d.datos->>'ARTICULO_ID')::bigint AS articulo_id,
+         sum(CASE WHEN (d.datos->>'UNIDADES') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (d.datos->>'UNIDADES')::numeric ELSE 0 END) AS u,
+         sum(CASE WHEN (d.datos->>'PRECIO_TOTAL_NETO') ~ '^-?[0-9]+(\.[0-9]+)?\Z' THEN (d.datos->>'PRECIO_TOTAL_NETO')::numeric ELSE 0 END) AS imp
+  FROM ms_raw d, cfg
+  WHERE d.base = cfg.base AND d.tabla = 'DOCTOS_CM_DET' AND (d.datos->>'ARTICULO_ID') ~ '^[0-9]{1,18}\Z'
+    AND d.datos->>'DOCTO_CM_ID' IN (SELECT cm_id FROM reg WHERE cm_id IS NOT NULL)
+  GROUP BY 1, 2),
+fuera AS (   -- la recepción trae artículos que no están en el pedido (¿para qué se compró?)
+  SELECT g.id, string_agg(DISTINCT coalesce(a.nombre, 'artículo ' || x.articulo_id), ', ') AS arts
+  FROM reg g CROSS JOIN cfg JOIN cdet x ON x.id = g.cm_id
+  LEFT JOIN ms_articulos a ON a.base = cfg.base AND a.articulo_id = x.articulo_id
+  WHERE g.ped_folio IS NOT NULL AND EXISTS (SELECT 1 FROM pdet WHERE pdet.fn = g.ped_norm)
+    AND NOT EXISTS (SELECT 1 FROM pdet WHERE pdet.fn = g.ped_norm AND pdet.articulo_id = x.articulo_id)
+  GROUP BY g.id),
 est AS (   -- semáforo de cada registro (la primera regla que aplica)
   SELECT g.*, cfg.ahora > g.vence AS vencido,
     CASE WHEN g.revision = 'aprobado' THEN 'verde' WHEN g.revision = 'inconsistencia' THEN 'rojo'
@@ -96,21 +119,23 @@ est AS (   -- semáforo de cada registro (la primera regla que aplica)
          WHEN abs(g.falta) > cfg.tol THEN 'naranja'
          WHEN g.req_compra AND abs(g.cm_total - g.comprobado) > greatest(cfg.tol, g.comprobado * 0.01) THEN 'naranja'
          WHEN g.ped_norm <> '' AND (g.ped_folio IS NULL OR g.ped_cancelado) THEN 'naranja'
+         WHEN fu.arts IS NOT NULL THEN 'naranja'
          WHEN g.cands > 1 THEN 'naranja'
          ELSE 'verde' END AS estado,
     CASE WHEN g.revision = 'aprobado' THEN 'Aprobado por ' || coalesce(g.revisado_por, 'auditoría')
          WHEN g.revision = 'inconsistencia' THEN 'INCONSISTENCIA' || coalesce(': ' || nullif(g.revision_nota, ''), '')
          WHEN g.fotos = 0 THEN CASE WHEN cfg.ahora > g.vence THEN 'FALTA COMPROBANTE' ELSE 'Falta subir comprobante' END
-         WHEN g.req_compra AND g.cm_id IS NULL THEN CASE WHEN cfg.ahora > g.vence THEN 'COMPRA NO REGISTRADA en Microsip' ELSE 'Falta registrar la compra en Microsip' END
+         WHEN g.req_compra AND g.cm_id IS NULL THEN CASE WHEN cfg.ahora > g.vence THEN 'FALTA RECEPCIÓN de compra en Microsip' ELSE 'Falta capturar la recepción en Microsip' END
          WHEN g.falta > cfg.tol THEN 'Faltan comprobar ' || to_char(g.falta, 'FM999,999,990.00')
          WHEN g.falta < -cfg.tol THEN 'Comprobado de más ' || to_char(-g.falta, 'FM999,999,990.00')
          WHEN g.req_compra AND abs(g.cm_total - g.comprobado) > greatest(cfg.tol, g.comprobado * 0.01)
-           THEN 'La compra en Microsip es de ' || to_char(g.cm_total, 'FM999,999,990.00') || ' y lo comprobado ' || to_char(g.comprobado, 'FM999,999,990.00')
+           THEN 'La recepción ' || g.cm_folio || ' es de ' || to_char(g.cm_total, 'FM999,999,990.00') || ' y lo comprobado ' || to_char(g.comprobado, 'FM999,999,990.00')
          WHEN g.ped_norm <> '' AND g.ped_folio IS NULL THEN 'REVISAR PEDIDO: ' || g.pedido || ' no existe en Microsip'
          WHEN g.ped_norm <> '' AND g.ped_cancelado THEN 'REVISAR PEDIDO: ' || g.ped_folio || ' está cancelado'
-         WHEN g.cands > 1 THEN 'Revisar compra: hay ' || g.cands || ' compras posibles con ese importe'
+         WHEN fu.arts IS NOT NULL THEN 'REVISAR: la recepción trae ' || fu.arts || ' y no está en el pedido ' || g.ped_folio
+         WHEN g.cands > 1 THEN 'Revisar recepción: hay ' || g.cands || ' recepciones posibles con ese importe'
          ELSE 'Cuadrado' END AS motivo
-  FROM reg g, cfg),
+  FROM reg g CROSS JOIN cfg LEFT JOIN fuera fu ON fu.id = g.id),
 rsr AS (   -- retiros de caja que nadie ha reportado
   SELECT r.*, (CASE WHEN r.hora ~ '^[0-9]{1,2}:[0-9]{2}' AND r.hora::time > cfg.cierre THEN r.fecha + 1 ELSE r.fecha END) + cfg.cierre AS vence
   FROM ret r, cfg
@@ -140,7 +165,9 @@ mov AS (   -- todo junto, con el mismo formato
   UNION ALL
   SELECT 'cobro', c.id, c.fecha, c.hora, c.folio, c.usuario, c.forma || coalesce(' · ' || nullif(c.cliente, ''), ''), 'cobro', c.forma,
          c.importe, 0, c.importe, CASE WHEN cfg.ahora > c.vence THEN 'rojo' ELSE 'pendiente' END,
-         CASE WHEN cfg.ahora > c.vence THEN 'FALTA ' || upper(CASE c.que WHEN 'voucher' THEN 'voucher' ELSE 'comprobante de ' || c.que END)
-              ELSE 'Falta subir ' || CASE c.que WHEN 'voucher' THEN 'el voucher' ELSE 'el comprobante de ' || c.que END END,
+         CASE WHEN cfg.ahora > c.vence THEN 'FALTA ' || CASE c.que WHEN 'voucher' THEN 'VOUCHER' WHEN 'ticket firmado' THEN 'TICKET FIRMADO'
+                                                            WHEN 'comprobante' THEN 'COMPROBANTE (' || upper(c.forma) || ')' ELSE 'COMPROBANTE DE ' || upper(c.que) END
+              ELSE 'Falta subir ' || CASE c.que WHEN 'voucher' THEN 'el voucher' WHEN 'ticket firmado' THEN 'el ticket firmado'
+                                                WHEN 'comprobante' THEN 'el comprobante' ELSE 'el comprobante de ' || c.que END END,
          c.vence, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL
   FROM cbr c, cfg)

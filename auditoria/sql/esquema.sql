@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS mov_ignorado (base TEXT NOT NULL DEFAULT '', tipo TEX
 CREATE TABLE IF NOT EXISTS mov_bitacora (id BIGSERIAL PRIMARY KEY, registro_id BIGINT, ref TEXT, accion TEXT NOT NULL, detalle TEXT, por TEXT,
   creado TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS mov_bitacora_reg ON mov_bitacora (registro_id);
+-- corte de caja firmado (en lugar de la libreta): lo que había que entregar, lo que se entregó y quién firmó
+CREATE TABLE IF NOT EXISTS mov_corte (base TEXT NOT NULL DEFAULT '', fecha DATE NOT NULL, esperado NUMERIC, entregado NUMERIC, diferencia NUMERIC,
+  pendientes INT, pendiente_monto NUMERIC, nota TEXT, firmado_por TEXT, firmado_en TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (base, fecha));
 CREATE TABLE IF NOT EXISTS mov_aviso (clave TEXT PRIMARY KEY, enviado TIMESTAMPTZ NOT NULL DEFAULT now());
 -- la auditoría empieza el día que se instala (no revisa todo el pasado de Microsip)
 INSERT INTO mov_config (clave, valor, por) SELECT 'desde', to_char((now() AT TIME ZONE 'America/Mexico_City')::date, 'YYYY-MM-DD'), 'instalación'

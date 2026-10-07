@@ -1,7 +1,11 @@
 # Auditoría de movimientos (Microsip)
 
 Control de comprobación encima de Microsip, para el **corte de caja**:
-- **Cobros con tarjeta, transferencia o Mercado Pago**: cada uno debe tener su voucher o comprobante.
+- **Cobros**: toda forma de pago **menos efectivo** debe tener comprobante.
+  - Tarjeta: voucher.
+  - Transferencia y Mercado Pago: comprobante.
+  - Venta a crédito: foto del **ticket firmado**.
+  - Efectivo: lo firma el dueño en el corte.
 - **Retiros de caja** (siempre en efectivo): dinero que sale → comprobante → compra en Microsip → pedido.
   Los retiros de **préstamo** y **nómina** no piden comprobante.
 El empleado reporta y sube la foto, el sistema cruza todo y la auditora solo revisa las excepciones.
@@ -15,6 +19,33 @@ El empleado reporta y sube la foto, el sistema cruza todo y la auditora solo rev
 
 Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
 
+## Corte de caja (pestaña "Corte de caja")
+Reporte del día listo para imprimir:
+- **Totales**: cobrado en caja, cobrado en efectivo, retiros (y cuántos no piden comprobante) y efectivo neto (efectivo − retiros; sin fondo de caja).
+- **Cobros por forma de pago**: tickets, importe y cuántos tienen comprobante o faltan, con el monto que falta.
+- **Retiros**: estado de cada uno. Préstamo y nómina salen como "no pide". Se ve la recepción ligada a cada compra.
+- **Firma**, en lugar de la libreta. La auditora o el administrador escriben el efectivo entregado y queda guardado:
+  - lo esperado, lo entregado y la diferencia;
+  - lo que seguía pendiente al firmar;
+  - quién firmó y cuándo (`mov_corte` y bitácora).
+
+  Se puede volver a firmar. El encargado ve el corte, pero no lo firma.
+
+## Recepción de compra y pedidos
+- Una compra de mercancía debe tener su **recepción de compra** en Microsip y el importe tiene que cuadrar.
+  En el expediente se ve **qué llegó** (artículos y unidades de `DOCTOS_CM_DET`).
+- **Cuadre por pedido** (pestaña "Pedidos" y en el expediente): lo pedido (`ms_ventas_det` del pedido) contra lo que ha llegado en todas las recepciones ligadas a ese pedido.
+  Sirve cuando se compra por partes, por ejemplo 100 + 200 + 300 de un millar de block.
+- 🟠 **"La recepción trae X y no está en el pedido"**: se compró algo que el pedido no lleva.
+
+## Retiros del mes (pestaña "Retiros del mes")
+Muestra todos los retiros de un mes, aunque sean de antes de empezar la auditoría:
+- agrupados en "no piden comprobante", "gasto" y "compra / otro";
+- con las palabras que más se repiten y su importe.
+
+Sirve para ajustar en Ajustes qué retiros no piden comprobante y cuáles son gasto.
+Al escoger un retiro para comprobarlo, si su descripción es de gasto, el tipo se pone solo en "Gasto".
+
 ## De dónde sale cada dato
 - **Retiros de caja**: Punto de venta, documentos tipo `R` de `ms_ventas`, sin cancelados. El importe sale de `DOCTOS_PV_COBROS`.
   Al reportar un retiro, el folio, la fecha, la hora y el importe salen de Microsip: el empleado no los captura.
@@ -22,8 +53,8 @@ Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
   El total es importe neto más impuestos.
 - **Pedido**: Ventas `P`, `R` o `F`. Se compara solo el número (`P4509` = `P0004509`). Avisa si no existe o si está cancelado.
 - **Cobros**: `DOCTOS_PV_COBROS` de tickets de caja (`V`/`P`, sin cancelados), por ticket y forma.
-  Piden comprobante las formas cuyo nombre en `FORMAS_COBRO` coincide con "Formas de cobro que piden comprobante" (por omisión `TARJETA|TRANSFER|SPEI|MERCADO ?PAGO`).
-  Tarjeta pide **voucher**; transferencia y Mercado Pago, **comprobante**. Efectivo y crédito no piden nada.
+  Piden comprobante todas las formas de `FORMAS_COBRO`, menos las de "Formas de cobro que NO piden comprobante" (por omisión `EFECTIVO|CAMBIO`).
+  Tarjeta pide **voucher**; crédito, **ticket firmado**; transferencia y Mercado Pago, **comprobante**.
   El importe es el de esa forma de pago en ese ticket. Si Microsip trae `REFERENCIA` o `NUM_AUTORIZACION`, también se muestra.
 - **Retiros que no piden comprobante**: los que dicen préstamo o nómina en la descripción (Ajustes → `PR[EÉ]STAMO|N[OÓ]MINA`). Se pueden agregar más palabras.
 - **Retiros sin reportar** salen solos, aunque nadie los capture. Las **compras de contado sin comprobante** también, si se activa en Ajustes.
@@ -34,9 +65,10 @@ Todas las ligas aparecen en **Mis ligas**, con Copiar, Abrir y Regenerar.
 | 🟢 Cuadrado | Retirado = comprobado (± tolerancia), la compra en Microsip coincide (si es tipo compra) y el pedido existe |
 | 🟢 Aprobado | La auditora lo aprobó a mano (con nota opcional) |
 | 🔴 FALTA COMPROBANTE | Sin foto después de la hora límite |
-| 🔴 COMPRA NO REGISTRADA | Tipo compra, sin compra en Microsip después de la hora límite |
+| 🔴 FALTA RECEPCIÓN de compra | Tipo compra, sin recepción en Microsip después de la hora límite |
 | 🔴 RETIRO SIN COMPROBAR | Retiro de caja que nadie reportó a la hora límite |
-| 🔴 FALTA VOUCHER / COMPROBANTE DE TRANSFERENCIA / DE MERCADO PAGO | Cobro con esa forma de pago sin foto a la hora límite |
+| 🔴 FALTA VOUCHER / TICKET FIRMADO / COMPROBANTE DE TRANSFERENCIA / DE MERCADO PAGO | Cobro con esa forma de pago sin foto a la hora límite |
+| 🟠 La recepción trae X y no está en el pedido | Lo que llegó no es de lo que se pidió |
 | 🔴 FALTA COMPROBANTE de la compra | Compra de contado en Microsip sin ningún movimiento ligado (al día siguiente a la hora límite) |
 | 🔴 INCONSISTENCIA | La auditora lo marcó, con la nota de qué está mal |
 | 🟠 Faltan comprobar $X / comprobado de más | Lo comprobado no llega a lo retirado, o se pasa |
@@ -110,7 +142,7 @@ La auditoría empieza **el día que se instala**: no revisa todo el pasado de Mi
 
 ## Pruebas
 ```
-python3 auditoria/pruebas/probar_todo.py     # 91 casos del cruce, los cobros y el semáforo (base de prueba 'auditoria')
+python3 auditoria/pruebas/probar_todo.py     # 112 casos: cruce, cobros, semáforo, corte y firma, pedidos, retiros del mes (base de prueba 'auditoria')
 node auditoria/pruebas/probar_nodos.js       # 36 casos: permisos, fotos, avisos, resumen y ligas
 AHORA='2026-10-07 21:00' node auditoria/pruebas/servidor.js   # página en http://localhost:5683/webhook/auditoria-mov?k=...
 ```

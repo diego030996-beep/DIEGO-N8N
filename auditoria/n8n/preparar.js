@@ -9,8 +9,8 @@ const b = $('API').first().json.body || {};
 const op = String(b.op || '');
 if (!SQL[op] || op === 'avisos') return fail('Operación desconocida.');
 const PERMISO = {
-  empleado: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar'],
-  auditora: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar', 'tablero', 'revisar', 'vincular', 'ignorar'],
+  empleado: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar', 'corte'],
+  auditora: ['datos', 'mis', 'registrar', 'actualizar', 'detalle', 'buscar', 'corte', 'tablero', 'revisar', 'vincular', 'ignorar', 'firmar', 'retiros_mes', 'pedidos'],
   admin: Object.keys(SQL),
 };
 if (!(PERMISO[rol] || []).includes(op)) return fail('Tu liga no tiene permiso para esto.');
@@ -22,7 +22,7 @@ const refOk = v => /^[0-9A-Za-z_\-:]{1,40}$/.test(String(v ?? ''));
 const montoOk = v => v !== '' && v != null && isFinite(Number(v)) && Number(v) > 0 && Number(v) <= 5e6;
 const METODOS = ['efectivo', 'tarjeta', 'transferencia'];
 const TIPOS = ['compra', 'gasto', 'gasolina', 'deposito', 'otro'];
-const TCOMP = ['ticket', 'factura', 'transferencia', 'voucher', 'mercado pago', 'otro'];
+const TCOMP = ['ticket', 'factura', 'transferencia', 'voucher', 'mercado pago', 'ticket firmado', 'otro'];
 function comprobantes(L, obligatorio) {
   L = Array.isArray(L) ? L : [];
   if (obligatorio && !L.length) return 'Falta la foto del comprobante.';
@@ -91,7 +91,7 @@ switch (op) {
     else { p = { nombre: txt(b.nombre, 40).toUpperCase() }; if (p.nombre.length < 2) return fail('Escribe el nombre.'); }
     break;
   case 'config': {
-    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, formas_comprobante: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10 }, general = {};
+    const g = b.general || {}, OK = { hora_cierre: 5, tolerancia: 8, dias_compra: 3, margen_compra: 5, tipos_compra: 80, retiros_excluir: 200, retiros_gasto: 300, formas_comprobante: 200, formas_sin_comprobante: 200, compras_sin_comprobante: 10, proveedores_mostrador: 300, desde: 10 }, general = {};
     for (const [k, v] of Object.entries(g)) { if (!(k in OK)) return fail('Ajuste desconocido: ' + k); general[k] = txt(v, OK[k]); }
     if (general.hora_cierre && !/^([01]?\d|2[0-3]):[0-5]\d$/.test(general.hora_cierre)) return fail('Hora de cierre inválida (ej. 20:00).');
     if (general.tolerancia && !(Number(general.tolerancia) >= 0 && Number(general.tolerancia) <= 1000)) return fail('Tolerancia inválida.');
@@ -100,8 +100,19 @@ switch (op) {
     if (general.desde && !fechaOk(general.desde)) return fail('Fecha de inicio inválida.');
     if (general.compras_sin_comprobante && !['contado', 'mostrador', 'todas', 'no'].includes(general.compras_sin_comprobante)) return fail('Opción inválida.');
     if (general.tipos_compra && !general.tipos_compra.split(',').every(t => TIPOS.includes(t))) return fail('Tipos inválidos.');
-    for (const k of ['retiros_excluir', 'proveedores_mostrador', 'formas_comprobante']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
+    for (const k of ['retiros_excluir', 'retiros_gasto', 'proveedores_mostrador', 'formas_comprobante', 'formas_sin_comprobante']) if (general[k]) { try { new RegExp(general[k], 'i'); } catch (e) { return fail('Texto inválido en ' + k + '.'); } }
     p = { general }; break; }
+  case 'corte': if (b.fecha && !fechaOk(b.fecha)) return fail('Fecha inválida.'); p = { fecha: b.fecha || '' }; break;
+  case 'firmar': {
+    if (!fechaOk(b.fecha)) return fail('Fecha inválida.');
+    const num = v => v !== '' && v != null && isFinite(Number(v)) && Math.abs(Number(v)) <= 1e8;
+    if (!num(b.entregado)) return fail('Escribe el efectivo que te entregaron.');
+    if (!num(b.esperado)) return fail('Falta el efectivo esperado.');
+    p = { fecha: b.fecha, entregado: String(Number(b.entregado)), esperado: String(Number(b.esperado)), nota: txt(b.nota, 300),
+          pendientes: String(Number.isInteger(Number(b.pendientes)) ? Number(b.pendientes) : 0), pendiente_monto: String(Number(b.pendiente_monto) || 0) };
+    break; }
+  case 'retiros_mes': if (b.mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(b.mes))) return fail('Mes inválido.'); p = { mes: b.mes || '' }; break;
+  case 'pedidos': p = { dias: Number.isInteger(Number(b.dias)) && Number(b.dias) > 0 && Number(b.dias) <= 400 ? String(Number(b.dias)) : '' }; break;
   case 'borrar': if (!idOk(b.id)) return fail('Movimiento inválido.'); p = { id: String(b.id), nota: txt(b.nota, 200) }; break;
 }
 p._rol = rol;

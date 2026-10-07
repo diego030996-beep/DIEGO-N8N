@@ -14,7 +14,7 @@ chk AS (SELECT CASE WHEN coalesce(p->>'retiro_id', '') <> '' AND NOT EXISTS (SEL
 ins AS (INSERT INTO mov_registro (base, fecha, hora, retiro_id, retiro_folio, cobro_id, metodo, tipo, concepto, proveedor, pedido, importe, empleado)
         SELECT cfg.base, coalesce(r.fecha, k.fecha, nullif(p->>'fecha', '')::date, cfg.hoy), coalesce(nullif(r.hora, ''), nullif(k.hora, ''), to_char(cfg.ahora, 'HH24:MI')),
                r.id, coalesce(r.folio, k.folio), k.id,
-               CASE WHEN r.id IS NOT NULL THEN 'efectivo' WHEN k.id IS NOT NULL THEN CASE k.que WHEN 'voucher' THEN 'tarjeta' WHEN 'Mercado Pago' THEN 'mercado pago' ELSE 'transferencia' END
+               CASE WHEN r.id IS NOT NULL THEN 'efectivo' WHEN k.id IS NOT NULL THEN CASE k.que WHEN 'voucher' THEN 'tarjeta' WHEN 'Mercado Pago' THEN 'mercado pago' WHEN 'ticket firmado' THEN 'credito' WHEN 'transferencia' THEN 'transferencia' ELSE lower(k.forma) END
                     ELSE p->>'metodo' END,
                CASE WHEN k.id IS NOT NULL THEN 'cobro' ELSE p->>'tipo' END,
                coalesce(k.forma || coalesce(' · ' || nullif(k.cliente, ''), ''), p->>'concepto'), nullif(p->>'proveedor', ''), nullif(p->>'pedido', ''),

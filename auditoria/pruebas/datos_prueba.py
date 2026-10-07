@@ -11,9 +11,14 @@ CREATE TABLE ms_ventas (base TEXT, origen TEXT, docto_id BIGINT, tipo TEXT, esta
   importe NUMERIC, impuestos NUMERIC, descripcion TEXT, usuario TEXT, usuario_cancelacion TEXT, fecha_cancelacion TIMESTAMP, caja_id BIGINT, cajero_id BIGINT,
   cliente_id BIGINT, sync_id TEXT, actualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (base, origen, docto_id));
 CREATE VIEW ms_ventas_v AS SELECT v.*, v.importe + v.impuestos AS total, (v.estatus = 'C') AS cancelado FROM ms_ventas v;
+CREATE TABLE ms_articulos (base TEXT, articulo_id BIGINT, clave TEXT, nombre TEXT, PRIMARY KEY (base, articulo_id));
+CREATE TABLE ms_ventas_det (base TEXT, origen TEXT, det_id BIGINT, docto_id BIGINT, clave TEXT, articulo_id BIGINT, articulo TEXT, unidades NUMERIC,
+  precio_unitario NUMERIC, importe NUMERIC, PRIMARY KEY (base, origen, det_id));
+INSERT INTO ms_articulos VALUES ('B', 501, 'BLK', 'BLOCK LIGERO'), ('B', 502, 'CEM', 'CEMENTO GRIS'), ('B', 503, 'VAR', 'VARILLA 3/8');
+INSERT INTO ms_ventas_det VALUES ('B', 'VE', 1, 4509, 'BLK', 501, 'BLOCK LIGERO', 1000, 5, 5000), ('B', 'VE', 2, 4509, 'CEM', 502, 'CEMENTO GRIS', 10, 200, 2000);
 CREATE TABLE ms_raw (base TEXT, tabla TEXT, pk TEXT, fecha DATE, datos JSONB, sync_id TEXT, actualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (base, tabla, pk));
 CREATE TABLE mov_config (clave TEXT PRIMARY KEY, valor TEXT, por TEXT, actualizado TIMESTAMPTZ NOT NULL DEFAULT now());
-INSERT INTO mov_config (clave, valor) VALUES ('desde', '2026-10-01'), ('retiros_excluir', 'DEPOSITO|PR[EÉ]STAMO|N[OÓ]MINA'), ('formas_comprobante', 'TARJETA|TRANSFER|SPEI|MERCADO ?PAGO'), ('compras_sin_comprobante', 'contado');
+INSERT INTO mov_config (clave, valor) VALUES ('desde', '2026-10-01'), ('retiros_excluir', 'DEPOSITO|PR[EÉ]STAMO|N[OÓ]MINA'), ('formas_sin_comprobante', 'EFECTIVO'), ('compras_sin_comprobante', 'contado');
 """]
 # retiros de caja (PV, tipo R). importe en ms_ventas = 0; lo real viene de DOCTOS_PV_COBROS
 ret = [  # id, folio, fecha, hora, descripcion, importe
@@ -74,6 +79,9 @@ cm = [  # id, tipo, folio, fecha, prov, cond, neto, iva
 ]
 for i, t, f, d, pv, cp, n, iva in cm:
     S.append(f"INSERT INTO ms_raw VALUES ('B', 'DOCTOS_CM', '{i}', {q(d)}, {q(json.dumps({'DOCTO_CM_ID': i, 'TIPO_DOCTO': t, 'FOLIO': f, 'FECHA': d, 'PROVEEDOR_ID': pv, 'COND_PAGO_ID': cp, 'ESTATUS': 'N', 'IMPORTE_NETO': n, 'TOTAL_IMPUESTOS': iva}))});")
+# lo que llegó en cada recepción / compra
+for did, (cm, art, u, imp) in enumerate([(8391, 501, 100, 431.03), (8392, 501, 90, 405.17), (8399, 503, 20, 603.45), (8396, 501, 200, 862.07)]):
+    S.append(f"INSERT INTO ms_raw VALUES ('B', 'DOCTOS_CM_DET', 'd{did}', NULL, {q(json.dumps({'DOCTO_CM_ID': cm, 'ARTICULO_ID': art, 'UNIDADES': u, 'PRECIO_TOTAL_NETO': imp}))});")
 S.append("INSERT INTO ms_raw VALUES ('B', 'DOCTOS_CM_LIGAS', 'l1', NULL, '{\"DOCTO_CM_FTE_ID\": 8394, \"DOCTO_CM_DEST_ID\": 8395}');")
 r = subprocess.run(PSQL + ['-d', 'auditoria', '-c', '\n'.join(S)], text=True, capture_output=True)
 if r.returncode:

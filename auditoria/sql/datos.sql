@@ -2,7 +2,7 @@
 SET LOCAL statement_timeout = '20s';
 WITH /*CTX*/, /*MOV*/
 SELECT json_build_object('ok', true, 'hoy', cfg.hoy, 'ahora', to_char(cfg.ahora, 'YYYY-MM-DD HH24:MI'), 'desde', cfg.desde,
-  'cierre', to_char(cfg.cierre, 'HH24:MI'), 'tipos_compra', cfg.tipos_compra,
+  'cierre', to_char(cfg.cierre, 'HH24:MI'), 'tipos_compra', cfg.tipos_compra, 'gasto_re', coalesce(cfg.c->>'retiros_gasto', ''),
   'config', CASE WHEN cfg.p->>'_rol' = 'admin' THEN cfg.c END,
   'retiros', (SELECT coalesce(json_agg(json_build_object('id', r.id, 'folio', r.folio, 'fecha', r.fecha, 'hora', r.hora, 'descripcion', r.descripcion,
                 'usuario', r.usuario, 'importe', r.importe) ORDER BY r.fecha DESC, r.hora DESC), '[]') FROM rsr r WHERE r.fecha >= cfg.hoy - 7),

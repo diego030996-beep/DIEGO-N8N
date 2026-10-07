@@ -47,7 +47,7 @@ const av = { r: { ok: true, avisos: [{ clave: 'registro:9:rojo', clase: 'registr
 const msgs = new Function('$', '$input', code('Armar avisos'))(n => ORG, { first: () => ({ json: av }) });
 const t0 = msgs[0].json.text;
 ok(msgs.length === 2 && msgs[0].json.chat_id === '8552803594' && msgs[1].json.chat_id === '360000001', 'un mensaje por chat', msgs.length);
-ok(/⚠️ <b>Comprobación pendiente<\/b> \(3\)/.test(t0) && /🔴 <b>R-01842<\/b> · \$500 · JUAN\nPedido P4509\ncomprar 10 block &lt;ligero&gt;\nFalta: ticket \+ registro de compra en Microsip · 8 h/.test(t0), 'formato del aviso', t0);
+ok(/⚠️ <b>Comprobación pendiente<\/b> \(3\)/.test(t0) && /🔴 <b>R-01842<\/b> · \$500 · JUAN\nPedido P4509\ncomprar 10 block &lt;ligero&gt;\nFalta: ticket \+ recepción de compra en Microsip · 8 h/.test(t0), 'formato del aviso', t0);
 ok(/Falta: reportarlo \+ ticket/.test(t0) && /🟠 <b>R-01843<\/b>[\s\S]*Falta: Faltan comprobar 30.00/.test(t0) && /Mis ligas/.test(t0), 'retiro sin reportar y naranja', t0);
 ok(msgs[0].json.claves.length === 3, 'claves para marcar');
 ok(new Function('$', '$input', code('Armar avisos'))(n => ORG, { first: () => ({ json: { r: { avisos: [] } } }) }).length === 0, 'sin avisos no manda nada');
