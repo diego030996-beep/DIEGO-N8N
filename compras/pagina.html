@@ -132,6 +132,8 @@ button.cn{border:2px solid transparent;cursor:pointer;font:inherit} button.cn:ho
 .bulk .btn{background:var(--panel);color:var(--ink)} .bulk .btn-ghost{background:transparent;color:var(--panel);border-color:rgba(255,255,255,.35)}
 input.sel{width:16px;height:16px;vertical-align:-3px;margin:0 4px 0 0}
 .pausados-prov{margin-top:6px}
+.tplan select.r{font-size:.74rem;padding:3px 4px;margin-top:3px!important} .tplan .usar{font-size:.74rem;padding:0}
+.meta1{color:var(--soft);font-size:.74rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .meta1.neg{color:var(--red);font-weight:600}
 .filtro-prov{padding:8px 18px;font-size:.85rem;color:var(--soft)}
 .ocs-art{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:6px} .ocs-art th,.ocs-art td{padding:4px 6px;border-bottom:1px solid var(--line2);text-align:left} .ocs-art .n{text-align:right}
 .tog{border:0;background:transparent;cursor:pointer;padding:6px;border-radius:8px;color:var(--soft)}
@@ -204,7 +206,7 @@ input.sel{width:16px;height:16px;vertical-align:-3px;margin:0 4px 0 0}
   .sp{overflow:visible}
   .tplan{table-layout:fixed}
   .tplan thead th{top:0;z-index:3;box-shadow:0 1px 0 var(--line)}
-  .tplan td.n{white-space:normal} .tplan .mas{display:block;white-space:normal;overflow-wrap:normal}
+  .tplan td.n{white-space:normal} .tplan .mas{display:inline-block;white-space:nowrap;overflow-wrap:normal;font-size:.7rem;padding:1px 6px}
   .tplan .tag,.tplan .est,.tplan .rot,.tplan .pill{overflow-wrap:normal;white-space:nowrap}
   .tplan .c-art{width:auto} .tplan .c-ex{width:76px} .tplan .c-pr{width:110px} .tplan .c-sug{width:92px} .tplan .c-co{width:104px}
   .tplan .c-cos{width:90px} .tplan .c-est{width:128px} .tplan .c-vc{width:104px}
@@ -614,7 +616,8 @@ function deMas(f, c){   // compra de más contra redondeo por empaque
 function avisoMas(m, u){
   if(!m) return "";
   if(m.redondeo) return `<span class="tag redo">Redondeo a empaque (+${n0(m.sobre)})</span>`;
-  return `<span class="mas">⚠ Compras de más${m.sobre ? ": +" + n0(m.sobre) + " " + esc(u || "") : ""}${m.arriba ? " · " + n0(m.arriba) + " arriba del máx." : ""}</span>`;
+  const det = `Compras de más${m.sobre ? ": +" + n0(m.sobre) + " " + (u || "") + " sobre el sugerido" : ""}${m.arriba ? " · quedarías " + n0(m.arriba) + " arriba del máximo" : ""}`;
+  return `<span class="mas" title="${esc(det)}">⚠ ${m.sobre ? "+" + n0(m.sobre) + " de más" : "arriba del máx."}</span>`;
 }
 const iniciales = s => String(s || "?").replace(/S\.?A\.?B?.*|DE C\.?V\.?/gi, "").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
 const colorDe = s => { let h = 0; for(const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) % 360; return `hsl(${h} 55% 42%)`; };
@@ -709,6 +712,14 @@ function tarjeta(k, F, r){
       </div>
     </div></div>`;
 }
+// una sola línea corta debajo de "por recibir"; el detalle completo al pasar el mouse
+const folioCorto = t => String(t).replace(/\bO0+(\d)/g, "O$1").replace(/ \(atrasada\)| \(parcial\)/g, "");
+function porRecibirTxt(f){
+  if(!f.folios && !f.atr_u) return "";
+  const det = [f.folios ? "OC: " + f.folios : "", f.atr_u ? (f.atr_cuenta ? "Incluye " + n0(f.atr_u) + " de OC atrasada (" + (f.atr_folios || "") + ")" : n0(f.atr_u) + " de OC atrasada que no se cuenta (" + (f.atr_folios || "") + ")") : ""].filter(Boolean).join(" · ");
+  const a = String(f.folios || "").split(", ").filter(Boolean), txt = a.length ? folioCorto(a[0]) + (a.length > 1 ? " +" + (a.length - 1) : "") : "";
+  return `<div class="meta1${f.atr_u ? " neg" : ""}" title="${esc(det)}">${f.atr_u ? "⚠ " : ""}${esc(txt || (f.atr_cuenta ? "" : "+" + n0(f.atr_u)))}${f.atr_u ? " atrasada" : ""}</div>`;
+}
 function cortaFolios(t){ const a = String(t).split(", "); return a.length <= 2 ? t : a.slice(0, 2).join(", ") + " y " + (a.length - 2) + " más"; }
 function renglon(f){
   const k = llave(f), dist = num(f._c) !== sugRef(f), m = deMas(f, f._c), sinProv = !f.proveedor_id, rv = revisa(f);
@@ -719,9 +730,9 @@ function renglon(f){
       <div class="meta">Última venta: ${f.ult_venta ? fecha(f.ult_venta) + " (hace " + dias(f.ult_venta, D.hoy) + " d)" : "—"} · Última recepción: ${f.rec_fecha ? fecha(f.rec_fecha) + ", " + n0(f.rec_unidades) : "—"}</div>
       ${f.presentaciones ? `<div class="meta">Incluye: ${esc(f.presentaciones)}</div>` : ""}</td>
     <td class="n" data-l="Existencia"><span class="${f.existencia < 0 ? "neg" : ""}">${n0(f.existencia)}</span></td>
-    <td class="n" data-l="Por recibir">${n0(f.pendiente)}${f.folios ? `<div class="meta" title="${esc(f.folios)}">${esc(cortaFolios(f.folios))}</div>` : ""}${f.atr_u ? `<div class="meta neg">${f.atr_cuenta ? "incluye " + n0(f.atr_u) + " atrasado" : "+" + n0(f.atr_u) + " atrasado (no cuenta)"}</div>` : ""}</td>
+    <td class="n" data-l="Por recibir">${n0(f.pendiente)}${porRecibirTxt(f)}</td>
     <td class="n" data-l="Sugerido"><span class="sug">${n0(f.sugerido)}</span>${rv ? `<div class="tag prov">provisional</div>` : ""}${f.sug_guardado !== null && f.sug_guardado !== undefined && num(f.sug_guardado) !== num(f.sugerido)
-      ? `<div class="meta" title="Lo guardaste hoy cuando el sugerido era ${n0(f.sug_guardado)}. Cambió (por ejemplo, una OC atrasada que ahora cuenta como por recibir).">al guardar era ${n0(f.sug_guardado)}</div>${soloLectura() ? "" : `<button class="mas-link usar" title="Poner el sugerido nuevo en Compro">usar ${n0(f.sugerido)}</button>`}` : ""}</td>
+      ? `<div class="meta" title="Lo guardaste hoy cuando el sugerido era ${n0(f.sug_guardado)}. Cambió (por ejemplo, una OC atrasada que ahora cuenta como por recibir).">antes ${n0(f.sug_guardado)}${soloLectura() ? "" : ` · <button class="mas-link usar" title="Poner el sugerido nuevo en Compro">usar ${n0(f.sugerido)}</button>`}</div>` : ""}</td>
     <td class="n" data-l="Compro"><input type="number" min="0" step="any" inputmode="decimal" class="c" value="${f._c ?? ""}" ${soloLectura() || sinProv ? "disabled" : ""} aria-label="Cantidad a comprar">
       ${dist && !sinProv && !soloLectura() ? `<div>${selRazon(f._r, 'class="r" style="margin-top:4px;max-width:150px"')}</div>` : ""}${avisoMas(m, f.unidad)}</td>
     <td class="n" data-l="Costo">${f.costo ? money(linea) + `<div class="meta">${money(f.costo)} c/u</div>` : `<span class="meta">sin costo</span>`}</td>
