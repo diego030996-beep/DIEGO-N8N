@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Producción de tinacos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F9; --panel:#FFFFFF; --panel2:#F8FAFC; --ink:#0F172A; --soft:#64748B; --line:#E5E9F0; --line2:#EEF1F6;
+  --side:#0E2A47; --side2:#16385C; --sideink:#C9D6E5;
+  --blue:#2563EB; --blue2:#DBEAFE; --red:#DC2626; --green:#16A34A;
+  --c-red:#DC2626; --c-redbg:#FEE2E2; --c-or:#EA580C; --c-orbg:#FFEDD5; --c-gr:#15803D; --c-grbg:#DCFCE7; --c-pu:#7C3AED; --c-pubg:#EDE9FE;
+  --warn:#FEF3C7; --warnink:#78350F;
+  --sh:0 1px 2px rgba(15,23,42,.05),0 4px 14px rgba(15,23,42,.05);
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A; --line2:#1E2940;
+  --side:#08111F; --side2:#132339; --blue:#60A5FA; --blue2:#1E3A5F;
+  --c-redbg:#3B1416; --c-red:#F87171; --c-orbg:#3A1E0E; --c-or:#FB923C; --c-grbg:#0E2E1B; --c-gr:#4ADE80; --c-pubg:#2A1B4A; --c-pu:#A78BFA;
+  --warn:#36290A; --warnink:#FDE68A;
+}}
+:root[data-theme="dark"]{
+  --bg:#0B1220; --panel:#131C2E; --panel2:#18233A; --ink:#E5EAF2; --soft:#94A3B8; --line:#26324A; --line2:#1E2940;
+  --side:#08111F; --side2:#132339; --blue:#60A5FA; --blue2:#1E3A5F;
+  --c-redbg:#3B1416; --c-red:#F87171; --c-orbg:#3A1E0E; --c-or:#FB923C; --c-grbg:#0E2E1B; --c-gr:#4ADE80; --c-pubg:#2A1B4A; --c-pu:#A78BFA;
+  --warn:#36290A; --warnink:#FDE68A;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+[hidden]{display:none!important}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);color:var(--sideink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.logo{display:flex;align-items:center;gap:10px;padding:0 20px 18px;color:#fff;font-weight:800;font-size:1.05rem}
+.logo svg{width:26px;height:26px;flex:none}
+.logo small{display:block;font-weight:500;font-size:.72rem;color:var(--sideink)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.tab{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:var(--sideink);padding:11px 20px;text-align:left;cursor:pointer;font-weight:600;font-size:.9rem;border-left:3px solid transparent}
+.tab svg{width:19px;height:19px;flex:none;opacity:.9}
+.tab:hover{background:var(--side2);color:#fff}
+.tab[aria-selected=true]{background:var(--side2);color:#fff;border-left-color:#60A5FA}
+.tab .n{margin-left:auto;min-width:20px;padding:0 6px;border-radius:10px;background:var(--red);color:#fff;font-size:.72rem;line-height:20px;text-align:center}
+.who{margin-top:auto;padding:14px 20px 0;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px;font-size:.78rem}
+.who input{background:var(--side2);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:7px 9px}
+main{padding:22px 28px 90px;max-width:1360px;width:100%;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.head h1{margin:0;font-size:1.6rem;font-weight:800;letter-spacing:-.02em}
+.head p{margin:2px 0 0;color:var(--soft)}
+h2{font-size:1.15rem;font-weight:800;margin:0 0 4px}
+.sub{color:var(--soft);margin:0 0 12px;font-size:.9rem}
+.muted{color:var(--soft);font-size:.83rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:16px;box-shadow:var(--sh)}
+input[type=text],input[type=number],input[type=date],input[type=search],select{padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);min-width:0}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:10px;border:1px solid transparent;font-weight:600;cursor:pointer;font-size:.88rem;white-space:nowrap}
+.btn-main{background:var(--blue);color:#fff} .btn-main:hover{filter:brightness(1.07)}
+.btn-ghost{background:var(--panel);border-color:var(--line)} .btn-ghost:hover{background:var(--panel2)}
+.btn-sm{padding:6px 11px;font-size:.8rem}
+.btn:disabled{opacity:.55;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--sh)}
+.kpi b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+.kpi span{color:var(--soft);font-size:.82rem}
+.kpi.bad b{color:var(--c-red)} .kpi.good b{color:var(--c-gr)}
+.scroll{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+.tbl th{text-align:left;font-size:.74rem;color:var(--soft);font-weight:600;padding:9px 8px;border-bottom:1px solid var(--line);background:var(--panel2);white-space:nowrap}
+.tbl td{padding:9px 8px;border-bottom:1px solid var(--line2);vertical-align:top}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr:last-child td{border-bottom:0}
+.tbl input[type=number]{width:96px;text-align:right}
+.tbl tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.meta{color:var(--soft);font-size:.78rem}
+.neg{color:var(--c-red);font-weight:600} .pos{color:var(--c-gr);font-weight:600}
+.pill{display:inline-block;border-radius:7px;padding:1px 7px;font-size:.72rem;font-weight:700}
+.pill.ok{background:var(--c-grbg);color:var(--c-gr)} .pill.no{background:var(--c-orbg);color:var(--c-or)} .pill.pu{background:var(--c-pubg);color:var(--c-pu)} .pill.red{background:var(--c-redbg);color:var(--c-red)}
+.warn{background:var(--warn);color:var(--warnink);border-radius:12px;padding:10px 14px;font-size:.88rem;margin-top:10px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+.lista-tin{display:flex;flex-direction:column;gap:2px;max-height:70vh;overflow:auto}
+.lista-tin button{display:flex;justify-content:space-between;gap:8px;text-align:left;border:1px solid transparent;background:transparent;padding:8px 10px;border-radius:10px;cursor:pointer}
+.lista-tin button:hover{background:var(--panel2)} .lista-tin button[aria-pressed=true]{background:var(--blue2);border-color:var(--blue)}
+.res{border:1px solid var(--line);border-radius:10px;margin-top:6px;max-height:260px;overflow:auto}
+.res button{display:flex;justify-content:space-between;width:100%;gap:8px;text-align:left;border:0;border-bottom:1px solid var(--line2);background:var(--panel);padding:8px 10px;cursor:pointer}
+.res button:hover{background:var(--panel2)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);opacity:0;pointer-events:none;background:var(--ink);color:var(--panel);padding:12px 18px;border-radius:12px;font-weight:600;transition:transform .25s,opacity .25s;z-index:9;max-width:92vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.barra{position:sticky;bottom:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-top:16px;box-shadow:0 -4px 20px rgba(15,23,42,.08);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.bars{display:flex;gap:6px;align-items:flex-end;height:140px;padding-top:10px}
+.bars div{flex:1;background:var(--blue);border-radius:6px 6px 0 0;min-height:2px;position:relative}
+.bars div span{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:.72rem;color:var(--soft)}
+.blab{display:flex;gap:6px}.blab span{flex:1;text-align:center;font-size:.7rem;color:var(--soft)}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;padding:8px 10px;z-index:5;overflow-x:auto;gap:4px;min-width:0;max-width:100vw}
+  .logo{padding:0 8px 0 4px}.logo small{display:none}
+  .nav{flex-direction:row}
+  .tab{padding:9px 11px;border-left:0;border-bottom:3px solid transparent;white-space:nowrap}
+  .tab[aria-selected=true]{border-bottom-color:#60A5FA}
+  .tab span.l{display:none}
+  .who{display:none}
+  main{padding:16px 14px 90px}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.4"><path d="M5 7c0-2 3-3 7-3s7 1 7 3v11c0 2-3 3-7 3s-7-1-7-3z"/><path d="M5 7c0 2 3 3 7 3s7-1 7-3"/></svg><div><span id="tienda">Producción</span><small id="subt">de tinacos</small></div></div>
+  <nav class="nav" role="tablist" aria-label="Secciones">
+    <button class="tab" role="tab" data-t="cap" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span class="l">Capturar producción</span></button>
+    <button class="tab" role="tab" data-t="rec" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="l">Recetas</span><span class="n" id="nrec" hidden></span></button>
+    <button class="tab" role="tab" data-t="sim" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg><span class="l">Simulación y utilidad</span></button>
+    <button class="tab" role="tab" data-t="exp" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 19h16"/></svg><span class="l">Semana: archivos Microsip</span><span class="n" id="nexp" hidden></span></button>
+    <button class="tab" role="tab" data-t="mat" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/></svg><span class="l">Materia prima</span></button>
+    <button class="tab" role="tab" data-t="res" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="l">Cuánto se hizo</span></button>
+    <button class="tab" role="tab" data-t="cfg" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.5 14H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 3.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span class="l">Configuración</span></button>
+  </nav>
+  <label class="who">Quién captura<input type="text" id="quien" maxlength="40" placeholder="tu nombre"></label>
+</aside>
+<main>
+  <div class="warn" id="aviso" hidden></div>
+
+  <!-- ============ CAPTURAR ============ -->
+  <section id="t-cap">
+    <div class="head"><div><h1>Capturar producción</h1><p>Lo que se fabricó: se descuenta la materia prima de su receta al costo de Microsip.</p></div>
+      <div class="row"><label class="muted">Fecha <input type="date" id="capFecha"></label></div></div>
+    <div class="kpis" id="kpisCap"></div>
+    <div class="card">
+      <div class="row"><input type="search" id="capQ" class="grow" placeholder="Buscar tinaco…" aria-label="Buscar tinaco"><span class="muted" id="capSinRec"></span></div>
+      <div class="scroll" style="margin-top:10px"><table class="tbl" id="tblCap"><thead><tr><th>Tinaco</th><th class="n">Costo materiales</th><th class="n">Existencia</th><th class="n">Fabricados</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card" id="capConsumo" hidden>
+      <h2>Lo que sale del inventario</h2>
+      <div class="scroll"><table class="tbl" id="tblConsumo"><thead><tr><th>Materia prima</th><th class="n">Usa</th><th class="n">Disponible</th><th class="n">Queda</th><th class="n">Costo</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+    </div>
+    <div class="barra" id="capBarra" hidden><span class="grow" id="capTotal"></span><input type="text" id="capNota" maxlength="200" placeholder="nota (opcional)" style="max-width:260px"><button class="btn btn-main" id="capGuardar">Guardar producción</button></div>
+    <div class="card">
+      <div class="row"><h2 class="grow">Capturado en los últimos 7 días</h2><button class="btn btn-ghost btn-sm" id="capRecargar">Actualizar</button></div>
+      <div class="scroll"><table class="tbl" id="tblReg"><thead><tr><th>Fecha</th><th>Tinaco</th><th class="n">Piezas</th><th class="n">Costo c/u</th><th class="n">Costo</th><th>Estado</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ RECETAS ============ -->
+  <section id="t-rec" hidden>
+    <div class="head"><div><h1>Recetas</h1><p>Qué sale del inventario por cada tinaco: polímero (kg), tapa, kit… Elige los artículos de tu inventario de Microsip.</p></div></div>
+    <div class="grid2">
+      <div class="card" style="margin-top:0">
+        <input type="search" id="recQ" placeholder="Buscar tinaco…" style="width:100%" aria-label="Buscar tinaco">
+        <div class="lista-tin" id="recLista" style="margin-top:8px"></div>
+      </div>
+      <div>
+        <div class="card" style="margin-top:0" id="recEditor"><p class="muted">Elige un tinaco de la lista.</p></div>
+        <div class="card" id="recCopiar" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SIMULACIÓN ============ -->
+  <section id="t-sim" hidden>
+    <div class="head"><div><h1>Simulación y utilidad</h1><p>Costo de materiales (lo que sale del inventario) + gastos que no salen del inventario, contra el precio de venta. Nada de esto se guarda en Microsip.</p></div></div>
+    <div class="card">
+      <h2>Gastos por tinaco que no salen del inventario</h2>
+      <p class="sub">Mano de obra del quemador, gas, luz, etiquetas… Solo para saber tu utilidad real; en tu centro de costo siguen fuera.</p>
+      <div class="scroll"><table class="tbl" id="tblExtras"><thead><tr><th>Concepto</th><th class="n">$ por tinaco</th><th>Aplica a</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="row" style="margin-top:10px"><button class="btn btn-ghost btn-sm" id="extAgregar">+ Agregar concepto</button><span class="grow"></span><button class="btn btn-main btn-sm" id="extGuardar">Guardar gastos</button></div>
+    </div>
+    <div class="card">
+      <h2>¿Qué pasa si…?</h2>
+      <p class="sub">Cambia el costo de una materia prima (por ejemplo, si sube el polímero) y ve cómo cambia la utilidad. No se guarda.</p>
+      <div class="row" id="simCostos"></div>
+    </div>
+    <div class="card">
+      <h2>Utilidad por tinaco</h2>
+      <div class="scroll"><table class="tbl" id="tblSim"><thead><tr><th>Tinaco</th><th class="n">Precio de venta</th><th class="n">Materiales</th><th class="n">Otros gastos</th><th class="n">Costo total</th><th class="n">Utilidad</th><th class="n">Margen</th><th class="n">Plan (piezas)</th></tr></thead><tbody></tbody></table></div>
+      <p class="muted">El precio de venta sale del precio de lista de Microsip; puedes escribir otro (se guarda solo para la simulación). Precios sin IVA.</p>
+    </div>
+    <div class="card" id="simPlan" hidden>
+      <h2>Si fabricas ese plan</h2>
+      <div class="kpis" id="kpisPlan"></div>
+      <div class="scroll" style="margin-top:12px"><table class="tbl" id="tblPlanMat"><thead><tr><th>Materia prima</th><th class="n">Necesitas</th><th class="n">Disponible</th><th class="n">Falta comprar</th><th class="n">Costo</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ EXPORTAR ============ -->
+  <section id="t-exp" hidden>
+    <div class="head"><div><h1>Semana: archivos para Microsip</h1><p>Baja dos archivos para importar en Microsip: la <b>salida de materia prima</b> y la <b>entrada de tinacos fabricados</b> (CLAVE,UNIDADES,COSTO).</p></div></div>
+    <div class="card">
+      <div class="row"><label class="muted">Del <input type="date" id="expDesde"></label><label class="muted">al <input type="date" id="expHasta"></label>
+        <button class="btn btn-ghost" id="expVer">Ver qué sale</button><span class="grow"></span><button class="btn btn-main" id="expBajar">Bajar archivos y marcar como exportado</button></div>
+      <p class="muted" style="margin-top:8px">Solo sale lo que no se ha exportado. Al marcarlo ya no vuelve a salir (pero lo puedes volver a bajar abajo).</p>
+      <div id="expPrev"></div>
+    </div>
+    <div class="card">
+      <h2>Exportados</h2>
+      <p class="sub">Cuando ya lo importaste en Microsip, márcalo: desde ahí la existencia de Microsip ya trae esos movimientos y la página deja de descontarlos aparte.</p>
+      <div class="scroll"><table class="tbl" id="tblExp"><thead><tr><th>#</th><th>Fechas</th><th class="n">Capturas</th><th>Exportado</th><th>¿Ya en Microsip?</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ MATERIA PRIMA ============ -->
+  <section id="t-mat" hidden>
+    <div class="head"><div><h1>Materia prima</h1><p>Lo que entró (recepciones y compras de Microsip), lo que se consumió en producción y lo que hay.</p></div>
+      <div class="row"><label class="muted">Del <input type="date" id="matDesde"></label><label class="muted">al <input type="date" id="matHasta"></label><button class="btn btn-ghost" id="matVer">Ver</button></div></div>
+    <div class="card"><div class="scroll"><table class="tbl" id="tblMat"><thead><tr><th>Materia prima</th><th class="n">Entró</th><th class="n">Consumido</th><th class="n">Existencia Microsip</th><th class="n">Falta importar</th><th class="n">Disponible</th><th class="n">Alcanza para</th></tr></thead><tbody></tbody></table></div>
+      <p class="muted">Disponible = existencia de Microsip − lo capturado que todavía no se importa en Microsip. "Alcanza para" usa el consumo diario del periodo.</p></div>
+  </section>
+
+  <!-- ============ RESUMEN ============ -->
+  <section id="t-res" hidden>
+    <div class="head"><div><h1>Cuánto se hizo</h1><p>Tinacos fabricados por semana y por modelo.</p></div>
+      <div class="row"><label class="muted">Del <input type="date" id="resDesde"></label><label class="muted">al <input type="date" id="resHasta"></label><button class="btn btn-ghost" id="resVer">Ver</button></div></div>
+    <div class="kpis" id="kpisRes"></div>
+    <div class="card"><h2>Por semana (últimas 12)</h2><div class="bars" id="resBars"></div><div class="blab" id="resLab"></div></div>
+    <div class="card"><h2>Por tinaco en el periodo</h2><div class="scroll"><table class="tbl" id="tblRes"><thead><tr><th>Tinaco</th><th class="n">Piezas</th><th class="n">Costo c/u</th><th class="n">Costo total</th><th class="n">Venta (precio)</th></tr></thead><tbody></tbody></table></div></div>
+  </section>
+
+  <!-- ============ CONFIGURACIÓN ============ -->
+  <section id="t-cfg" hidden>
+    <div class="head"><div><h1>Configuración</h1><p>Todo se guarda en la base de datos.</p></div></div>
+    <div class="card">
+      <div class="row" style="align-items:flex-start;flex-direction:column;gap:12px" id="formCfg"></div>
+      <div class="row" style="margin-top:14px"><span class="grow muted" id="cfgEstado"></span><button class="btn btn-main" id="cfgGuardar">Guardar</button></div>
+    </div>
+  </section>
+</main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const K = new URLSearchParams(location.search).get("k") || "";
+const API = location.pathname.replace(/\/?$/, "-api");
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const num = v => (v === null || v === undefined || v === "" || isNaN(Number(v))) ? null : Number(v);
+const n0 = v => num(v) === null ? "–" : Number(v).toLocaleString("es-MX", {maximumFractionDigits: 2});
+const money = v => num(v) === null ? "–" : "$" + Number(v).toLocaleString("es-MX", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const money0 = v => "$" + Math.round(num(v) || 0).toLocaleString("es-MX");
+const fecha = iso => iso ? new Date(String(iso).slice(0,10) + "T12:00:00").toLocaleDateString("es-MX", {weekday:"short", day:"numeric", month:"short"}) : "–";
+const sumaDias = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+function toast(t){ const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 3500); }
+function aviso(t){ const a = $("#aviso"); a.hidden = !t; a.innerHTML = t || ""; }
+let quien = ""; try { quien = localStorage.getItem("prod_quien") || ""; } catch(e) {}
+$("#quien").value = quien;
+$("#quien").addEventListener("change", e => { quien = e.target.value.trim(); try { localStorage.setItem("prod_quien", quien); } catch(err) {} });
+async function api(op, p = {}){
+  const r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({k:K, op, quien, ...p})});
+  if(!r.ok) throw new Error("HTTP " + r.status);
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.msg || "No se pudo completar");
+  return j;
+}
+async function ocupado(btn, fn){
+  const t = btn.textContent; btn.disabled = true; btn.textContent = "Un momento…";
+  try { return await fn(); } catch(e) { toast(e.message); } finally { btn.disabled = false; btn.textContent = t; }
+}
+function bajar(nombre, texto){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([texto], {type: "text/plain;charset=utf-8"}));
+  a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+const lineasTxt = L => L.filter(x => x.clave && num(x.u) > 0).map(x => `${x.clave},${+Number(x.u).toFixed(4)},${+Number(x.costo || 0).toFixed(4)}`).join("\r\n") + "\r\n";
+
+let D = null, CAP = {}, REC = null, SIMC = {}, PLAN = {}, EXT = [], CP_TODOS = false;
+const soloLectura = () => D && D.rol === "auditor";
+const tinacos = () => D ? D.tinacos : [];
+const conReceta = () => tinacos().filter(t => t.receta.length);
+const uni = u => { const x = String(u || "").toLowerCase(); return /^kilo/.test(x) ? "kg" : /^pieza/.test(x) ? "pz" : /^litro/.test(x) ? "L" : /^metro/.test(x) ? "m" : x; };
+const comp = id => (D.componentes || []).find(c => c.articulo_id === id) || {};
+
+/* ================= pestañas ================= */
+$$(".tab").forEach(b => b.addEventListener("click", () => abrir(b.dataset.t)));
+function abrir(t){
+  $$(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
+  ["cap","rec","sim","exp","mat","res","cfg"].forEach(x => $("#t-" + x).hidden = x !== t);
+  try { localStorage.setItem("prod_tab", t); } catch(e) {}
+  if(t === "cap") cargarReg();
+  if(t === "exp") verExport(false);
+  if(t === "mat") cargarMat();
+  if(t === "res") cargarRes();
+}
+async function cargar(){
+  try { D = await api("datos"); } catch(e) { aviso("No se pudieron leer los datos: " + esc(e.message)); return; }
+  aviso("");
+  $("#tienda").textContent = D.cfg.tienda || "Producción";
+  $("#subt").textContent = (D.cfg.empresa || "con Microsip") + (soloLectura() ? " · solo consulta" : "");
+  EXT = (D.extras || []).map(x => ({...x}));
+  const sinRec = tinacos().filter(t => !t.receta.length).length; $("#nrec").hidden = !sinRec || !!conReceta().length; $("#nrec").textContent = sinRec;
+  const pend = (D.sin_exportar || {}).registros || 0; $("#nexp").hidden = !pend; $("#nexp").textContent = pend;
+  $$("#capGuardar,#expBajar,#extGuardar,#cfgGuardar").forEach(b => b.hidden = soloLectura());
+  pintarCap(); pintarRecLista(); pintarSim(); pintarCfg();
+}
+
+/* ================= capturar ================= */
+function pintarCap(){
+  const L = conReceta(), q = $("#capQ").value.trim().toUpperCase();
+  const sinRec = tinacos().length - L.length;
+  $("#capSinRec").textContent = sinRec ? sinRec + " tinacos sin receta (no se pueden capturar): ponla en Recetas" : "";
+  const V = L.filter(t => !q || (t.nombre + " " + t.clave).toUpperCase().includes(q));
+  $("#tblCap tbody").innerHTML = V.length ? V.map(t => `<tr>
+      <td><b>${esc(t.nombre)}</b><div class="meta">${esc(t.clave)} · ${t.receta.map(c => n0(c.cantidad) + " " + esc(uni(c.unidad)) + " " + esc(c.nombre)).join(" · ")}</div></td>
+      <td class="n">${money(t.costo)}${t.sin_costo ? `<div class="meta neg">falta costo de algún componente</div>` : ""}</td>
+      <td class="n">${n0(t.existencia)}${t.por_importar ? `<div class="meta">+${n0(t.por_importar)} por importar</div>` : ""}</td>
+      <td class="n"><input type="number" min="0" step="1" inputmode="numeric" data-cap="${t.articulo_id}" value="${CAP[t.articulo_id] || ""}" ${soloLectura() ? "disabled" : ""} aria-label="Fabricados de ${esc(t.nombre)}"></td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">${L.length ? "Nada con esa búsqueda." : "Todavía no hay recetas. Ve a <b>Recetas</b> y arma la de cada tinaco."}</td></tr>`;
+  $$("#tblCap input[data-cap]").forEach(i => i.addEventListener("input", () => { const v = num(i.value); if(v > 0) CAP[i.dataset.cap] = Math.round(v); else delete CAP[i.dataset.cap]; pintarConsumo(); }));
+  pintarConsumo();
+}
+function consumoDe(cant){   // {articulo_id: piezas} → materia prima que sale
+  const M = {};
+  for(const [id, n] of Object.entries(cant)){ const t = tinacos().find(x => String(x.articulo_id) === String(id)); if(!t || !n) continue;
+    for(const c of t.receta){ const m = M[c.componente_id] = M[c.componente_id] || {...c, usa: 0, costo: num(SIMC[c.componente_id]) ?? c.costo}; m.usa += c.cantidad * n; } }
+  return Object.values(M).sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
+}
+function pintarConsumo(){
+  const M = consumoDe(CAP), piezas = Object.values(CAP).reduce((a, b) => a + b, 0), costo = M.reduce((a, m) => a + m.usa * (m.costo || 0), 0);
+  $("#capConsumo").hidden = $("#capBarra").hidden = !piezas;
+  $("#kpisCap").innerHTML = [[n0(piezas), "tinacos en esta captura"], [money0(costo), "de materia prima"], [n0((D.sin_exportar || {}).tinacos || 0), "capturados sin exportar a Microsip"]]
+    .map(([v, t]) => `<div class="kpi"><b>${v}</b><span>${t}</span></div>`).join("");
+  if(!piezas) return;
+  $("#tblConsumo tbody").innerHTML = M.map(m => { const disp = comp(m.componente_id).disponible ?? 0, queda = disp - m.usa;
+    return `<tr><td>${esc(m.nombre)}<div class="meta">${esc(m.clave)}</div></td><td class="n">${n0(m.usa)} ${esc(m.unidad || "")}</td><td class="n">${n0(disp)}</td>
+      <td class="n ${queda < 0 ? "neg" : ""}">${n0(queda)}${queda < 0 ? `<div class="meta neg">no alcanza</div>` : ""}</td><td class="n">${money(m.usa * (m.costo || 0))}</td></tr>`; }).join("");
+  $("#tblConsumo tfoot").innerHTML = `<tr><td>Total</td><td></td><td></td><td></td><td class="n">${money(costo)}</td></tr>`;
+  $("#capTotal").innerHTML = `<b>${n0(piezas)} tinacos</b> · materia prima ${money(costo)} · ${esc(fecha($("#capFecha").value))}`;
+}
+$("#capQ").addEventListener("input", pintarCap);
+$("#capFecha").addEventListener("change", pintarConsumo);
+$("#capGuardar").addEventListener("click", () => ocupado($("#capGuardar"), async () => {
+  const lineas = Object.entries(CAP).filter(([, n]) => n > 0).map(([articulo_id, cantidad]) => ({articulo_id: Number(articulo_id), cantidad}));
+  if(!lineas.length) throw new Error("Escribe cuántos se fabricaron.");
+  const neg = consumoDe(CAP).filter(m => (comp(m.componente_id).disponible ?? 0) - m.usa < 0);
+  if(neg.length && !confirm("⚠ No alcanza la materia prima según Microsip:\n" + neg.map(m => "• " + m.nombre).join("\n") + "\n\nPuede faltar capturar una compra en Microsip. ¿Guardar de todos modos?")) return;
+  const r = await api("capturar", {fecha: $("#capFecha").value, nota: $("#capNota").value, lineas});
+  toast(`Guardado ✓ ${n0(r.tinacos)} tinacos`); CAP = {}; $("#capNota").value = ""; await cargar(); cargarReg();
+}));
+async function cargarReg(){
+  if(!D) return;
+  try { const r = await api("registros", {desde: sumaDias(D.hoy, -6), hasta: D.hoy});
+    $("#tblReg tbody").innerHTML = r.registros.length ? r.registros.map(x => `<tr>
+      <td>${esc(fecha(x.fecha))}</td><td><b>${esc(x.nombre)}</b><div class="meta">${esc(x.clave)}${x.nota ? " · " + esc(x.nota) : ""}${x.por ? " · " + esc(x.por) : ""}</div></td>
+      <td class="n">${n0(x.cantidad)}</td><td class="n">${money(x.costo_unit)}</td><td class="n">${money(x.costo)}</td>
+      <td>${x.importado ? `<span class="pill ok">en Microsip</span>` : x.exporte_id ? `<span class="pill pu">exportado #${x.exporte_id}</span>` : `<span class="pill no">sin exportar</span>`}</td>
+      <td>${!x.exporte_id && !soloLectura() ? `<button class="btn btn-ghost btn-sm" data-borrar="${x.id}">Borrar</button>` : ""}</td></tr>`).join("")
+      : `<tr><td colspan="7" class="muted">Nada capturado en los últimos 7 días.</td></tr>`;
+    $$("#tblReg [data-borrar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+      if(!confirm("¿Borrar esta captura?")) return; await api("borrar", {id: Number(b.dataset.borrar)}); toast("Borrada ✓"); await cargar(); cargarReg(); })));
+  } catch(e) { toast(e.message); }
+}
+$("#capRecargar").addEventListener("click", cargarReg);
+
+/* ================= recetas ================= */
+function pintarRecLista(){
+  const q = $("#recQ").value.trim().toUpperCase();
+  const L = tinacos().filter(t => !q || (t.nombre + " " + t.clave).toUpperCase().includes(q));
+  $("#recLista").innerHTML = L.map(t => `<button data-t="${t.articulo_id}" aria-pressed="${REC && REC.articulo_id === t.articulo_id}"><span><b>${esc(t.nombre)}</b><br><span class="meta">${esc(t.clave)}</span></span>
+    ${t.receta.length ? `<span class="pill ok">${money0(t.costo)}</span>` : `<span class="pill no">sin receta</span>`}</button>`).join("") || `<p class="muted">No hay tinacos. Revisa las líneas en Configuración.</p>`;
+  $$("#recLista [data-t]").forEach(b => b.addEventListener("click", () => { const t = tinacos().find(x => x.articulo_id === Number(b.dataset.t));
+    REC = {articulo_id: t.articulo_id, comps: t.receta.map(c => ({...c}))}; CP_TODOS = false; pintarRecLista(); pintarRec(); }));
+}
+$("#recQ").addEventListener("input", pintarRecLista);
+function pintarRec(){
+  const t = tinacos().find(x => x.articulo_id === REC.articulo_id); if(!t) return;
+  const ro = soloLectura() ? "disabled" : "";
+  const costo = REC.comps.reduce((a, c) => a + (c.cantidad || 0) * (c.costo || 0), 0);
+  $("#recEditor").innerHTML = `<h2>${esc(t.nombre)}</h2><p class="sub">${esc(t.clave)} · por cada tinaco sale del inventario:</p>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Materia prima</th><th class="n">Cantidad</th><th class="n">Costo</th><th class="n">Importe</th><th></th></tr></thead><tbody>
+    ${REC.comps.map((c, i) => `<tr><td>${esc(c.nombre)}<div class="meta">${esc(c.clave)} · ${esc(c.unidad || "")}</div></td>
+      <td class="n"><input type="number" min="0" step="any" value="${c.cantidad ?? ""}" data-rc="${i}" ${ro} aria-label="Cantidad de ${esc(c.nombre)}"></td>
+      <td class="n">${money(c.costo)}${c.fuente && c.fuente !== "último costo" ? `<div class="meta">${esc(c.fuente)}</div>` : ""}${c.costo == null ? `<div class="meta neg">sin costo</div>` : ""}</td>
+      <td class="n">${money((c.cantidad || 0) * (c.costo || 0))}</td><td>${ro ? "" : `<button class="btn btn-ghost btn-sm" data-rq="${i}" aria-label="Quitar">✕</button>`}</td></tr>`).join("")
+      || `<tr><td colspan="5" class="muted">Sin componentes. Busca abajo la materia prima (ej. polímero negro, tapa, kit).</td></tr>`}
+    </tbody><tfoot><tr><td>Costo de materiales</td><td></td><td></td><td class="n">${money(costo)}</td><td></td></tr></tfoot></table></div>
+    ${ro ? "" : `<div style="margin-top:12px"><input type="search" id="recBuscar" placeholder="Agregar materia prima del inventario: escribe nombre o clave…" style="width:100%"><div id="recRes"></div></div>
+    <div class="row" style="margin-top:12px"><span class="grow"></span><button class="btn btn-main" id="recGuardar">Guardar receta</button></div>`}`;
+  $$("#recEditor [data-rc]").forEach(i => i.addEventListener("change", () => { REC.comps[i.dataset.rc].cantidad = num(i.value); pintarRec(); }));
+  $$("#recEditor [data-rq]").forEach(b => b.addEventListener("click", () => { REC.comps.splice(Number(b.dataset.rq), 1); pintarRec(); }));
+  const bq = $("#recBuscar"); if(bq) buscador(bq, $("#recRes"), a => { if(REC.comps.some(c => c.componente_id === a.articulo_id)) return toast("Ya está en la receta.");
+    REC.comps.push({componente_id: a.articulo_id, clave: a.clave, nombre: a.nombre, unidad: a.unidad, cantidad: null, costo: a.costo}); pintarRec();
+    setTimeout(() => { const i = $(`#recEditor [data-rc="${REC.comps.length - 1}"]`); if(i) i.focus(); }, 0); });
+  const bg = $("#recGuardar"); if(bg) bg.addEventListener("click", () => ocupado(bg, async () => {
+    const comps = REC.comps.filter(c => num(c.cantidad) > 0).map(c => ({componente_id: c.componente_id, cantidad: c.cantidad}));
+    if(REC.comps.some(c => !(num(c.cantidad) > 0))) throw new Error("Escribe la cantidad de cada materia prima (o quítala).");
+    await api("receta", {articulo_id: REC.articulo_id, comps}); toast("Receta guardada ✓"); const id = REC.articulo_id; await cargar();
+    const t2 = tinacos().find(x => x.articulo_id === id); REC = {articulo_id: id, comps: t2.receta.map(c => ({...c}))}; pintarRecLista(); pintarRec(); }));
+  pintarCopiar(t);
+}
+function buscador(input, caja, elegir){
+  let tq = null;
+  input.addEventListener("input", () => { clearTimeout(tq); const q = input.value.trim(); if(q.length < 2){ caja.innerHTML = ""; return; }
+    tq = setTimeout(async () => { try { const r = await api("buscar", {q});
+      caja.innerHTML = r.articulos.length ? `<div class="res">${r.articulos.map((a, i) => `<button data-i="${i}"><span>${esc(a.nombre)}<br><span class="meta">${esc(a.clave)} · ${esc(a.unidad || "")}${a.linea ? " · " + esc(a.linea) : ""}</span></span><span class="meta">exist. ${n0(a.existencia)}<br>${money(a.costo)}</span></button>`).join("")}</div>` : `<p class="muted">No encontré nada.</p>`;
+      caja.querySelectorAll("[data-i]").forEach(b => b.addEventListener("click", () => { elegir(r.articulos[Number(b.dataset.i)]); input.value = ""; caja.innerHTML = ""; }));
+    } catch(e) { caja.innerHTML = `<p class="muted">${esc(e.message)}</p>`; } }, 300); });
+}
+function pintarCopiar(t){
+  const box = $("#recCopiar");
+  if(!t.receta.length || soloLectura()){ box.hidden = true; return; }
+  box.hidden = false;
+  const otros = tinacos().filter(x => x.articulo_id !== t.articulo_id);
+  // sugerencia: los del mismo modelo (mismo nombre quitando el color)
+  const base = s => String(s).toUpperCase().replace(/\b(NEGRO|BEIGE|BLANCO|AZUL|GRIS|ARENA|VERDE|CAFE|ROJO|TERRACOTA)\b/g, "").replace(/\s+/g, " ").trim();
+  const mismo = otros.filter(x => base(x.nombre) === base(t.nombre));
+  box.innerHTML = `<h2>Copiar esta receta a otros colores</h2><p class="sub">Copia la receta guardada y cambia el polímero por el del color. Hazlo <b>un color a la vez</b>: marca el BEIGE y elige el POLÍMERO BEIGE; luego el BLANCO con el suyo.</p>
+    <div class="row"><label class="muted">Cambiar <select id="cpDe"><option value="">— nada —</option>${t.receta.map(c => `<option value="${c.componente_id}">${esc(c.nombre)}</option>`).join("")}</select></label>
+      <label class="muted">por <input type="search" id="cpA" placeholder="buscar (ej. polímero beige)"></label><span id="cpAsel" class="pill pu" hidden></span></div><div id="cpRes"></div>
+    <div style="margin-top:10px;max-height:220px;overflow:auto">${(mismo.length && !CP_TODOS ? mismo : otros).map(x => `<label class="row" style="padding:4px 0"><input type="checkbox" data-cp="${x.articulo_id}"> ${esc(x.nombre)} ${x.receta.length ? `<span class="pill no">ya tiene receta (se reemplaza)</span>` : ""}</label>`).join("")}
+    ${mismo.length && !CP_TODOS ? `<button class="btn btn-ghost btn-sm" id="cpTodos" style="margin-top:6px">Ver todos los tinacos</button>` : ""}</div>
+    <div class="row" style="margin-top:10px"><span class="grow"></span><button class="btn btn-main" id="cpOk">Copiar receta</button></div>`;
+  let cambiarA = null;
+  buscador($("#cpA"), $("#cpRes"), a => { cambiarA = a; const s = $("#cpAsel"); s.hidden = false; s.textContent = a.nombre; });
+  const bt = $("#cpTodos"); if(bt) bt.addEventListener("click", () => { CP_TODOS = true; pintarCopiar(t); });
+  $("#cpOk").addEventListener("click", () => ocupado($("#cpOk"), async () => {
+    const a = $$("#recCopiar [data-cp]").filter(i => i.checked).map(i => Number(i.dataset.cp));
+    if(!a.length) throw new Error("Marca a qué tinacos copiar.");
+    const de = $("#cpDe").value; if(de && !cambiarA) throw new Error("Busca por qué componente cambiarlo.");
+    if(de && cambiarA && a.length > 1 && !confirm("A los " + a.length + " tinacos marcados se les pondrá " + cambiarA.nombre + ". ¿Todos son de ese color?")) return;
+    await api("copiar", {de: t.articulo_id, a, cambiar_de: de || "", cambiar_a: de && cambiarA ? cambiarA.articulo_id : ""});
+    toast("Receta copiada a " + a.length + " tinaco(s) ✓"); await cargar(); pintarRec();
+  }));
+}
+
+/* ================= simulación ================= */
+function extrasDe(t){ return EXT.filter(x => !x.articulo_id || Number(x.articulo_id) === t.articulo_id).reduce((a, x) => a + (num(x.monto) || 0), 0); }
+function costoSim(t){ return t.receta.reduce((a, c) => a + c.cantidad * (num(SIMC[c.componente_id]) ?? c.costo ?? 0), 0); }
+function pintarSim(){
+  if(!D) return;
+  const ro = soloLectura() ? "disabled" : "";
+  $("#tblExtras tbody").innerHTML = EXT.length ? EXT.map((x, i) => `<tr><td><input type="text" value="${esc(x.concepto)}" data-ex="${i}" data-f="concepto" ${ro} style="width:100%"></td>
+      <td class="n"><input type="number" min="0" step="any" value="${x.monto ?? ""}" data-ex="${i}" data-f="monto" ${ro}></td>
+      <td><select data-ex="${i}" data-f="articulo_id" ${ro}><option value="">Todos los tinacos</option>${conReceta().map(t => `<option value="${t.articulo_id}" ${Number(x.articulo_id) === t.articulo_id ? "selected" : ""}>${esc(t.nombre)}</option>`).join("")}</select></td>
+      <td>${ro ? "" : `<button class="btn btn-ghost btn-sm" data-exq="${i}" aria-label="Quitar">✕</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">Sin gastos. Agrega mano de obra del quemador, gas, luz, etiquetas…</td></tr>`;
+  $$("#tblExtras [data-ex]").forEach(i => i.addEventListener("change", () => { const x = EXT[i.dataset.ex]; x[i.dataset.f] = i.dataset.f === "monto" ? num(i.value) : i.value; pintarTablaSim(); }));
+  $$("#tblExtras [data-exq]").forEach(b => b.addEventListener("click", () => { EXT.splice(Number(b.dataset.exq), 1); pintarSim(); }));
+  $("#simCostos").innerHTML = (D.componentes || []).map(c => `<label class="muted" style="display:flex;flex-direction:column;gap:3px">${esc(c.nombre)} <span>$<input type="number" min="0" step="any" data-sc="${c.articulo_id}" value="${SIMC[c.articulo_id] ?? ""}" placeholder="${c.costo ?? ""}" style="width:110px"> / ${esc((c.unidad || "").toLowerCase())}</span></label>`).join("")
+    + (Object.keys(SIMC).length ? `<button class="btn btn-ghost btn-sm" id="scLimpiar">Volver a los costos de Microsip</button>` : "");
+  $$("#simCostos [data-sc]").forEach(i => i.addEventListener("input", () => { const v = num(i.value); if(v === null) delete SIMC[i.dataset.sc]; else SIMC[i.dataset.sc] = v; pintarTablaSim(); }));
+  const sl = $("#scLimpiar"); if(sl) sl.addEventListener("click", () => { SIMC = {}; pintarSim(); });
+  pintarTablaSim();
+}
+function pintarTablaSim(){
+  const L = conReceta(), ro = soloLectura() ? "disabled" : "";
+  $("#tblSim tbody").innerHTML = L.length ? L.map(t => { const mat = costoSim(t), ext = extrasDe(t), tot = mat + ext, ut = (num(t.precio) || 0) - tot, mg = t.precio ? ut / t.precio : null;
+    return `<tr><td><b>${esc(t.nombre)}</b><div class="meta">${esc(t.clave)}</div></td>
+      <td class="n"><input type="number" min="0" step="any" value="${t.precio ?? ""}" data-pr="${t.articulo_id}" ${ro}>${t.precio_propio ? `<div class="meta">lista: ${money(t.precio_lista)}</div>` : ""}</td>
+      <td class="n">${money(mat)}${Object.keys(SIMC).length && Math.abs(mat - (t.costo || 0)) > 0.005 ? `<div class="meta">hoy ${money(t.costo)}</div>` : ""}</td><td class="n">${money(ext)}</td><td class="n"><b>${money(tot)}</b></td>
+      <td class="n ${ut < 0 ? "neg" : "pos"}">${money(ut)}</td><td class="n ${mg !== null && mg < 0 ? "neg" : ""}">${mg === null ? "–" : (mg * 100).toFixed(1) + "%"}</td>
+      <td class="n"><input type="number" min="0" step="1" value="${PLAN[t.articulo_id] || ""}" data-pl="${t.articulo_id}" aria-label="Plan de ${esc(t.nombre)}"></td></tr>`; }).join("")
+    : `<tr><td colspan="8" class="muted">Primero arma las recetas.</td></tr>`;
+  $$("#tblSim [data-pr]").forEach(i => i.addEventListener("change", async () => { try { await api("precio", {articulo_id: Number(i.dataset.pr), precio: i.value.trim()});
+    const t = tinacos().find(x => x.articulo_id === Number(i.dataset.pr)); t.precio = num(i.value) ?? t.precio_lista; t.precio_propio = num(i.value) !== null; toast("Precio guardado ✓"); pintarTablaSim(); } catch(e) { toast(e.message); } }));
+  $$("#tblSim [data-pl]").forEach(i => i.addEventListener("input", () => { const v = num(i.value); if(v > 0) PLAN[i.dataset.pl] = v; else delete PLAN[i.dataset.pl]; pintarPlan(); }));
+  pintarPlan();
+}
+function pintarPlan(){
+  const piezas = Object.values(PLAN).reduce((a, b) => a + b, 0); $("#simPlan").hidden = !piezas; if(!piezas) return;
+  const M = consumoDe(PLAN); let venta = 0, costo = 0;
+  for(const [id, n] of Object.entries(PLAN)){ const t = tinacos().find(x => String(x.articulo_id) === id); if(!t) continue; venta += n * (num(t.precio) || 0); costo += n * (costoSim(t) + extrasDe(t)); }
+  const falta = M.reduce((a, m) => a + Math.max(0, m.usa - (comp(m.componente_id).disponible ?? 0)) * (m.costo || 0), 0);
+  $("#kpisPlan").innerHTML = [[n0(piezas), "tinacos", ""], [money0(venta), "venta", ""], [money0(costo), "costo total", ""], [money0(venta - costo), "utilidad", venta - costo < 0 ? "bad" : "good"], [money0(falta), "materia prima por comprar", falta > 0 ? "bad" : ""]]
+    .map(([v, t, c]) => `<div class="kpi ${c}"><b>${v}</b><span>${t}</span></div>`).join("");
+  $("#tblPlanMat tbody").innerHTML = M.map(m => { const disp = comp(m.componente_id).disponible ?? 0, f = Math.max(0, m.usa - disp);
+    return `<tr><td>${esc(m.nombre)}</td><td class="n">${n0(m.usa)} ${esc(m.unidad || "")}</td><td class="n">${n0(disp)}</td><td class="n ${f > 0 ? "neg" : ""}">${f > 0 ? n0(Math.ceil(f * 100) / 100) : "—"}</td><td class="n">${money(m.usa * (m.costo || 0))}</td></tr>`; }).join("");
+}
+$("#extAgregar").addEventListener("click", () => { EXT.push({concepto: "", monto: null, articulo_id: ""}); pintarSim(); });
+$("#extGuardar").addEventListener("click", () => ocupado($("#extGuardar"), async () => {
+  const lista = EXT.filter(x => String(x.concepto || "").trim() || num(x.monto)).map(x => ({concepto: String(x.concepto || "").trim(), monto: num(x.monto) ?? 0, articulo_id: x.articulo_id || ""}));
+  if(lista.some(x => !x.concepto)) throw new Error("Escribe el concepto de cada gasto.");
+  await api("extras", {lista}); toast("Gastos guardados ✓"); await cargar();
+}));
+
+/* ================= exportar ================= */
+let EXP = null;
+async function verExport(marcar){
+  if(!D) return;
+  if(!$("#expDesde").value){ $("#expDesde").value = (D.sin_exportar || {}).desde || sumaDias(D.hoy, -6); $("#expHasta").value = D.hoy; }
+  try { EXP = await api("exportar", {desde: $("#expDesde").value, hasta: $("#expHasta").value, marcar: marcar ? "si" : ""}); }
+  catch(e) { toast(e.message); return null; }
+  pintarExport(); return EXP;
+}
+function tablaMov(L, titulo){
+  return `<h3 style="margin:14px 0 6px">${titulo}</h3><div class="scroll"><table class="tbl"><thead><tr><th>Clave</th><th>Artículo</th><th class="n">Unidades</th><th class="n">Costo unitario</th><th class="n">Importe</th></tr></thead><tbody>
+    ${L.map(x => `<tr><td>${esc(x.clave)}</td><td>${esc(x.nombre)}</td><td class="n">${n0(x.u)} ${esc(x.unidad || "")}</td><td class="n">${money(x.costo)}</td><td class="n">${money(x.u * (x.costo || 0))}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function pintarExport(){
+  const e = EXP;
+  $("#expPrev").innerHTML = !e.registros ? `<p class="muted" style="margin-top:10px">No hay nada sin exportar en esas fechas.</p>`
+    : `<p style="margin-top:12px"><b>${n0(e.registros)}</b> capturas del ${esc(fecha(e.desde))} al ${esc(fecha(e.hasta))}${e.exporte_id ? ` · exporte #${e.exporte_id}` : " · todavía no se marcan"}.</p>`
+      + tablaMov(e.salida, "1) Salida de materia prima") + tablaMov(e.entrada, "2) Entrada de tinacos fabricados (al costo de sus materiales)")
+      + (e.salida.some(x => !x.costo) ? `<div class="warn">Algún componente no tiene costo en Microsip: sale con costo 0.</div>` : "");
+  $("#tblExp tbody").innerHTML = (e.anteriores || []).length ? e.anteriores.map(x => `<tr><td>${x.id}</td><td>${esc(fecha(x.desde))} – ${esc(fecha(x.hasta))}</td><td class="n">${n0(x.registros)}</td>
+      <td>${esc(fecha(x.creado))}<div class="meta">${esc(x.por || "")}</div></td>
+      <td>${x.importado ? `<span class="pill ok">sí, ${esc(fecha(x.importado))}</span>` : `<span class="pill no">todavía no</span>`}</td>
+      <td class="row"><button class="btn btn-ghost btn-sm" data-rebajar="${x.id}">Bajar otra vez</button>${soloLectura() ? "" : x.importado ? `<button class="btn btn-ghost btn-sm" data-imp="${x.id}" data-q="si">Quitar marca</button>` : `<button class="btn btn-main btn-sm" data-imp="${x.id}">Ya lo importé en Microsip</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="muted">Todavía no se ha exportado nada.</td></tr>`;
+  $$("#tblExp [data-rebajar]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => { const r = await api("exportar", {exporte_id: Number(b.dataset.rebajar)}); bajarArchivos(r); })));
+  $$("#tblExp [data-imp]").forEach(b => b.addEventListener("click", () => ocupado(b, async () => {
+    await api("importado", {exporte_id: Number(b.dataset.imp), quitar: b.dataset.q || ""}); toast(b.dataset.q ? "Marca quitada" : "Listo ✓ Ya no se descuenta aparte."); await cargar(); verExport(false); })));
+}
+function bajarArchivos(r){
+  const tag = (r.desde || "") + (r.hasta && r.hasta !== r.desde ? "_a_" + r.hasta : "") + (r.exporte_id ? " #" + r.exporte_id : "");
+  bajar("Salida materia prima " + tag + ".txt", lineasTxt(r.salida));
+  setTimeout(() => bajar("Entrada tinacos " + tag + ".txt", lineasTxt(r.entrada)), 400);
+}
+$("#expVer").addEventListener("click", () => ocupado($("#expVer"), () => verExport(false)));
+$("#expBajar").addEventListener("click", () => ocupado($("#expBajar"), async () => {
+  const prev = await verExport(false); if(!prev || !prev.registros) throw new Error("No hay nada sin exportar en esas fechas.");
+  if(!confirm(`Se bajan los 2 archivos de ${prev.registros} capturas y se marcan como exportadas (ya no vuelven a salir). ¿Continuar?`)) return;
+  const r = await verExport(true); if(r) { bajarArchivos(r); toast("Archivos bajados ✓ Impórtalos en Microsip y luego marca «Ya lo importé»."); await cargar(); verExport(false); }
+}));
+
+/* ================= materia prima ================= */
+async function cargarMat(){
+  if(!D) return;
+  if(!$("#matDesde").value){ $("#matDesde").value = D.hoy.slice(0, 8) + "01"; $("#matHasta").value = D.hoy; }
+  try { const r = await api("materia", {desde: $("#matDesde").value, hasta: $("#matHasta").value});
+    const dias = Math.max(1, Math.round((new Date(r.hasta) - new Date(r.desde)) / 864e5) + 1);
+    $("#tblMat tbody").innerHTML = r.filas.length ? r.filas.map(x => { const vd = x.consumo / dias, alc = vd > 0 ? x.disponible / vd : null;
+      return `<tr><td><b>${esc(x.nombre)}</b><div class="meta">${esc(x.clave)} · ${esc(x.unidad || "")}</div></td>
+        <td class="n" title="${esc((x.docs || []).map(d => d.folio + " " + d.fecha + " · " + d.u + (d.prov ? " · " + d.prov : "")).join("\n"))}">${n0(x.entro)}${x.entro ? `<div class="meta">${money0(x.entro_imp)} · ${(x.docs || []).length} doc.</div>` : ""}</td>
+        <td class="n">${n0(x.consumo)}${x.consumo ? `<div class="meta">${money0(x.consumo_imp)}</div>` : ""}</td><td class="n">${n0(x.existencia)}</td><td class="n">${x.por_importar ? n0(x.por_importar) : "—"}</td>
+        <td class="n ${x.disponible < 0 ? "neg" : ""}"><b>${n0(x.disponible)}</b></td><td class="n ${alc !== null && alc < 7 ? "neg" : ""}">${alc === null ? "—" : Math.floor(alc) + " días"}</td></tr>`; }).join("")
+      : `<tr><td colspan="7" class="muted">Todavía no hay materia prima en las recetas.</td></tr>`;
+  } catch(e) { toast(e.message); }
+}
+$("#matVer").addEventListener("click", () => ocupado($("#matVer"), cargarMat));
+
+/* ================= resumen ================= */
+async function cargarRes(){
+  if(!D) return;
+  if(!$("#resDesde").value){ $("#resDesde").value = D.hoy.slice(0, 8) + "01"; $("#resHasta").value = D.hoy; }
+  try { const r = await api("resumen", {desde: $("#resDesde").value, hasta: $("#resHasta").value});
+    const P = r.por_tinaco, tot = P.reduce((a, x) => a + x.tinacos, 0), costo = P.reduce((a, x) => a + x.costo, 0), venta = P.reduce((a, x) => a + x.tinacos * (x.precio || 0), 0);
+    $("#kpisRes").innerHTML = [[n0(tot), "tinacos en el periodo"], [money0(costo), "materia prima"], [money0(venta), "a precio de venta"], [tot ? money(costo / tot) : "–", "costo promedio por tinaco"]]
+      .map(([v, t]) => `<div class="kpi"><b>${v}</b><span>${t}</span></div>`).join("");
+    const S = r.semanas, mx = Math.max(1, ...S.map(s => s.tinacos));
+    $("#resBars").innerHTML = S.map(s => `<div style="height:${s.tinacos / mx * 100}%" title="Semana del ${esc(s.semana)}: ${n0(s.tinacos)} tinacos · ${money0(s.costo)}"><span>${n0(s.tinacos)}</span></div>`).join("") || `<p class="muted">Sin producción capturada.</p>`;
+    $("#resLab").innerHTML = S.map(s => `<span>${esc(s.semana.slice(8, 10) + "/" + s.semana.slice(5, 7))}</span>`).join("");
+    $("#tblRes tbody").innerHTML = P.length ? P.map(x => `<tr><td><b>${esc(x.nombre)}</b><div class="meta">${esc(x.clave)}</div></td><td class="n">${n0(x.tinacos)}</td><td class="n">${money(x.costo_unit)}</td><td class="n">${money(x.costo)}</td><td class="n">${money(x.tinacos * (x.precio || 0))}</td></tr>`).join("")
+      : `<tr><td colspan="5" class="muted">Sin producción en esas fechas.</td></tr>`;
+  } catch(e) { toast(e.message); }
+}
+$("#resVer").addEventListener("click", () => ocupado($("#resVer"), cargarRes));
+
+/* ================= configuración ================= */
+const CFG = [["tienda", "Nombre en la página", "Ej. Producción Adhesipro"], ["empresa", "Empresa", ""],
+  ["lineas", "Líneas o grupos de Microsip que son tinacos", "Ej. tinaco|cisterna. También salen los que ya tienen receta."],
+  ["almacenes", "Almacenes de materia prima (vacío = todos)", "Ej. PLANTA|BODEGA"], ["iva", "IVA (%)", ""]];
+function pintarCfg(){
+  $("#formCfg").innerHTML = CFG.map(([k, t, h]) => `<label style="display:flex;flex-direction:column;gap:4px;width:100%;max-width:520px">${esc(t)}<input type="text" data-k="${k}" value="${esc(D.cfg[k] ?? "")}" ${soloLectura() ? "disabled" : ""}>${h ? `<small class="muted">${esc(h)}</small>` : ""}</label>`).join("");
+}
+$("#cfgGuardar").addEventListener("click", () => ocupado($("#cfgGuardar"), async () => {
+  const general = {}; $$("#formCfg [data-k]").forEach(i => general[i.dataset.k] = i.value.trim());
+  await api("config", {general}); $("#cfgEstado").textContent = "Guardado " + new Date().toLocaleTimeString("es-MX"); await cargar();
+}));
+
+/* ================= inicio ================= */
+(async () => {
+  const hoy = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);
+  $("#capFecha").value = hoy; $("#capFecha").max = hoy;
+  await cargar();
+  let t = "cap"; try { t = localStorage.getItem("prod_tab") || "cap"; } catch(e) {}
+  if(D && !conReceta().length) t = "rec";
+  abrir(t);
+})();
+</script>
+</body>
+</html>
